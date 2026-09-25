@@ -1,0 +1,43 @@
+@import 'tailwindcss';
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Values marked "placeholder" are pending the Figma sync (CLAUDE.md §4). */
+:root {
+  --color-brand: #0f7a56;
+  --color-accent: #1e2a4a; /* placeholder — navy from Figma */
+  --color-verified: #c9a227; /* placeholder — gold from Figma, verified badge ONLY */
+  --color-bg: #ffffff; /* placeholder */
+  --color-surface: #f6f8f7; /* placeholder */
+  --color-text: #111827; /* placeholder */
+  --color-muted: #6b7280; /* placeholder */
+  --color-danger: #dc2626; /* placeholder */
+}
+
+.dark {
+  --color-brand: #22a473;
+  --color-accent: #8fa3d9; /* placeholder */
+  --color-verified: #d9b441; /* placeholder */
+  --color-bg: #0b1210; /* placeholder */
+  --color-surface: #141d1a; /* placeholder */
+  --color-text: #f3f4f6; /* placeholder */
+  --color-muted: #9ca3af; /* placeholder */
+  --color-danger: #f87171; /* placeholder */
+}
+
+@theme inline {
+  --color-brand: var(--color-brand);
+  --color-accent: var(--color-accent);
+  --color-verified: var(--color-verified);
+  --color-bg: var(--color-bg);
+  --color-surface: var(--color-surface);
+  --color-text: var(--color-text);
+  --color-muted: var(--color-muted);
+  --color-danger: var(--color-danger);
+  --font-sans: 'Cairo', system-ui, sans-serif;
+}
+
+@layer base {
+  body {
+    @apply bg-bg text-text font-sans antialiased;
+  }
+}
