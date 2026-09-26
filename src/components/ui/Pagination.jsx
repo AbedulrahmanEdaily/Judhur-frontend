@@ -2,9 +2,9 @@ import clsx from 'clsx';
 import { ar } from '../../locales/ar.js';
 
 const itemClasses =
-  'inline-flex min-w-10 items-center justify-center rounded-[10px] px-3.5 py-[9px] text-[13.5px] leading-[1.75] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand';
-const idleClasses = 'border border-border bg-surface text-text hover:bg-inset';
-const currentClasses = 'bg-brand font-semibold text-inverse';
+  'inline-flex items-center justify-center rounded-[10px] border px-[13px] py-2 text-[13.5px] leading-[1.75] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand';
+const idleClasses = 'border-border bg-surface text-text hover:bg-inset';
+const currentClasses = 'border-transparent bg-brand font-semibold text-inverse';
 
 /**
  * Page numbers to render, with `null` for a gap: 1 … 4 5 6 … 20

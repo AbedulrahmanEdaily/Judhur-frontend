@@ -1,8 +1,12 @@
-/** All user-facing text, grouped by feature. */
+/**
+ * All user-facing text, grouped by feature.
+ * Copy that appears in Figma is taken from it word for word (see DESIGN.md); anything marked
+ * "not in Figma" follows the same tone and is listed in DESIGN.md.
+ */
 export const ar = {
   app: {
     name: 'جذور',
-    tagline: 'سوق العقارات الفلسطيني',
+    tagline: 'سوق العقارات الفلسطيني', // not in Figma (placeholder home)
     comingSoon: 'قريباً',
     logoAlt: 'شعار جذور',
   },
@@ -16,13 +20,34 @@ export const ar = {
   nav: {
     home: 'الرئيسية',
     properties: 'العقارات',
+    map: 'الخريطة',
+    about: 'عن جذور',
+    approvals: 'الموافقات',
+    users: 'المستخدمون',
+    reports: 'البلاغات',
     login: 'تسجيل دخول',
     register: 'إنشاء حساب',
+    addProperty: 'أضف عقار',
+    adminPanel: 'لوحة الإدارة',
+    messages: 'المحادثات',
+    notifications: 'الإشعارات',
+    tabSearch: 'بحث',
+    tabAdd: 'أضف',
+    tabAccount: 'حسابي',
     searchLabel: 'البحث',
     searchPlaceholder: 'ابحث عن أرض أو عقار…',
-    openMenu: 'فتح القائمة',
-    closeMenu: 'إغلاق القائمة',
     mainNav: 'التنقّل الرئيسي',
+  },
+  footer: {
+    about: 'منصة عقارية فلسطينية — مشروع تخرج، جامعة فلسطين التقنية خضوري.',
+    linksTitle: 'روابط',
+    platformTitle: 'المنصة',
+    contactTitle: 'تواصل',
+    howItWorks: 'كيف تعمل',
+    faq: 'الأسئلة الشائعة',
+    email: 'info@judhur.ps',
+    location: 'طولكرم — فلسطين',
+    rights: (year) => `© ${year} جذور — جميع الحقوق محفوظة`,
   },
   theme: {
     toDark: 'تفعيل الوضع الليلي',
@@ -38,95 +63,111 @@ export const ar = {
     page: (n) => `الصفحة ${n}`,
   },
   confirm: {
-    typeToConfirm: (word) => `اكتب «${word}» للتأكيد`,
+    // Figma 48:794 — two spaces around the word.
+    typeToConfirm: (word) => `اكتب  ${word}  للتأكيد`,
   },
   auth: {
     sessionExpired: 'انتهت جلستك، الرجاء تسجيل الدخول مجدداً',
     fields: {
-      userName: 'اسم المستخدم',
       fullName: 'الاسم الكامل',
       email: 'البريد الإلكتروني',
-      phoneNumber: 'رقم الجوال',
+      phoneNumber: 'رقم الهاتف',
       city: 'المدينة',
       password: 'كلمة المرور',
-      newPassword: 'كلمة المرور الجديدة',
-      code: 'رمز التحقق',
-    },
-    hints: {
-      phoneNumber: 'مثال: 0591234567 أو 970591234567+',
-      code: 'الرمز المكوّن من 6 أرقام الذي وصلك على البريد',
+      newPassword: 'كلمة المرور الجديدة', // not in Figma
+      code: 'رمز التحقق', // not in Figma
     },
     validation: {
       required: 'هذا الحقل مطلوب',
       maxLength: (max) => `الحد الأقصى ${max} حرفاً`,
       email: 'البريد الإلكتروني غير صالح',
-      phone: 'رقم الجوال غير صالح. استخدم الصيغة 05XXXXXXXX أو 970/972 متبوعاً بالرقم',
-      password: 'كلمة المرور لا تستوفي الشروط أدناه',
+      phone: 'رقم الهاتف غير صالح. استخدم الصيغة 05XXXXXXXX أو 970/972 متبوعاً بالرقم',
+      password: 'كلمة المرور لازم تحقق كل الشروط',
       code: 'الرمز يتكوّن من 6 أرقام',
+      terms: 'لازم توافق على الشروط عشان تكمّل',
     },
+    // Figma register chips (69:1364…). "حرف صغير" is not in Figma — the API requires it.
     passwordRules: {
-      title: 'يجب أن تحتوي كلمة المرور على:',
-      minLength: '8 أحرف على الأقل',
-      uppercase: 'حرف إنجليزي كبير (A-Z)',
-      lowercase: 'حرف إنجليزي صغير (a-z)',
-      digit: 'رقم واحد على الأقل (0-9)',
-      met: 'مستوفى',
-      unmet: 'غير مستوفى',
+      minLength: '8 أحرف',
+      uppercase: 'حرف كبير',
+      lowercase: 'حرف صغير',
+      digit: 'رقم',
     },
     showPassword: 'إظهار كلمة المرور',
     hidePassword: 'إخفاء كلمة المرور',
     google: 'المتابعة باستخدام Google',
-    or: 'أو',
+    googleSoon: 'الدخول باستخدام Google قريباً', // not in Figma
+    orEmail: 'أو بالبريد الإلكتروني',
+    orEmailShort: 'أو بالبريد',
+    panel: {
+      headline: 'كل عقار إله قصة كاملة — إحنا بنكتبها قبل ما تسأل',
+      points: [
+        'تصنيف الأرض (أ/ب/ج) واضح على كل عرض',
+        'وثيقة ملكية مراجَعة قبل النشر',
+        'تقدير سعر بالذكاء الاصطناعي مع أساسه',
+        'محادثة داخلية محفوظة بينك وبين البائع',
+      ],
+    },
     login: {
-      title: 'تسجيل الدخول',
-      subtitle: 'أهلاً بعودتك إلى جذور',
-      submit: 'تسجيل الدخول',
+      backHome: 'رجوع للرئيسية',
+      title: 'أهلاً فيك من جديد',
+      subtitle: 'سجّل دخولك عشان تكمّل محادثاتك وتشوف مفضلتك.',
+      mobileTitle: 'أهلاً فيك في جذور',
+      rememberMe: 'تذكّرني',
       forgotPassword: 'نسيت كلمة المرور؟',
-      noAccount: 'ليس لديك حساب؟',
-      register: 'أنشئ حساباً',
-      resendConfirmation: 'إعادة إرسال رابط التفعيل',
+      submit: 'تسجيل الدخول',
+      noAccount: 'ما عندك حساب؟',
+      register: 'أنشئ حساب',
+      resendConfirmation: 'أعد إرسال رابط التفعيل', // not in Figma
     },
     register: {
-      title: 'إنشاء حساب',
-      subtitle: 'حساب واحد للبحث عن عقار ولعرض عقاراتك',
-      submit: 'إنشاء الحساب',
-      haveAccount: 'لديك حساب بالفعل؟',
-      login: 'سجّل الدخول',
+      title: 'أنشئ حسابك على جذور',
+      subtitle: 'حساب واحد بيخليك تشتري وتبيع — ما في اختيار دور، بتضيف عقار وقت ما تحب.',
+      terms: 'أوافق على شروط الاستخدام وسياسة الخصوصية',
+      submit: 'أنشئ الحساب',
+      haveAccount: 'عندك حساب؟',
+      login: 'سجّل دخول',
     },
     checkEmail: {
-      title: 'تحقّق من بريدك الإلكتروني',
-      body: (email) => `أرسلنا رابط تفعيل إلى ${email}. افتح الرابط لتفعيل حسابك ثم سجّل الدخول.`,
-      bodyNoEmail: 'أرسلنا رابط تفعيل إلى بريدك. افتح الرابط لتفعيل حسابك ثم سجّل الدخول.',
-      notReceived: 'لم يصلك البريد؟ تحقّق من مجلد الرسائل غير المرغوب فيها أو اطلب رابطاً جديداً.',
-    },
-    resend: {
-      submit: 'إعادة إرسال رابط التفعيل',
-      waitSeconds: (seconds) => `يمكنك الإرسال مجدداً بعد ${seconds} ثانية`,
-      sent: 'إذا كان هذا البريد مسجّلاً وغير مفعّل، فسيصلك رابط تفعيل جديد خلال دقائق.',
-    },
-    confirmEmail: {
-      loading: 'جارٍ تفعيل حسابك…',
-      successTitle: 'تم تفعيل حسابك',
-      successBody: 'يمكنك الآن تسجيل الدخول والبدء باستخدام جذور.',
-      failureTitle: 'رابط التفعيل غير صالح أو منتهي الصلاحية',
-      failureBody: 'اطلب رابط تفعيل جديداً وسيصلك على بريدك.',
+      title: 'افحص بريدك الإلكتروني',
+      body: (email) =>
+        `بعتنا رابط تفعيل على ${email} — اضغط عليه عشان تفعّل حسابك. الرابط صالح لـ 24 ساعة.`,
+      // not in Figma: when the email is not in the URL.
+      bodyNoEmail:
+        'بعتنا رابط تفعيل على بريدك — اضغط عليه عشان تفعّل حسابك. الرابط صالح لـ 24 ساعة.',
+      spamNotice: 'ما وصلك؟ افحص مجلد الرسائل غير المرغوب فيها (Spam) قبل ما تطلب إرسال جديد.',
+      openMailApp: 'افتح تطبيق البريد',
+      resendIn: (time) => `أعد الإرسال بعد ${time}`,
+      resend: 'أعد الإرسال', // not in Figma (the ready state of the countdown line)
+      resent: 'إذا كان البريد مسجّل وما تفعّل، رح يوصلك رابط جديد خلال دقائق.', // not in Figma
     },
     forgot: {
-      title: 'نسيت كلمة المرور',
-      subtitle: 'أدخل بريدك الإلكتروني وسنرسل لك رمزاً من 6 أرقام صالحاً لمدة 5 دقائق.',
-      submit: 'إرسال الرمز',
+      title: 'نسيت كلمة المرور؟',
+      subtitle: 'اكتب بريدك وبنبعتلك رابط آمن تعيّن منه كلمة مرور جديدة.',
+      submit: 'أرسل رابط الاستعادة',
+      backToLogin: 'رجوع لتسجيل الدخول',
     },
+    // not in Figma — the code + new password step.
     reset: {
-      title: 'تعيين كلمة مرور جديدة',
-      subtitle: 'أدخل الرمز الذي أرسلناه إلى بريدك واختر كلمة مرور جديدة.',
-      submit: 'تغيير كلمة المرور',
-      expiresIn: (time) => `ينتهي الرمز خلال ${time}`,
-      expired: 'انتهت صلاحية الرمز. اطلب رمزاً جديداً.',
-      sendNewCode: 'إرسال رمز جديد',
-      codeSent: 'إذا كان البريد مسجّلاً، فسيصلك رمز جديد خلال دقائق.',
-      success: 'تم تغيير كلمة المرور. سجّل الدخول بكلمة المرور الجديدة.',
+      title: 'عيّن كلمة مرور جديدة',
+      subtitle: 'اكتب الرمز اللي وصلك على بريدك وكلمة المرور الجديدة.',
+      codeHint: 'الرمز من 6 أرقام وصالح لمدة 5 دقائق.',
+      expiresIn: (time) => `الرمز بينتهي بعد ${time}`,
+      expired: 'انتهت صلاحية الرمز — اطلب رمز جديد.',
+      sendNewCode: 'أرسل رمز جديد',
+      codeSent: 'إذا كان البريد مسجّل، رح يوصلك رمز جديد خلال دقائق.',
+      submit: 'غيّر كلمة المرور',
+      success: 'تم تغيير كلمة المرور. سجّل دخولك بكلمة المرور الجديدة.',
     },
-    backToLogin: 'العودة لتسجيل الدخول',
+    // not in Figma — the page the email link opens.
+    confirmEmail: {
+      loading: 'عم نفعّل حسابك…',
+      successTitle: 'تم تفعيل حسابك',
+      successBody: 'صار فيك تسجّل دخولك وتبلّش تستخدم جذور.',
+      failureTitle: 'رابط التفعيل مش صالح أو انتهت صلاحيته',
+      failureBody: 'اطلب رابط تفعيل جديد وبيوصلك على بريدك.',
+      resendSubmit: 'أرسل رابط جديد',
+    },
     account: {
       menu: 'قائمة الحساب',
       signedInAs: 'مسجّل الدخول باسم',
@@ -145,12 +186,10 @@ export const ar = {
     conflict: 'تعارض مع بيانات موجودة.',
     tooManyRequests: 'محاولات كثيرة. الرجاء الانتظار قليلاً ثم المحاولة مجدداً.',
   },
+  // not in Figma
   notFound: {
     code: '404',
     title: 'الصفحة غير موجودة',
     description: 'الرابط الذي فتحته غير صحيح أو أن الصفحة لم تعد موجودة.',
-  },
-  footer: {
-    rights: (year) => `© ${year} جذور. جميع الحقوق محفوظة.`,
   },
 };

@@ -1,48 +1,81 @@
-import { useId, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { Link, NavLink } from 'react-router';
-import { Menu, X } from 'lucide-react';
+import clsx from 'clsx';
+import { IconAdminShield, IconBell, IconChat } from '../icons/index.js';
 import { AccountMenu } from './AccountMenu.jsx';
 import { HeaderSearch } from './HeaderSearch.jsx';
-import { LogoLockup } from './LogoLockup.jsx';
-import { MobileNav } from './MobileNav.jsx';
+import { Logo } from './Logo.jsx';
 import { ThemeToggle } from './ThemeToggle.jsx';
-import {
-  NAV_LINKS,
-  navLinkClasses,
-  navPrimaryActionClasses,
-  navSecondaryActionClasses,
-} from './navStyles.js';
-import { selectIsAuthenticated } from '../../features/auth/authSlice.js';
+import { selectIsAdmin, selectIsAuthenticated } from '../../features/auth/authSlice.js';
 import { ar } from '../../locales/ar.js';
 
+// Links without `to` point at pages that are not built yet: they stay visible, not clickable.
+const visitorLinks = [
+  { label: ar.nav.home, to: '/' },
+  { label: ar.nav.properties },
+  { label: ar.nav.map },
+  { label: ar.nav.about },
+];
+const adminLinks = [
+  { label: ar.nav.home, to: '/' },
+  { label: ar.nav.properties },
+  { label: ar.nav.approvals },
+  { label: ar.nav.users },
+  { label: ar.nav.reports },
+];
+
+const iconButtonClasses =
+  'rounded-md bg-inset p-[9px] text-text-secondary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand';
+const primaryActionClasses =
+  'rounded-md bg-brand px-[18px] py-2.5 text-[14px] leading-[1.65] font-semibold whitespace-nowrap text-inverse transition-colors hover:bg-brand-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand';
+
 /**
- * Figma "شريط علوي / Navbar". In RTL: logo at the start (right), search and links in the
- * middle, actions at the end (left). Guests get sign-up/login; signed-in users the account menu.
+ * Figma "شريط علوي / Navbar" (34:104) — زائر / مستخدم / أدمن. Full width, 40×14 padding,
+ * 20 gap, 1px border/subtle. RTL: logo, search, links, then the actions at the far end.
+ * Shown from 1280px up; smaller screens use MobileTopBar + MobileTabBar.
  */
 export function Header() {
   const isAuthenticated = useSelector(selectIsAuthenticated);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuId = useId();
-  const closeMenu = () => setMenuOpen(false);
+  const isAdmin = useSelector(selectIsAdmin);
+  const links = isAdmin ? adminLinks : visitorLinks;
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-bg">
-      <div className="mx-auto flex max-w-7xl items-center gap-5 px-4 py-3.5 lg:px-10">
-        <LogoLockup />
+    <header className="sticky top-0 z-40 hidden border border-border bg-bg xl:block">
+      <div className="flex items-center gap-5 px-[39px] py-[13px]">
+        <Link
+          to="/"
+          className="flex items-center gap-2.5 rounded-md focus-visible:outline-2 focus-visible:outline-brand"
+        >
+          <Logo size={42} decorative />
+          <span className="text-[24px] leading-[1.65] font-bold text-brand-text">
+            {ar.app.name}
+          </span>
+        </Link>
 
-        {/* Visibility lives on wrappers: the inner classes set their own `display`. */}
-        <div className="hidden w-[230px] lg:block">
-          <HeaderSearch />
-        </div>
+        <HeaderSearch />
 
-        <nav aria-label={ar.nav.mainNav} className="hidden lg:block">
-          <ul className="flex items-center gap-[26px]">
-            {NAV_LINKS.map((link) => (
-              <li key={link.to}>
-                <NavLink to={link.to} end={link.end} className={navLinkClasses}>
-                  {ar.nav[link.key]}
-                </NavLink>
+        <nav aria-label={ar.nav.mainNav}>
+          <ul className="flex items-center gap-[26px] text-[14.5px] leading-[1.65] whitespace-nowrap">
+            {links.map((link) => (
+              <li key={link.label}>
+                {link.to ? (
+                  <NavLink
+                    to={link.to}
+                    end
+                    className={({ isActive }) =>
+                      clsx(
+                        'rounded-sm focus-visible:outline-2 focus-visible:outline-brand',
+                        isActive ? 'font-semibold text-brand-text' : 'text-text-secondary',
+                      )
+                    }
+                  >
+                    {link.label}
+                  </NavLink>
+                ) : (
+                  <span aria-disabled="true" className="cursor-default text-text-secondary">
+                    {link.label}
+                  </span>
+                )}
               </li>
             ))}
           </ul>
@@ -50,36 +83,59 @@ export function Header() {
 
         <div className="flex-1" />
 
-        <div className="flex items-center gap-2.5">
-          {isAuthenticated ? (
-            <AccountMenu />
-          ) : (
-            <div className="hidden items-center gap-2.5 lg:flex">
-              <Link to="/register" className={navPrimaryActionClasses}>
-                {ar.nav.register}
-              </Link>
-              <Link to="/login" className={navSecondaryActionClasses}>
-                {ar.nav.login}
-              </Link>
-            </div>
-          )}
-          <ThemeToggle />
-          <button
-            type="button"
-            onClick={() => setMenuOpen((open) => !open)}
-            aria-expanded={menuOpen}
-            aria-controls={menuId}
-            aria-label={menuOpen ? ar.nav.closeMenu : ar.nav.openMenu}
-            className="rounded-md bg-inset p-[9px] text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand lg:hidden"
-          >
-            {menuOpen ? <X size={18} aria-hidden="true" /> : <Menu size={18} aria-hidden="true" />}
-          </button>
-        </div>
-      </div>
+        {!isAuthenticated && (
+          <div className="flex items-center gap-2.5">
+            <Link to="/register" className={primaryActionClasses}>
+              {ar.nav.register}
+            </Link>
+            <Link
+              to="/login"
+              className="rounded-md px-[18px] py-2.5 text-[14px] leading-[1.65] font-semibold whitespace-nowrap text-text-secondary focus-visible:outline-2 focus-visible:outline-brand"
+            >
+              {ar.nav.login}
+            </Link>
+            <ThemeToggle />
+          </div>
+        )}
 
-      {menuOpen && (
-        <MobileNav id={menuId} onNavigate={closeMenu} showGuestActions={!isAuthenticated} />
-      )}
+        {isAuthenticated && (
+          <div className="flex items-center gap-2.5">
+            <AccountMenu />
+            {isAdmin && (
+              <span
+                aria-disabled="true"
+                className="flex cursor-default items-center gap-1.5 rounded-md bg-accent-subtle px-3.5 py-2 text-[13px] leading-[1.65] font-semibold whitespace-nowrap text-text"
+              >
+                <IconAdminShield />
+                {ar.nav.adminPanel}
+              </span>
+            )}
+            {/* Admins never post listings, so only regular users see this. */}
+            {!isAdmin && (
+              <span aria-disabled="true" className={clsx(primaryActionClasses, 'cursor-default')}>
+                {ar.nav.addProperty}
+              </span>
+            )}
+            <button
+              type="button"
+              aria-disabled="true"
+              aria-label={ar.nav.notifications}
+              className={iconButtonClasses}
+            >
+              <IconBell />
+            </button>
+            <button
+              type="button"
+              aria-disabled="true"
+              aria-label={ar.nav.messages}
+              className={iconButtonClasses}
+            >
+              <IconChat />
+            </button>
+            <ThemeToggle />
+          </div>
+        )}
+      </div>
     </header>
   );
 }

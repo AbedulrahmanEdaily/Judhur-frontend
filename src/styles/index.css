@@ -174,6 +174,20 @@
   --shadow-dialog: 0 14px 18px rgb(0 0 0 / 0.2); /* Confirm Dialog */
 }
 
+/*
+ * Raw (non-variable) fills that Figma uses on specific screens — see DESIGN.md "Raw values".
+ */
+
+/* Login / register identity panel: "طبقة تعتيم" over the Property Photo (89:4753). */
+@utility bg-auth-overlay {
+  background-image: linear-gradient(to bottom, rgb(9 28 23 / 0.63), rgb(9 28 23 / 0.84));
+}
+
+/* Mobile login identity header "الهوية" (84:721). */
+@utility bg-auth-hero {
+  background-image: linear-gradient(141.94deg, rgb(14 102 74) 0%, rgb(10 31 48) 71.429%);
+}
+
 @layer base {
   body {
     @apply bg-bg text-text font-sans text-body antialiased;

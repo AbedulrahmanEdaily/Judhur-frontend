@@ -73,43 +73,24 @@ export function toProblem(error) {
     return { status: null, message: ar.errors.timeout, fieldErrors: {}, requestId: null };
   }
 
+  let status = null;
+  if (typeof err?.status === 'number') status = err.status;
   // PARSING_ERROR: a non-JSON error body (proxy page, etc.) — keep the HTTP status.
-  const status =
-    typeof err?.status === 'number'
-      ? err.status
-      : typeof err?.originalStatus === 'number'
-        ? err.originalStatus
-        : null;
+  if (typeof err?.originalStatus === 'number') status = err.originalStatus;
 
   // 429 and middleware 401/403 may come with an empty body.
-  const body = err?.data && typeof err.data === 'object' ? err.data : {};
-  const title = typeof body.title === 'string' ? body.title.trim() : '';
-  const useTitle =
-    title && status !== null && status < 500 && !GENERIC_TITLES.has(title.toLowerCase());
+  let body = {};
+  if (err?.data && typeof err.data === 'object') body = err.data;
 
-  return {
-    status,
-    message: useTitle ? title : fallbackMessage(status),
-    fieldErrors: readFieldErrors(body.errors),
-    requestId: typeof body.requestId === 'string' ? body.requestId : null,
-  };
-}
+  let title = '';
+  if (typeof body.title === 'string') title = body.title.trim();
 
-/**
- * Splits `fieldErrors` into errors for the form's own fields and the rest, which belong in a
- * form-level alert (error codes, or properties the form doesn't have).
- *
- * @param {Record<string, string>} fieldErrors
- * @param {readonly string[]} fieldNames registered form field names
- * @returns {{ fields: Record<string, string>, formMessages: string[] }}
- */
-export function splitFieldErrors(fieldErrors, fieldNames) {
-  /** @type {Record<string, string>} */
-  const fields = {};
-  const formMessages = [];
-  for (const [key, message] of Object.entries(fieldErrors)) {
-    if (fieldNames.includes(key)) fields[key] = message;
-    else formMessages.push(message);
-  }
-  return { fields, formMessages };
+  let message = fallbackMessage(status);
+  const titleIsUseful = title !== '' && !GENERIC_TITLES.has(title.toLowerCase());
+  if (titleIsUseful && status !== null && status < 500) message = title;
+
+  let requestId = null;
+  if (typeof body.requestId === 'string') requestId = body.requestId;
+
+  return { status, message, fieldErrors: readFieldErrors(body.errors), requestId };
 }

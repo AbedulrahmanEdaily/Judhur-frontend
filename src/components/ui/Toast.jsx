@@ -1,15 +1,21 @@
 import clsx from 'clsx';
-import { Check, RotateCcw, TriangleAlert, X } from 'lucide-react';
+import {
+  IconClose15,
+  IconToastCheck,
+  IconToastError,
+  IconToastUndo,
+  IconToastWarning,
+} from '../icons/index.js';
 import { ar } from '../../locales/ar.js';
 
 /** @typedef {'success'|'warning'|'error'|'neutral'} ToastTone */
 
-// Figma "تنبيه / Toast": نجاح / تحذير / خطأ / تراجع.
+// Figma "تنبيه / Toast" (45:786): نجاح / تحذير / خطأ / تراجع.
 const tones = {
-  success: { icon: Check, circle: 'bg-success-soft text-success' },
-  warning: { icon: TriangleAlert, circle: 'bg-warning-soft text-warning' },
-  error: { icon: X, circle: 'bg-danger-soft text-danger' },
-  neutral: { icon: RotateCcw, circle: 'bg-inset text-text-secondary' },
+  success: { icon: IconToastCheck, circle: 'bg-success-soft text-success' },
+  warning: { icon: IconToastWarning, circle: 'bg-warning-soft text-warning' },
+  error: { icon: IconToastError, circle: 'bg-danger-soft text-danger' },
+  neutral: { icon: IconToastUndo, circle: 'bg-inset text-text-secondary' },
 };
 
 /**
@@ -29,12 +35,12 @@ export function Toast({ tone = 'success', message, action, onClose, className })
   return (
     <div
       className={clsx(
-        'flex w-full items-center gap-3 rounded-lg border border-border bg-raised px-4 py-3.5 shadow-toast',
+        'flex w-full items-center gap-3 rounded-lg border border-border bg-raised px-[15px] py-[13px] shadow-toast',
         className,
       )}
     >
       <div className={clsx('shrink-0 rounded-full p-[7px]', circle)}>
-        <Icon size={16} aria-hidden="true" />
+        <Icon />
       </div>
       <p className="flex-1 text-[13.5px] leading-[1.75] text-text">{message}</p>
       {action && (
@@ -52,7 +58,7 @@ export function Toast({ tone = 'success', message, action, onClose, className })
         aria-label={ar.common.close}
         className="shrink-0 rounded-sm text-muted transition-colors hover:text-text focus-visible:outline-2 focus-visible:outline-brand"
       >
-        <X size={15} aria-hidden="true" />
+        <IconClose15 />
       </button>
     </div>
   );

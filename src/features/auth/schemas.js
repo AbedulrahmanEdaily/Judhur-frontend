@@ -4,58 +4,65 @@ import { ar } from '../../locales/ar.js';
 
 // Mirrors the backend validators for /api/Identity/Account. The server stays the authority.
 
-const t = ar.auth.validation;
+const messages = ar.auth.validation;
 
 /** Palestinian/Israeli mobile formats, same regex as the backend. */
 export const PHONE_REGEX = /^(?:\+?(?:970|972)\d{9}|05\d{8})$/;
 
-/** Password rules, in the order the checklist shows them. */
-export const PASSWORD_RULES = /** @type {const} */ ([
+/** The backend password rules, in the order the chips show them. */
+export const PASSWORD_RULES = [
   { key: 'minLength', test: (value) => value.length >= 8 },
   { key: 'uppercase', test: (value) => /[A-Z]/.test(value) },
   { key: 'lowercase', test: (value) => /[a-z]/.test(value) },
   { key: 'digit', test: (value) => /\d/.test(value) },
-]);
+];
 
-/** @param {number} max */
-const requiredText = (max) => z.string().trim().min(1, t.required).max(max, t.maxLength(max));
+function passesAllPasswordRules(value) {
+  for (const rule of PASSWORD_RULES) {
+    if (!rule.test(value)) return false;
+  }
+  return true;
+}
 
 const email = z
   .string()
   .trim()
-  .min(1, t.required)
-  .max(256, t.maxLength(256))
-  .pipe(z.email(t.email));
+  .min(1, messages.required)
+  .max(256, messages.maxLength(256))
+  .pipe(z.email(messages.email));
 
-/** New password (register / reset): the four rules. Not trimmed — spaces are characters. */
+// Not trimmed: spaces are part of a password.
 const newPassword = z
   .string()
-  .min(1, t.required)
-  .refine((value) => PASSWORD_RULES.every((rule) => rule.test(value)), t.password);
+  .min(1, messages.required)
+  .refine(passesAllPasswordRules, messages.password);
 
+// Accepts Arabic-Indic digits, spaces and dashes ("٠٥٩٩ ١٢٣ ٤٥٦"), sends "0599123456".
 const phoneNumber = z
   .string()
   .transform((value) => toLatinDigits(value).replace(/[\s-]/g, ''))
-  .pipe(z.string().min(1, t.required).regex(PHONE_REGEX, t.phone));
+  .pipe(z.string().min(1, messages.required).regex(PHONE_REGEX, messages.phone));
 
 const resetCode = z
   .string()
   .transform((value) => toLatinDigits(value).trim())
-  .pipe(z.string().regex(/^\d{6}$/, t.code));
+  .pipe(z.string().regex(/^\d{6}$/, messages.code));
 
 export const loginSchema = z.object({
   email,
-  // Login checks only presence; the rules apply when a password is set.
-  password: z.string().min(1, t.required),
+  // Login only checks that a password was typed; the rules apply when one is set.
+  password: z.string().min(1, messages.required),
+  remember: z.boolean(),
 });
 
+// The design has no user-name field; the page sends the email as userName.
 export const registerSchema = z.object({
-  userName: requiredText(256),
-  fullName: requiredText(150),
+  fullName: z.string().trim().min(1, messages.required).max(150, messages.maxLength(150)),
   email,
   phoneNumber,
-  city: requiredText(100),
+  city: z.string().trim().min(1, messages.required).max(100, messages.maxLength(100)),
   password: newPassword,
+  acceptTerms: z.boolean().refine((value) => value === true, messages.terms),
 });
 
 export const emailSchema = z.object({ email });

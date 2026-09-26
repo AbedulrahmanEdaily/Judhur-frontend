@@ -3,23 +3,27 @@ import { useNavigate } from 'react-router';
 import { useLogoutMutation } from '../authApi.js';
 import { selectAuth, sessionEnded } from '../authSlice.js';
 
-/** POST /logout, then always end the session locally (even if the call fails) and go home. */
+/**
+ * Used by the desktop account menu and the mobile tab bar.
+ * Calls POST /logout, then always ends the session locally (even if the call fails) and goes home.
+ */
 export function useLogout() {
-  const [logout, { isLoading }] = useLogoutMutation();
+  const [logoutRequest, { isLoading }] = useLogoutMutation();
   const { refreshToken } = useSelector(selectAuth);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const run = async () => {
+  async function logout() {
     try {
-      if (refreshToken) await logout({ refreshToken }).unwrap();
+      if (refreshToken) {
+        await logoutRequest({ refreshToken }).unwrap();
+      }
     } catch {
-      // Logging out locally is what matters; the server treats unknown tokens as logged out.
-    } finally {
-      dispatch(sessionEnded('logout'));
-      navigate('/');
+      // The server treats an unknown token as already logged out, so a failure here is fine.
     }
-  };
+    dispatch(sessionEnded('logout'));
+    navigate('/');
+  }
 
-  return [run, { isLoading }];
+  return { logout, isLoggingOut: isLoading };
 }

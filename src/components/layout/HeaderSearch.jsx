@@ -1,38 +1,30 @@
 import { useId } from 'react';
-import clsx from 'clsx';
-import { Search } from 'lucide-react';
-import { useNavigate } from 'react-router';
+import { IconSearch } from '../icons/index.js';
 import { ar } from '../../locales/ar.js';
 
-/** Figma navbar "بحث": sends the text to the search page as `searchTerm`. */
-export function HeaderSearch({ className, onSubmitted }) {
-  const navigate = useNavigate();
+/**
+ * Figma navbar "بحث": 230×40, bg/inset, radius md, 14×9 padding, 8 gap, 16px icon.
+ * The search page is build step 5, so submitting does nothing yet.
+ */
+export function HeaderSearch() {
   const inputId = useId();
 
   return (
     <form
       role="search"
-      onSubmit={(event) => {
-        event.preventDefault();
-        const term = new FormData(event.currentTarget).get('searchTerm')?.toString().trim();
-        navigate(term ? `/properties?${new URLSearchParams({ searchTerm: term })}` : '/properties');
-        onSubmitted?.();
-      }}
-      className={clsx(
-        'flex h-10 items-center gap-2 rounded-md bg-inset px-3.5 focus-within:ring-1 focus-within:ring-brand',
-        className,
-      )}
+      onSubmit={(event) => event.preventDefault()}
+      className="flex h-10 w-[230px] shrink-0 items-center gap-2 rounded-md bg-inset px-3.5 text-muted focus-within:ring-1 focus-within:ring-brand"
     >
       <label htmlFor={inputId} className="sr-only">
         {ar.nav.searchLabel}
       </label>
-      <Search size={16} aria-hidden="true" className="shrink-0 text-muted" />
+      <IconSearch className="shrink-0" />
       <input
         id={inputId}
         name="searchTerm"
         type="search"
         placeholder={ar.nav.searchPlaceholder}
-        className="w-full min-w-0 bg-transparent text-[13px] text-text outline-none placeholder:text-muted"
+        className="w-full min-w-0 bg-transparent text-[13px] leading-[1.65] text-text outline-none placeholder:text-muted"
       />
     </form>
   );

@@ -18,10 +18,17 @@ const tones = {
   'land-c': 'bg-land-c-soft text-land-c',
 };
 
-export const badgeBaseClasses =
-  'inline-flex items-center gap-1 rounded-full px-3 py-[5px] text-[12px] font-semibold leading-[1.6] whitespace-nowrap';
-
 /** @param {{ tone?: BadgeTone, className?: string, children: import('react').ReactNode }} props */
 export function Badge({ tone = 'neutral', className, children }) {
-  return <span className={clsx(badgeBaseClasses, tones[tone], className)}>{children}</span>;
+  return (
+    <span
+      className={clsx(
+        'inline-flex items-center rounded-full px-3 py-[5px] text-[12px] leading-[1.6] font-semibold whitespace-nowrap',
+        tones[tone],
+        className,
+      )}
+    >
+      {children}
+    </span>
+  );
 }
