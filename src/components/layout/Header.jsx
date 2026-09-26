@@ -1,6 +1,8 @@
 import { useId, useState } from 'react';
+import { useSelector } from 'react-redux';
 import { Link, NavLink } from 'react-router';
 import { Menu, X } from 'lucide-react';
+import { AccountMenu } from './AccountMenu.jsx';
 import { HeaderSearch } from './HeaderSearch.jsx';
 import { LogoLockup } from './LogoLockup.jsx';
 import { MobileNav } from './MobileNav.jsx';
@@ -11,13 +13,15 @@ import {
   navPrimaryActionClasses,
   navSecondaryActionClasses,
 } from './navStyles.js';
+import { selectIsAuthenticated } from '../../features/auth/authSlice.js';
 import { ar } from '../../locales/ar.js';
 
 /**
- * Figma "شريط علوي / Navbar", guest state. In RTL: logo at the start (right), search and links
- * in the middle, actions at the end (left). User/admin states arrive with the auth work.
+ * Figma "شريط علوي / Navbar". In RTL: logo at the start (right), search and links in the
+ * middle, actions at the end (left). Guests get sign-up/login; signed-in users the account menu.
  */
 export function Header() {
+  const isAuthenticated = useSelector(selectIsAuthenticated);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuId = useId();
   const closeMenu = () => setMenuOpen(false);
@@ -47,14 +51,18 @@ export function Header() {
         <div className="flex-1" />
 
         <div className="flex items-center gap-2.5">
-          <div className="hidden items-center gap-2.5 lg:flex">
-            <Link to="/register" className={navPrimaryActionClasses}>
-              {ar.nav.register}
-            </Link>
-            <Link to="/login" className={navSecondaryActionClasses}>
-              {ar.nav.login}
-            </Link>
-          </div>
+          {isAuthenticated ? (
+            <AccountMenu />
+          ) : (
+            <div className="hidden items-center gap-2.5 lg:flex">
+              <Link to="/register" className={navPrimaryActionClasses}>
+                {ar.nav.register}
+              </Link>
+              <Link to="/login" className={navSecondaryActionClasses}>
+                {ar.nav.login}
+              </Link>
+            </div>
+          )}
           <ThemeToggle />
           <button
             type="button"
@@ -69,7 +77,9 @@ export function Header() {
         </div>
       </div>
 
-      {menuOpen && <MobileNav id={menuId} onNavigate={closeMenu} />}
+      {menuOpen && (
+        <MobileNav id={menuId} onNavigate={closeMenu} showGuestActions={!isAuthenticated} />
+      )}
     </header>
   );
 }
