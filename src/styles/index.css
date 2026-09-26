@@ -1,43 +1,181 @@
 @import 'tailwindcss';
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* Values marked "placeholder" are pending the Figma sync (CLAUDE.md §4). */
+/*
+ * Design tokens synced from Figma (file voDthhA1bOmjcJgIkDDXqe):
+ * "Color" collection (Light / Dark modes) and "Layout" collection.
+ * Semantic names used across the app; the Figma variable is noted next to each one.
+ */
 :root {
-  --color-brand: #0f7a56;
-  --color-accent: #1e2a4a; /* placeholder — navy from Figma */
-  --color-verified: #c9a227; /* placeholder — gold from Figma, verified badge ONLY */
-  --color-bg: #ffffff; /* placeholder */
-  --color-surface: #f6f8f7; /* placeholder */
-  --color-text: #111827; /* placeholder */
-  --color-muted: #6b7280; /* placeholder */
-  --color-danger: #dc2626; /* placeholder */
+  --color-bg: #ffffff; /* bg/canvas */
+  --color-surface: #f6f8f7; /* bg/surface */
+  --color-raised: #ffffff; /* bg/raised */
+  --color-inset: #eef2f0; /* bg/inset */
+
+  --color-border: #e2e8e4; /* border/subtle */
+  --color-border-strong: #c7d2cc; /* border/strong */
+
+  --color-text: #0e1a16; /* text/primary */
+  --color-text-secondary: #5f6b65; /* text/secondary */
+  --color-muted: #8a948f; /* text/muted */
+  --color-inverse: #ffffff; /* text/inverse */
+
+  --color-brand: #0f7a56; /* brand/solid */
+  --color-brand-hover: #0c6246; /* brand/hover */
+  --color-brand-subtle: #e6f2ec; /* brand/subtle */
+  --color-brand-text: #0f7a56; /* brand/text */
+
+  --color-accent: #0b2033; /* accent/solid — navy */
+  --color-accent-subtle: #e7ecf1; /* accent/subtle */
+
+  /* Gold — the "موثّق" (verified) badge ONLY. */
+  --color-verified: #96762f; /* accent/gold */
+  --color-verified-soft: #f6efdc; /* accent/gold-soft */
+
+  --color-success: #157f4e; /* state/success */
+  --color-success-soft: #e4f3eb; /* state/success-soft */
+  --color-warning: #b4530a; /* state/warning */
+  --color-warning-soft: #fbeedf; /* state/warning-soft */
+  --color-danger: #b3261e; /* state/danger */
+  --color-danger-soft: #fbe8e6; /* state/danger-soft */
+  --color-info: #14618a; /* state/info */
+  --color-info-soft: #e2eff6; /* state/info-soft */
+
+  --color-land-a: #157f4e; /* land/area-a */
+  --color-land-a-soft: #e4f3eb; /* land/area-a-soft */
+  --color-land-b: #b4530a; /* land/area-b */
+  --color-land-b-soft: #fbeedf; /* land/area-b-soft */
+  --color-land-c: #b3261e; /* land/area-c */
+  --color-land-c-soft: #fbe8e6; /* land/area-c-soft */
 }
 
 .dark {
+  --color-bg: #0b1512;
+  --color-surface: #132119;
+  --color-raised: #1a2b22;
+  --color-inset: #0e1a15;
+
+  --color-border: #24342c;
+  --color-border-strong: #35473d;
+
+  --color-text: #eaf2ee;
+  --color-text-secondary: #93a69d;
+  --color-muted: #6e7f77;
+  --color-inverse: #04150e;
+
   --color-brand: #22a473;
-  --color-accent: #8fa3d9; /* placeholder */
-  --color-verified: #d9b441; /* placeholder */
-  --color-bg: #0b1210; /* placeholder */
-  --color-surface: #141d1a; /* placeholder */
-  --color-text: #f3f4f6; /* placeholder */
-  --color-muted: #9ca3af; /* placeholder */
-  --color-danger: #f87171; /* placeholder */
+  --color-brand-hover: #35b686;
+  --color-brand-subtle: #123529;
+  --color-brand-text: #4fd3a0;
+
+  --color-accent: #123554;
+  --color-accent-subtle: #0f2a42;
+
+  --color-verified: #d9b96a;
+  --color-verified-soft: #33290f;
+
+  --color-success: #34c08a;
+  --color-success-soft: #0f3021;
+  --color-warning: #e08a3c;
+  --color-warning-soft: #3a2610;
+  --color-danger: #f0645a;
+  --color-danger-soft: #3b1b18;
+  --color-info: #4ba3d6;
+  --color-info-soft: #102a3b;
+
+  --color-land-a: #34c08a;
+  --color-land-a-soft: #0f3021;
+  --color-land-b: #e5a24b;
+  --color-land-b-soft: #3a2610;
+  --color-land-c: #f0645a;
+  --color-land-c-soft: #3b1b18;
 }
 
 @theme inline {
-  --color-brand: var(--color-brand);
-  --color-accent: var(--color-accent);
-  --color-verified: var(--color-verified);
   --color-bg: var(--color-bg);
   --color-surface: var(--color-surface);
+  --color-raised: var(--color-raised);
+  --color-inset: var(--color-inset);
+  --color-border: var(--color-border);
+  --color-border-strong: var(--color-border-strong);
   --color-text: var(--color-text);
+  --color-text-secondary: var(--color-text-secondary);
   --color-muted: var(--color-muted);
+  --color-inverse: var(--color-inverse);
+  --color-brand: var(--color-brand);
+  --color-brand-hover: var(--color-brand-hover);
+  --color-brand-subtle: var(--color-brand-subtle);
+  --color-brand-text: var(--color-brand-text);
+  --color-accent: var(--color-accent);
+  --color-accent-subtle: var(--color-accent-subtle);
+  --color-verified: var(--color-verified);
+  --color-verified-soft: var(--color-verified-soft);
+  --color-success: var(--color-success);
+  --color-success-soft: var(--color-success-soft);
+  --color-warning: var(--color-warning);
+  --color-warning-soft: var(--color-warning-soft);
   --color-danger: var(--color-danger);
+  --color-danger-soft: var(--color-danger-soft);
+  --color-info: var(--color-info);
+  --color-info-soft: var(--color-info-soft);
+  --color-land-a: var(--color-land-a);
+  --color-land-a-soft: var(--color-land-a-soft);
+  --color-land-b: var(--color-land-b);
+  --color-land-b-soft: var(--color-land-b-soft);
+  --color-land-c: var(--color-land-c);
+  --color-land-c-soft: var(--color-land-c-soft);
+
   --font-sans: 'Cairo', system-ui, sans-serif;
+}
+
+@theme {
+  /* Layout collection — radius/* (radius/pill = rounded-full) */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 28px;
+
+  /* Text styles (Cairo) */
+  --text-display: 36px;
+  --text-display--line-height: 1.45;
+  --text-display--font-weight: 700;
+  --text-h1: 28px;
+  --text-h1--line-height: 1.52;
+  --text-h1--font-weight: 700;
+  --text-h2: 24px;
+  --text-h2--line-height: 1.55;
+  --text-h2--font-weight: 700;
+  --text-h3: 20px;
+  --text-h3--line-height: 1.6;
+  --text-h3--font-weight: 600;
+  --text-title: 18px;
+  --text-title--line-height: 1.65;
+  --text-title--font-weight: 600;
+  --text-body: 16px;
+  --text-body--line-height: 1.78;
+  --text-body-md: 15px;
+  --text-body-md--line-height: 1.78;
+  --text-body-sm: 13px;
+  --text-body-sm--line-height: 1.75;
+  --text-label: 14px;
+  --text-label--line-height: 1.6;
+  --text-label--font-weight: 600;
+  --text-caption: 12px;
+  --text-caption--line-height: 1.7;
+  --text-price: 22px;
+  --text-price--line-height: 1.4;
+  --text-price--font-weight: 700;
+
+  /* Elevation — shadows used by the Figma components */
+  --shadow-menu: 0 8px 24px -4px rgb(0 0 0 / 0.14); /* Select menu */
+  --shadow-toast: 0 6px 10px rgb(0 0 0 / 0.14); /* Toast */
+  --shadow-modal: 0 12px 16px rgb(0 0 0 / 0.18); /* Modal */
+  --shadow-dialog: 0 14px 18px rgb(0 0 0 / 0.2); /* Confirm Dialog */
 }
 
 @layer base {
   body {
-    @apply bg-bg text-text font-sans antialiased;
+    @apply bg-bg text-text font-sans text-body antialiased;
   }
 }
