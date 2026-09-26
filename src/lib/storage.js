@@ -32,26 +32,3 @@ export function removeItem(key) {
     // Ignore — persistence is best effort.
   }
 }
-
-/**
- * @template T
- * @param {string} key
- * @returns {T | null}
- */
-export function getJson(key) {
-  const raw = getItem(key);
-  if (raw == null) return null;
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
-}
-
-/**
- * @param {string} key
- * @param {unknown} value
- */
-export function setJson(key, value) {
-  setItem(key, JSON.stringify(value));
-}

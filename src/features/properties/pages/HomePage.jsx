@@ -4,7 +4,7 @@ import { ar } from '../../../locales/ar.js';
 // Placeholder — the real home page (hero search, latest listings) is built with the browse step.
 export default function HomePage() {
   return (
-    <section className="flex flex-col items-center gap-3 py-16 text-center">
+    <section className="flex flex-col items-center gap-3 px-4 py-16 text-center">
       <Logo size={96} decorative />
       <h1 className="text-display text-brand-text">{ar.app.name}</h1>
       <p className="text-body text-text-secondary">{ar.app.tagline}</p>

@@ -4,6 +4,8 @@
 > The backend lives in a **separate repository** that you cannot see. Section 6 (API contract) is your only source of truth for the backend — never guess an endpoint, a field name, or a status code.
 >
 > Contract snapshot taken from backend commit `887f090` (2026-09-25).
+>
+> **Read DESIGN.md before any UI work; for anything visual it overrides this file.**
 
 ---
 
@@ -814,7 +816,27 @@ Build in this order; each step ends in a working app, and each is its own branch
 
 ---
 
-## 16. Before you finish any task
+## 16. Code style
+
+Goal: code that is simple, readable, and easy to explain line by line in a graduation-project defense. Prefer the obvious solution over the clever one.
+
+1. **Keep it direct.**
+   - Plain function components with `useState` / `useEffect` / Redux hooks.
+   - Straightforward `if`/`else` and early returns. No nested ternaries, no clever one-liners, no chained `reduce`/`flatMap` tricks when a simple loop or `map` is clearer.
+   - No higher-order components, render props, factories, or generic "engine" code.
+   - No custom hook unless the same logic is used in 2+ places.
+   - No `useMemo` / `useCallback` / `React.memo` unless there is a real, visible performance problem.
+2. **Keep it small and flat.**
+   - Short files, short functions. One component per file.
+   - Don't split a component into many tiny pieces just for structure; split only when a piece is reused or the file becomes hard to read.
+   - Don't create shared helpers "for later". Duplicate a few lines instead of building an abstraction nobody else uses yet.
+3. **Clear names over comments.** Descriptive variable and function names. Comments only where the "why" isn't obvious — one short line, in plain English.
+4. **Libraries:** only the ones listed in this file, each used in its most standard, documented way (the pattern shown in its official getting-started docs).
+5. **Do not simplify away correctness.** Keep the token refresh lock, error handling for every API call, form validation, loading/empty/error states, and the DESIGN.md match. Simple does not mean fragile.
+
+After every task, explain each created or changed file in short, simple Palestinian Arabic: what the file does and why it is written this way (code names on their own lines, not inside Arabic sentences).
+
+## 17. Before you finish any task
 
 - [ ] Every API call matches section 6 exactly (path, method, body keys, enum strings).
 - [ ] Loading, empty, error, and success states exist and are in Arabic.
@@ -822,4 +844,5 @@ Build in this order; each step ends in a working app, and each is its own branch
 - [ ] Form validation mirrors the backend rules; server errors land on the right fields.
 - [ ] Destructive actions go through `ConfirmDialog`.
 - [ ] No invented endpoints — anything missing is in `BACKEND_REQUESTS.md` and mentioned in your reply.
+- [ ] The code follows section 16 (code style) and every screen matches Figma per DESIGN.md.
 - [ ] `npm run lint` and `npm run build` pass.

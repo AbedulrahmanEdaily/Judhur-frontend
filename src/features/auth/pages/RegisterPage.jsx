@@ -2,31 +2,42 @@ import { useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useNavigate } from 'react-router';
-import { Button } from '../../../components/ui/Button.jsx';
-import { Input } from '../../../components/ui/Input.jsx';
+import { Checkbox } from '../../../components/ui/Checkbox.jsx';
 import { FormAlert } from '../../../components/form/FormAlert.jsx';
-import { PasswordInput } from '../../../components/form/PasswordInput.jsx';
 import { applyServerErrors } from '../../../components/form/applyServerErrors.js';
-import { AuthHeading } from '../components/AuthHeading.jsx';
+import morningPhoto from '../../../assets/photos/panel-morning.svg';
+import { AuthInput } from '../components/AuthInput.jsx';
+import { AuthSplitLayout } from '../components/AuthSplitLayout.jsx';
+import { AuthSubmitButton } from '../components/AuthSubmitButton.jsx';
 import { GoogleSignInButton } from '../components/GoogleSignInButton.jsx';
-import { PasswordChecklist } from '../components/PasswordChecklist.jsx';
+import { PasswordField } from '../components/PasswordField.jsx';
+import { PasswordRules } from '../components/PasswordRules.jsx';
 import { useRegisterMutation } from '../authApi.js';
 import { registerSchema } from '../schemas.js';
 import { ar } from '../../../locales/ar.js';
 
-const FIELDS = ['userName', 'fullName', 'email', 'phoneNumber', 'city', 'password'];
+const FIELD_NAMES = ['fullName', 'email', 'phoneNumber', 'city', 'password'];
 
-/** Identity password errors arrive as codes (`Identity.PasswordTooShort`, …). */
-const fieldForKey = (key) => (key.startsWith('identity.Password') ? 'password' : undefined);
+// Server error codes that belong to a form field.
+const ERROR_CODE_FIELDS = {
+  userName: 'email', // userName is sent as the email
+  'identity.DuplicateEmail': 'email',
+  'identity.DuplicateUserName': 'email',
+  'identity.PasswordTooShort': 'password',
+  'identity.PasswordRequiresDigit': 'password',
+  'identity.PasswordRequiresLower': 'password',
+  'identity.PasswordRequiresUpper': 'password',
+  'identity.PasswordRequiresNonAlphanumeric': 'password',
+  'identity.PasswordRequiresUniqueChars': 'password',
+};
 
+/** Figma "إنشاء حساب — زائر" (69:1262). The mobile layout follows the mobile login frame. */
 export default function RegisterPage() {
-  const t = ar.auth.register;
-  const f = ar.auth.fields;
+  const text = ar.auth.register;
+  const fields = ar.auth.fields;
   const navigate = useNavigate();
   const [registerAccount] = useRegisterMutation();
-  const [failure, setFailure] = useState(
-    /** @type {{ message: string | null, requestId: string | null } | null} */ (null),
-  );
+  const [failure, setFailure] = useState(null);
 
   const {
     register,
@@ -38,102 +49,119 @@ export default function RegisterPage() {
     resolver: zodResolver(registerSchema),
     mode: 'onTouched',
     defaultValues: {
-      userName: '',
       fullName: '',
       email: '',
       phoneNumber: '',
       city: '',
       password: '',
+      acceptTerms: false,
     },
   });
-
   const password = useWatch({ control, name: 'password' });
 
-  const onSubmit = handleSubmit(async (values) => {
+  async function onSubmit(values) {
     setFailure(null);
+    const body = {
+      userName: values.email, // the design has no user-name field (BACKEND_REQUESTS #13)
+      fullName: values.fullName,
+      email: values.email,
+      phoneNumber: values.phoneNumber,
+      city: values.city,
+      bio: null, // accepted but not saved by the API yet
+      profileImageUrl: null,
+      password: values.password,
+    };
     try {
-      // bio and profileImageUrl are accepted but not saved by the API yet — always null for now.
-      await registerAccount({ ...values, bio: null, profileImageUrl: null }).unwrap();
+      await registerAccount(body).unwrap();
       navigate(`/register/check-email?${new URLSearchParams({ email: values.email })}`, {
         replace: true,
       });
     } catch (error) {
-      const { problem, formMessage } = applyServerErrors(error, setError, FIELDS, fieldForKey);
-      setFailure({
-        message: formMessage,
-        requestId: problem.status !== null && problem.status >= 500 ? problem.requestId : null,
-      });
+      const { problem, formMessage } = applyServerErrors(
+        error,
+        setError,
+        FIELD_NAMES,
+        ERROR_CODE_FIELDS,
+      );
+      let requestId = null;
+      if (problem.status >= 500) requestId = problem.requestId;
+      setFailure({ message: formMessage, requestId });
     }
-  });
+  }
 
   return (
-    <>
-      <AuthHeading title={t.title} subtitle={t.subtitle} />
+    <AuthSplitLayout photo={morningPhoto} mobileTitle={text.title} mobileSubtitle={text.subtitle}>
+      <h1 className="hidden text-[30px] leading-[1.75] font-bold text-text xl:block">
+        {text.title}
+      </h1>
+      <p className="hidden text-[14.5px] leading-[1.75] text-text-secondary xl:block">
+        {text.subtitle}
+      </p>
+
       <GoogleSignInButton />
 
-      <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
-        <Input
-          label={f.fullName}
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        noValidate
+        className="flex flex-col gap-4 xl:gap-[18px]"
+      >
+        <AuthInput
+          label={fields.fullName}
           autoComplete="name"
           error={errors.fullName?.message}
           {...register('fullName')}
         />
-        <Input
-          label={f.userName}
-          dir="ltr"
-          autoComplete="username"
-          autoCapitalize="none"
-          spellCheck={false}
-          error={errors.userName?.message}
-          {...register('userName')}
-        />
-        <Input
-          label={f.email}
+        <AuthInput
+          label={fields.email}
           type="email"
-          dir="ltr"
           autoComplete="email"
           error={errors.email?.message}
           {...register('email')}
         />
-        <Input
-          label={f.phoneNumber}
-          type="tel"
-          dir="ltr"
-          inputMode="tel"
-          autoComplete="tel"
-          hint={ar.auth.hints.phoneNumber}
-          error={errors.phoneNumber?.message}
-          {...register('phoneNumber')}
-        />
-        <Input
-          label={f.city}
-          autoComplete="address-level2"
-          error={errors.city?.message}
-          {...register('city')}
-        />
-        <div className="flex flex-col gap-2">
-          <PasswordInput
-            label={f.password}
-            autoComplete="new-password"
-            error={errors.password?.message}
-            {...register('password')}
+        <div className="flex gap-3">
+          <AuthInput
+            className="flex-1"
+            label={fields.phoneNumber}
+            type="tel"
+            inputMode="tel"
+            autoComplete="tel"
+            error={errors.phoneNumber?.message}
+            {...register('phoneNumber')}
           />
-          <PasswordChecklist value={password} />
+          <AuthInput
+            className="flex-1"
+            label={fields.city}
+            autoComplete="address-level2"
+            error={errors.city?.message}
+            {...register('city')}
+          />
+        </div>
+        <PasswordField
+          label={fields.password}
+          autoComplete="new-password"
+          error={errors.password?.message}
+          {...register('password')}
+        />
+        <PasswordRules password={password} />
+
+        <div className="flex flex-col gap-1">
+          <Checkbox label={text.terms} {...register('acceptTerms')} />
+          {errors.acceptTerms && (
+            <p className="text-caption text-danger">{errors.acceptTerms.message}</p>
+          )}
         </div>
 
         {failure?.message && <FormAlert requestId={failure.requestId}>{failure.message}</FormAlert>}
 
-        <Button type="submit" fullWidth loading={isSubmitting}>
-          {t.submit}
-        </Button>
+        <AuthSubmitButton loading={isSubmitting}>{text.submit}</AuthSubmitButton>
       </form>
 
-      <p className="mt-6 text-center text-body-sm text-text-secondary">
-        {t.haveAccount}{' '}
-        <Link to="/login" className="font-semibold text-brand-text hover:underline">
-          {t.login}
+      <p className="flex items-center justify-center gap-1.5 text-[13px] leading-[1.72] xl:pt-1.5 xl:text-[13.5px] xl:leading-[1.75]">
+        <span className="text-text-secondary">{text.haveAccount}</span>
+        <Link to="/login" className="font-semibold text-brand-text">
+          {text.login}
         </Link>
       </p>
-    </>
+    </AuthSplitLayout>
   );
 }

@@ -1,45 +1,19 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 /**
- * Seconds left until `targetMs` (a timestamp), ticking every second. 0 once it has passed.
- * `now` only ticks while a countdown runs, so it can be up to a second stale right after the
- * target changes; `maxSeconds` (the countdown's length) caps that first value.
- *
- * @param {number | null} targetMs
- * @param {number} [maxSeconds]
+ * Used by the check-email and reset-password pages.
+ * Returns the whole seconds left until `targetTime` (a timestamp in ms), or 0 once it passed.
+ * @param {number} targetTime
  */
-export function useCountdown(targetMs, maxSeconds = Infinity) {
+export function useCountdown(targetTime) {
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
-    if (targetMs == null) return undefined;
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, [targetMs]);
+    const intervalId = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(intervalId);
+  }, []);
 
-  if (targetMs == null) return 0;
-  return Math.min(maxSeconds, Math.max(0, Math.ceil((targetMs - now) / 1000)));
-}
-
-/**
- * A restartable cooldown: `[secondsLeft, start(durationMs)]`.
- * @returns {[number, (durationMs: number) => void]}
- */
-export function useCooldown() {
-  const [cooldown, setCooldown] = useState(
-    /** @type {{ until: number, seconds: number } | null} */ (null),
-  );
-  const secondsLeft = useCountdown(cooldown?.until ?? null, cooldown?.seconds);
-  const start = useCallback(
-    (durationMs) => setCooldown({ until: Date.now() + durationMs, seconds: durationMs / 1000 }),
-    [],
-  );
-  return [secondsLeft, start];
-}
-
-/** 272 → "4:32" */
-export function formatSeconds(totalSeconds) {
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = String(totalSeconds % 60).padStart(2, '0');
-  return `${minutes}:${seconds}`;
+  const secondsLeft = Math.ceil((targetTime - now) / 1000);
+  if (secondsLeft < 0) return 0;
+  return secondsLeft;
 }

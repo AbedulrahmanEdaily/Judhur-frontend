@@ -2,21 +2,22 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useNavigate } from 'react-router';
-import { Button } from '../../../components/ui/Button.jsx';
-import { Input } from '../../../components/ui/Input.jsx';
+import { IconBackArrow, IconLock } from '../../../components/icons/index.js';
 import { FormAlert } from '../../../components/form/FormAlert.jsx';
 import { applyServerErrors } from '../../../components/form/applyServerErrors.js';
-import { AuthHeading } from '../components/AuthHeading.jsx';
+import { AuthCard } from '../components/AuthCard.jsx';
+import { AuthInput } from '../components/AuthInput.jsx';
+import { AuthSubmitButton } from '../components/AuthSubmitButton.jsx';
 import { useSendResetPasswordCodeMutation } from '../authApi.js';
 import { emailSchema } from '../schemas.js';
 import { ar } from '../../../locales/ar.js';
 
-/** Step 1 of the reset: ask for a 6-digit code by email. */
+/** Figma "استعادة كلمة المرور — زائر" (70:1314). Step 1: ask for the reset code. */
 export default function ForgotPasswordPage() {
-  const t = ar.auth.forgot;
+  const text = ar.auth.forgot;
   const navigate = useNavigate();
   const [sendCode] = useSendResetPasswordCodeMutation();
-  const [formMessage, setFormMessage] = useState(/** @type {string | null} */ (null));
+  const [formMessage, setFormMessage] = useState(null);
 
   const {
     register,
@@ -29,7 +30,7 @@ export default function ForgotPasswordPage() {
     defaultValues: { email: '' },
   });
 
-  const onSubmit = handleSubmit(async (values) => {
+  async function onSubmit(values) {
     setFormMessage(null);
     try {
       // Always 204, whether or not the account exists.
@@ -38,30 +39,39 @@ export default function ForgotPasswordPage() {
     } catch (error) {
       setFormMessage(applyServerErrors(error, setError, ['email']).formMessage);
     }
-  });
+  }
 
   return (
-    <>
-      <AuthHeading title={t.title} subtitle={t.subtitle} />
-      <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
-        <Input
+    <AuthCard>
+      <div className="rounded-full bg-brand-subtle p-4 text-brand-text">
+        <IconLock />
+      </div>
+      <h1 className="text-[25px] leading-[1.75] font-bold text-text">{text.title}</h1>
+      <p className="text-[14.5px] leading-[1.75] text-text-secondary">{text.subtitle}</p>
+
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        noValidate
+        className="flex w-full flex-col gap-[18px]"
+      >
+        <AuthInput
           label={ar.auth.fields.email}
           type="email"
-          dir="ltr"
           autoComplete="email"
           error={errors.email?.message}
           {...register('email')}
         />
         {formMessage && <FormAlert>{formMessage}</FormAlert>}
-        <Button type="submit" fullWidth loading={isSubmitting}>
-          {t.submit}
-        </Button>
+        <AuthSubmitButton loading={isSubmitting}>{text.submit}</AuthSubmitButton>
       </form>
-      <p className="mt-6 text-center text-body-sm">
-        <Link to="/login" className="font-semibold text-brand-text hover:underline">
-          {ar.auth.backToLogin}
-        </Link>
-      </p>
-    </>
+
+      <Link
+        to="/login"
+        className="flex items-center justify-center gap-1.5 rounded-sm text-[13px] leading-[1.75] font-semibold text-brand-text focus-visible:outline-2 focus-visible:outline-brand"
+      >
+        <IconBackArrow />
+        {text.backToLogin}
+      </Link>
+    </AuthCard>
   );
 }

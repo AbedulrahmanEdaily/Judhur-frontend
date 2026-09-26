@@ -25,11 +25,6 @@ export function formatArea(value) {
   return `${numberFormatter.format(value)} م²`;
 }
 
-/** @param {number} value */
-export function formatNumber(value) {
-  return numberFormatter.format(value);
-}
-
 /** @param {string | Date} value ISO-8601 string or Date */
 export function formatDate(value) {
   return dateFormatter.format(typeof value === 'string' ? new Date(value) : value);

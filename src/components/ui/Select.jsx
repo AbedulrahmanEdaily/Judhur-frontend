@@ -1,13 +1,14 @@
 import { useId } from 'react';
 import clsx from 'clsx';
-import { ChevronDown } from 'lucide-react';
-import { fieldBoxClasses, helpTextClasses, labelClasses } from './fieldStyles.js';
+import { IconChevronDown } from '../icons/index.js';
 
 /** @typedef {{ value: string, label: string }} SelectOption */
 
 /**
- * Native `<select>` styled like Figma "قائمة منسدلة / Select".
- * Options show the Arabic label and submit the API value.
+ * Figma "قائمة منسدلة / Select" (46:827) trigger: label 14/1.72 semibold, gap 8; box padding
+ * 16 (text side) × 12, 14 on the chevron side, value 14.5/1.72, 18px chevron (text/muted) with a
+ * 10px gap. A native `<select>` is used, so the open list is drawn by the browser — see
+ * DESIGN.md for the Figma menu styling that a native list cannot take.
  *
  * @param {import('react').SelectHTMLAttributes<HTMLSelectElement> & {
  *   label: string,
@@ -36,16 +37,24 @@ export function Select({
 
   return (
     <div className={clsx('flex flex-col gap-2', disabled && 'opacity-60', className)}>
-      <label htmlFor={selectId} className={labelClasses}>
+      <label htmlFor={selectId} className="text-[14px] leading-[1.72] font-semibold text-text">
         {label}
       </label>
-      <div className={fieldBoxClasses({ invalid: Boolean(error), className: 'relative' })}>
+      <div
+        className={clsx(
+          'relative rounded-md border bg-bg text-text transition-colors',
+          'has-disabled:border-border has-disabled:bg-inset',
+          error
+            ? 'border-danger ring-[0.5px] ring-danger ring-inset'
+            : 'border-border-strong focus-within:border-brand focus-within:ring-1 focus-within:ring-brand focus-within:ring-inset',
+        )}
+      >
         <select
           id={selectId}
           disabled={disabled}
           aria-invalid={error ? true : undefined}
           aria-describedby={helpText ? helpId : undefined}
-          className="w-full appearance-none bg-transparent py-3 ps-4 pe-10 text-[14.5px] outline-none disabled:cursor-not-allowed"
+          className="w-full appearance-none bg-transparent py-[11px] ps-[15px] pe-[41px] text-[14.5px] leading-[1.72] outline-none disabled:cursor-not-allowed"
           {...rest}
         >
           {placeholder !== undefined && <option value="">{placeholder}</option>}
@@ -55,14 +64,10 @@ export function Select({
             </option>
           ))}
         </select>
-        <ChevronDown
-          size={18}
-          aria-hidden="true"
-          className="pointer-events-none absolute end-3.5 top-1/2 -translate-y-1/2 text-muted"
-        />
+        <IconChevronDown className="pointer-events-none absolute end-[13px] top-1/2 -translate-y-1/2 text-muted" />
       </div>
       {helpText && (
-        <p id={helpId} className={helpTextClasses({ invalid: Boolean(error) })}>
+        <p id={helpId} className={clsx('text-caption', error ? 'text-danger' : 'text-muted')}>
           {helpText}
         </p>
       )}

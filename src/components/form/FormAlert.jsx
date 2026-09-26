@@ -1,32 +1,37 @@
 import clsx from 'clsx';
-import { CircleAlert, CircleCheck, Info } from 'lucide-react';
+import { IconToastCheck, IconToastError, IconToastWarning } from '../icons/index.js';
 import { ar } from '../../locales/ar.js';
 
-const tones = {
-  error: { icon: CircleAlert, classes: 'bg-danger-soft text-danger' },
-  success: { icon: CircleCheck, classes: 'bg-success-soft text-success' },
-  info: { icon: Info, classes: 'bg-info-soft text-info' },
+// Not in Figma: a form-level message built from the Toast colors and icons (45:786).
+const toneClasses = {
+  error: 'bg-danger-soft text-danger',
+  success: 'bg-success-soft text-success',
+  info: 'bg-info-soft text-info',
 };
 
 /**
- * Form-level message (above the submit button). Errors are announced to screen readers.
+ * Form-level message shown above the submit button. Errors are announced to screen readers.
  *
  * @param {{
  *   tone?: 'error'|'success'|'info',
  *   children: import('react').ReactNode,
  *   requestId?: string | null,
- *   className?: string,
  * }} props
  */
-export function FormAlert({ tone = 'error', children, requestId, className }) {
-  const { icon: Icon, classes } = tones[tone];
+export function FormAlert({ tone = 'error', children, requestId }) {
+  let icon = <IconToastError />;
+  if (tone === 'success') icon = <IconToastCheck />;
+  if (tone === 'info') icon = <IconToastWarning />;
 
   return (
     <div
       role={tone === 'error' ? 'alert' : 'status'}
-      className={clsx('flex gap-2.5 rounded-md px-4 py-3 text-body-sm', classes, className)}
+      className={clsx(
+        'flex gap-2.5 rounded-md px-4 py-3 text-start text-body-sm',
+        toneClasses[tone],
+      )}
     >
-      <Icon size={18} aria-hidden="true" className="mt-0.5 shrink-0" />
+      <span className="mt-1 shrink-0">{icon}</span>
       <div className="flex flex-col gap-1">
         <div>{children}</div>
         {requestId && (

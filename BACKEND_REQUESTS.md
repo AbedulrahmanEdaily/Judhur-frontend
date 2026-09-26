@@ -85,3 +85,17 @@ Contract gaps between this frontend and the backend. When one is done: mark it `
 - Why the frontend needs it: profile, Google sign-in, listing edit/deactivate/delete, admin moderation, favorites, messaging, reviews, reports, notifications, AI price estimate.
 - Endpoint / change wanted: requested one feature at a time, as its own entry, when the UI reaches it.
 - Current workaround in the UI: those screens are not built, or show a "قريباً" state.
+
+## 13. Register without a user name
+
+- Status: open
+- Why the frontend needs it: the sign-up design (Figma 69:1262) has no user-name field — only full name, email, phone, city, and password.
+- Endpoint / change wanted: make `userName` optional on `POST /api/Identity/Account/register` and derive it on the server (for example from the email).
+- Current workaround in the UI: the email is sent as `userName`; a user-name error is shown on the email field.
+
+## 14. Password reset by link or by code
+
+- Status: open
+- Why the frontend needs it: the forgot-password design (Figma 70:1314) says a secure **link** is emailed («أرسل رابط الاستعادة»), but the API emails a 6-digit **code**.
+- Endpoint / change wanted: decide one. Either email a link to `/reset-password?email=…&code=…`, or keep the code and the design copy gets updated.
+- Current workaround in the UI: the Figma copy is kept word for word; the next page (`/reset-password`, not in Figma) asks for the code.

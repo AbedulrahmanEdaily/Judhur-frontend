@@ -1,10 +1,13 @@
 import { useEffect, useId, useRef } from 'react';
 import clsx from 'clsx';
-import { X } from 'lucide-react';
+import { IconClose18 } from '../icons/index.js';
 import { ar } from '../../locales/ar.js';
 
 /**
- * Figma "نافذة / Modal". Built on the native `<dialog>` + `showModal()`: the rest of the page
+ * Figma "نافذة / Modal" (45:741): 480 wide, bg/raised, border/subtle, radius xl, 26/26/24
+ * padding, 18 gap, shadow-modal; header = title 19/1.75 bold + 18px close icon (text/muted) at
+ * the end. Footer buttons use `modalActionClasses` (45:760). The backdrop is not in Figma.
+ * Built on the native `<dialog>` + `showModal()`: the rest of the page
  * becomes inert (focus stays inside), Escape closes it, and focus returns to the opener.
  *
  * @param {{
@@ -45,7 +48,7 @@ export function Modal({ open, onClose, title, children, footer, className }) {
         className,
       )}
     >
-      <div className="flex flex-col gap-[18px] px-[26px] pt-[26px] pb-6">
+      <div className="flex flex-col gap-[18px] px-[25px] pt-[25px] pb-[23px]">
         <div className="flex items-center gap-3">
           <h2 id={titleId} className="flex-1 text-[19px] leading-[1.75] font-bold">
             {title}
@@ -54,9 +57,9 @@ export function Modal({ open, onClose, title, children, footer, className }) {
             type="button"
             onClick={onClose}
             aria-label={ar.common.close}
-            className="rounded-sm p-1 text-muted transition-colors hover:text-text focus-visible:outline-2 focus-visible:outline-brand"
+            className="shrink-0 rounded-sm text-muted transition-colors hover:text-text focus-visible:outline-2 focus-visible:outline-brand"
           >
-            <X size={18} aria-hidden="true" />
+            <IconClose18 />
           </button>
         </div>
         {children}

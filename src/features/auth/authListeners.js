@@ -11,6 +11,7 @@ import {
 import {
   AUTH_STORAGE_KEY,
   clearStoredTokens,
+  isSessionOnly,
   loadStoredTokens,
   storeTokens,
 } from './authStorage.js';
@@ -53,6 +54,8 @@ export function registerAuthListeners(startListening) {
 export function syncSessionAcrossTabs(store) {
   window.addEventListener('storage', (event) => {
     if (event.key !== null && event.key !== AUTH_STORAGE_KEY) return;
+    // A session started without "تذكّرني" belongs to this tab only.
+    if (isSessionOnly()) return;
 
     const current = selectAuth(store.getState());
     const stored = loadStoredTokens();

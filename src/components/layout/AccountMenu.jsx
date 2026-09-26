@@ -1,71 +1,67 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { LogOut, UserRound } from 'lucide-react';
 import { selectCurrentUser } from '../../features/auth/authSlice.js';
 import { useLogout } from '../../features/auth/hooks/useLogout.js';
 import { ar } from '../../locales/ar.js';
 
 /**
- * Avatar button + dropdown for a signed-in user. Shows the email until the API offers a
- * current-user endpoint with the name and photo.
+ * Figma navbar "الحساب" (34:44): a 38px brand/subtle circle. The dropdown it opens (email +
+ * logout) is not in Figma — built from tokens, listed in DESIGN.md.
  */
 export function AccountMenu() {
-  const t = ar.auth.account;
   const user = useSelector(selectCurrentUser);
-  const [logout, { isLoading }] = useLogout();
-  const [open, setOpen] = useState(false);
-  const containerRef = useRef(/** @type {HTMLDivElement | null} */ (null));
+  const { logout, isLoggingOut } = useLogout();
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef(null);
   const menuId = useId();
 
+  // Close on a click outside the menu or on Escape.
   useEffect(() => {
-    if (!open) return undefined;
-    const onPointerDown = (event) => {
-      if (!containerRef.current?.contains(event.target)) setOpen(false);
-    };
-    const onKeyDown = (event) => {
-      if (event.key === 'Escape') setOpen(false);
-    };
-    document.addEventListener('pointerdown', onPointerDown);
-    document.addEventListener('keydown', onKeyDown);
+    if (!isOpen) return undefined;
+
+    function handlePointerDown(event) {
+      if (!containerRef.current.contains(event.target)) setIsOpen(false);
+    }
+    function handleKeyDown(event) {
+      if (event.key === 'Escape') setIsOpen(false);
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
     return () => {
-      document.removeEventListener('pointerdown', onPointerDown);
-      document.removeEventListener('keydown', onKeyDown);
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [open]);
+  }, [isOpen]);
 
   return (
     <div ref={containerRef} className="relative">
       <button
         type="button"
-        onClick={() => setOpen((value) => !value)}
-        aria-expanded={open}
+        onClick={() => setIsOpen(!isOpen)}
+        aria-expanded={isOpen}
         aria-controls={menuId}
-        aria-label={t.menu}
-        className="flex size-[38px] items-center justify-center rounded-full bg-brand-subtle text-brand transition-colors hover:bg-inset focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
-      >
-        <UserRound size={18} aria-hidden="true" />
-      </button>
+        aria-label={ar.auth.account.menu}
+        className="block size-[38px] rounded-full bg-brand-subtle focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+      />
 
-      {open && (
+      {isOpen && (
         <div
           id={menuId}
           className="absolute end-0 top-full z-50 mt-2 w-64 rounded-md border border-border bg-raised p-2 shadow-menu"
         >
           <div className="px-3 py-2">
-            <p className="text-caption text-muted">{t.signedInAs}</p>
-            <p dir="ltr" className="truncate text-end text-body-sm text-text">
-              {user?.email}
-            </p>
+            <p className="text-caption text-muted">{ar.auth.account.signedInAs}</p>
+            <p className="truncate text-body-sm text-text">{user?.email}</p>
           </div>
           <div className="my-1 h-px bg-border" />
           <button
             type="button"
             onClick={logout}
-            disabled={isLoading}
-            className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-body-sm text-danger transition-colors hover:bg-danger-soft focus-visible:outline-2 focus-visible:outline-brand disabled:opacity-60"
+            disabled={isLoggingOut}
+            className="w-full rounded-sm px-3 py-2 text-start text-body-sm text-danger hover:bg-danger-soft focus-visible:outline-2 focus-visible:outline-brand disabled:opacity-60"
           >
-            <LogOut size={16} aria-hidden="true" className="rtl:rotate-180" />
-            {t.logout}
+            {ar.auth.account.logout}
           </button>
         </div>
       )}
