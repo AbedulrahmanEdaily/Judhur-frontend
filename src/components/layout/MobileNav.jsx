@@ -9,10 +9,11 @@ import {
 import { ar } from '../../locales/ar.js';
 
 /**
- * Collapsible menu under the header on small screens: search, links, and account actions.
- * @param {{ id: string, onNavigate: () => void }} props
+ * Collapsible menu under the header on small screens: search, links, and (for guests) the
+ * sign-up/login actions. Signed-in users use the account menu in the header.
+ * @param {{ id: string, onNavigate: () => void, showGuestActions: boolean }} props
  */
-export function MobileNav({ id, onNavigate }) {
+export function MobileNav({ id, onNavigate, showGuestActions }) {
   return (
     <div id={id} className="border-t border-border bg-bg px-4 pt-4 pb-5 lg:hidden">
       <HeaderSearch onSubmitted={onNavigate} />
@@ -32,18 +33,20 @@ export function MobileNav({ id, onNavigate }) {
           ))}
         </ul>
       </nav>
-      <div className="mt-4 flex gap-2.5">
-        <Link to="/register" onClick={onNavigate} className={`${navPrimaryActionClasses} flex-1`}>
-          {ar.nav.register}
-        </Link>
-        <Link
-          to="/login"
-          onClick={onNavigate}
-          className={`${navSecondaryActionClasses} flex-1 border border-border-strong`}
-        >
-          {ar.nav.login}
-        </Link>
-      </div>
+      {showGuestActions && (
+        <div className="mt-4 flex gap-2.5">
+          <Link to="/register" onClick={onNavigate} className={`${navPrimaryActionClasses} flex-1`}>
+            {ar.nav.register}
+          </Link>
+          <Link
+            to="/login"
+            onClick={onNavigate}
+            className={`${navSecondaryActionClasses} flex-1 border border-border-strong`}
+          >
+            {ar.nav.login}
+          </Link>
+        </div>
+      )}
     </div>
   );
 }
