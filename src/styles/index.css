@@ -173,6 +173,7 @@
   --shadow-modal: 0 12px 16px rgb(0 0 0 / 0.18); /* Modal */
   --shadow-dialog: 0 14px 18px rgb(0 0 0 / 0.2); /* Confirm Dialog */
   --shadow-search: 0 14px 40px -8px rgb(0 0 0 / 0.22); /* Home hero search bar (49:594) */
+  --shadow-segment: 0 1px 3px rgb(0 0 0 / 0.14); /* not in Figma: the selected purpose switch */
 }
 
 /*
@@ -194,9 +195,9 @@
   background-image: linear-gradient(to bottom, rgb(9 28 23 / 0.62), rgb(9 28 23 / 0.82));
 }
 
-/* Home mobile hero card "واجهة" (83:529). */
-@utility bg-home-hero-mobile {
-  background-image: linear-gradient(147.2deg, rgb(14 102 74) 0%, rgb(10 31 48) 71.429%);
+/* Scrollable rows (home cities) without a visible scrollbar; they have arrow buttons. */
+@utility scrollbar-none {
+  scrollbar-width: none;
 }
 
 /* Home city cards "طبقة تعتيم" (89:4583…). */

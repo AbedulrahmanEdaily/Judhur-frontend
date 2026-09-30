@@ -7,10 +7,13 @@ import { countActiveFilters } from '../searchFilters.js';
 
 const text = ar.search;
 
-/** "أراضي للبيع في نابلس" (desktop) or "أراضي في نابلس" (mobile, no purpose). */
+/**
+ * "أراضي للبيع في نابلس" (desktop) or "أراضي في نابلس" (mobile, no purpose). With several
+ * types ticked the title stays «العقارات».
+ */
 function searchTitle(filters, withPurpose) {
   let title = text.allProperties;
-  if (filters.propertyType) title = PROPERTY_TYPE_PLURALS[filters.propertyType];
+  if (filters.propertyType.length === 1) title = PROPERTY_TYPE_PLURALS[filters.propertyType[0]];
   if (withPurpose && filters.propertyStatus) {
     title = `${title} ${PROPERTY_STATUS_LABELS[filters.propertyStatus]}`;
   }
@@ -71,8 +74,10 @@ export function SearchHeader({ filters, totalCount, onOpenFilters }) {
             </li>
             {filters.city && <li aria-hidden="true">/</li>}
             {filters.city && <li>{filters.city}</li>}
-            {filters.propertyType && <li aria-hidden="true">/</li>}
-            {filters.propertyType && <li>{PROPERTY_TYPE_PLURALS[filters.propertyType]}</li>}
+            {filters.propertyType.length === 1 && <li aria-hidden="true">/</li>}
+            {filters.propertyType.length === 1 && (
+              <li>{PROPERTY_TYPE_PLURALS[filters.propertyType[0]]}</li>
+            )}
           </ol>
         </nav>
         <h1 className="text-[27px] leading-[1.7] font-bold text-text">

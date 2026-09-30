@@ -43,7 +43,7 @@ function draftFrom(filters) {
 
 /**
  * Figma "الفلاتر" (52:865). Choices are staged here and reach the URL only on «طبّق الفلاتر».
- * Each list is single-choice because the API takes one value per filter.
+ * The purpose is one choice; the checkbox lists take several (BACKEND_REQUESTS #16).
  *
  * @param {{
  *   filters: import('../searchFilters.js').SearchFilters,
@@ -62,9 +62,16 @@ export function SearchFiltersPanel({ filters, onApply, className }) {
     setDraft(draftFrom(filters));
   }
 
-  function choose(field, value, checked) {
-    let next = '';
-    if (checked) next = value;
+  function choosePurpose(status) {
+    let next = status;
+    if (draft.propertyStatus === status) next = '';
+    setDraft({ ...draft, propertyStatus: next });
+  }
+
+  // Tick adds the value to the list, untick takes it out.
+  function toggle(field, value, checked) {
+    let next = draft[field].filter((item) => item !== value);
+    if (checked) next = [...next, value];
     setDraft({ ...draft, [field]: next });
   }
 
@@ -104,7 +111,7 @@ export function SearchFiltersPanel({ filters, onApply, className }) {
       </div>
 
       <FilterSection title={text.purpose}>
-        <div className="flex rounded-md bg-inset">
+        <div className="flex gap-1 rounded-md bg-inset p-1">
           {LISTING_STATUSES.map((status) => {
             const isSelected = draft.propertyStatus === status;
             return (
@@ -112,10 +119,11 @@ export function SearchFiltersPanel({ filters, onApply, className }) {
                 key={status}
                 type="button"
                 aria-pressed={isSelected}
-                onClick={() => choose('propertyStatus', status, !isSelected)}
+                onClick={() => choosePurpose(status)}
                 className={clsx(
-                  'flex-1 rounded-[10px] py-[9px] text-center text-[13.5px] leading-[1.7] focus-visible:outline-2 focus-visible:outline-brand',
-                  isSelected ? 'bg-raised font-semibold text-text' : 'text-text-secondary',
+                  'flex-1 rounded-sm py-[5px] text-center text-[13.5px] leading-[1.7] transition-colors focus-visible:outline-2 focus-visible:outline-brand',
+                  isSelected && 'bg-raised font-semibold text-brand-text shadow-segment',
+                  !isSelected && 'text-text-secondary hover:text-text',
                 )}
               >
                 {PROPERTY_STATUS_LABELS[status]}
@@ -131,8 +139,8 @@ export function SearchFiltersPanel({ filters, onApply, className }) {
           <FilterOption
             key={type}
             label={PROPERTY_TYPE_LABELS[type]}
-            checked={draft.propertyType === type}
-            onChange={(checked) => choose('propertyType', type, checked)}
+            checked={draft.propertyType.includes(type)}
+            onChange={(checked) => toggle('propertyType', type, checked)}
           />
         ))}
       </FilterSection>
@@ -159,8 +167,8 @@ export function SearchFiltersPanel({ filters, onApply, className }) {
           <FilterOption
             key={landClass}
             label={LAND_CLASSIFICATION_LABELS[landClass]}
-            checked={draft.landClassification === landClass}
-            onChange={(checked) => choose('landClassification', landClass, checked)}
+            checked={draft.landClassification.includes(landClass)}
+            onChange={(checked) => toggle('landClassification', landClass, checked)}
             dotClassName={landDotClasses[landClass]}
           />
         ))}
@@ -172,8 +180,8 @@ export function SearchFiltersPanel({ filters, onApply, className }) {
           <FilterOption
             key={legalStatus}
             label={LEGAL_STATUS_LABELS[legalStatus]}
-            checked={draft.legalStatus === legalStatus}
-            onChange={(checked) => choose('legalStatus', legalStatus, checked)}
+            checked={draft.legalStatus.includes(legalStatus)}
+            onChange={(checked) => toggle('legalStatus', legalStatus, checked)}
           />
         ))}
       </FilterSection>

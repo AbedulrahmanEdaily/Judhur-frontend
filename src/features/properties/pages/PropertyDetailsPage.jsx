@@ -86,7 +86,7 @@ export default function PropertyDetailsPage() {
             <li aria-hidden="true">/</li>
             <li>
               <Link
-                to={searchPath({ propertyType: property.propertyType })}
+                to={searchPath({ propertyType: [property.propertyType] })}
                 className="text-brand-text"
               >
                 {PROPERTY_TYPE_PLURALS[property.propertyType]}

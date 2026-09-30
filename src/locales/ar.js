@@ -203,6 +203,8 @@ export const ar = {
       'احكي معه زي ما بتحكي مع صاحبك: «بدي أرض بجنين تحت 30 ألف على شارع». بيفهم العامية الفلسطينية وبيحوّلها لفلاتر بحث.',
     aiChatTag: 'يفهم العامية والفصحى',
     citiesTitle: 'تصفّح حسب المدينة',
+    citiesPrevious: 'المدن السابقة', // not in Figma (arrow buttons)
+    citiesNext: 'المدن التالية', // not in Figma (arrow buttons)
     whyClassificationTitle: 'تصنيف أ / ب / ج',
     whyClassificationText: 'بتعرف الوضع القانوني للأرض قبل ما توقّع، مش بعدين',
     whyDocumentTitle: 'وثيقة ملكية موثّقة',
@@ -242,6 +244,7 @@ export const ar = {
     emptyTitle: 'ما في عقارات بتطابق بحثك',
     emptyText: 'جرّب تغيّر الفلاتر أو تمسحها وتبحث من جديد.',
     closeFilters: 'إغلاق الفلاتر',
+    sortMenu: 'ترتيب النتائج',
   },
   property: {
     // Figma "بطاقة عقار" (33:2) and "تفاصيل العقار — زائر" (65:1087)

@@ -31,7 +31,7 @@ export function HomeCategories() {
           {categories.map(({ type, Icon }) => (
             <li key={type} className="flex-1">
               <Link
-                to={searchPath({ propertyType: type })}
+                to={searchPath({ propertyType: [type] })}
                 className="flex flex-col items-start gap-3 rounded-lg border border-border bg-surface px-[21px] pt-[23px] pb-[21px] transition-colors hover:bg-inset focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
               >
                 <span className="rounded-full bg-brand-subtle p-[11px] text-brand-text">
@@ -50,7 +50,7 @@ export function HomeCategories() {
         {categories.map(({ type }) => (
           <li key={type} className="shrink-0">
             <Link
-              to={searchPath({ propertyType: type })}
+              to={searchPath({ propertyType: [type] })}
               className="block rounded-full border border-border bg-surface px-[15px] py-2 text-[13px] leading-[1.72] font-semibold text-text-secondary focus-visible:outline-2 focus-visible:outline-brand"
             >
               {PROPERTY_TYPE_PLURALS[type]}

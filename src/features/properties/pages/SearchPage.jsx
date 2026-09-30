@@ -32,11 +32,14 @@ export default function SearchPage() {
     setIsDrawerOpen(false);
   }
 
-  function removeFilter(key) {
+  /** `value` is set for the list filters: only that value is removed from the list. */
+  function removeFilter(key, value) {
     const next = { ...filters, page: 1 };
     if (key === 'price') {
       next.minPrice = null;
       next.maxPrice = null;
+    } else if (value) {
+      next[key] = filters[key].filter((item) => item !== value);
     } else {
       next[key] = EMPTY_FILTERS[key];
     }
