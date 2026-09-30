@@ -1,15 +1,17 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { selectCurrentUser } from '../../features/auth/authSlice.js';
+import { Link } from 'react-router';
+import { selectCurrentUser, selectIsAdmin } from '../../features/auth/authSlice.js';
 import { useLogout } from '../../features/auth/hooks/useLogout.js';
 import { ar } from '../../locales/ar.js';
 
 /**
- * Figma navbar "الحساب" (34:44): a 38px brand/subtle circle. The dropdown it opens (email +
- * logout) is not in Figma — built from tokens, listed in DESIGN.md.
+ * Figma navbar "الحساب" (34:44): a 38px brand/subtle circle. The dropdown it opens (email,
+ * «لوحتي» / «عقاراتي», logout) is not in Figma — built from tokens, listed in DESIGN.md.
  */
 export function AccountMenu() {
   const user = useSelector(selectCurrentUser);
+  const isAdmin = useSelector(selectIsAdmin);
   const { logout, isLoggingOut } = useLogout();
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
@@ -55,6 +57,26 @@ export function AccountMenu() {
             <p className="truncate text-body-sm text-text">{user?.email}</p>
           </div>
           <div className="my-1 h-px bg-border" />
+          {/* The account pages (not for admins, who have no listings). */}
+          {!isAdmin && (
+            <>
+              <Link
+                to="/dashboard"
+                onClick={() => setIsOpen(false)}
+                className="block rounded-sm px-3 py-2 text-body-sm text-text hover:bg-inset focus-visible:outline-2 focus-visible:outline-brand"
+              >
+                {ar.accountNav.dashboard}
+              </Link>
+              <Link
+                to="/my-properties"
+                onClick={() => setIsOpen(false)}
+                className="block rounded-sm px-3 py-2 text-body-sm text-text hover:bg-inset focus-visible:outline-2 focus-visible:outline-brand"
+              >
+                {ar.accountNav.myProperties}
+              </Link>
+              <div className="my-1 h-px bg-border" />
+            </>
+          )}
           <button
             type="button"
             onClick={logout}

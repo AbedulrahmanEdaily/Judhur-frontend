@@ -137,7 +137,7 @@ export default function PropertyDetailsPage() {
             />
           </div>
           {property.description && <DescriptionCard description={property.description} />}
-          <LocationCard place={place} />
+          <LocationCard place={place} latitude={property.latitude} longitude={property.longitude} />
         </div>
       </div>
 

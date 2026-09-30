@@ -10,7 +10,7 @@ import {
   SORT_OPTIONS,
 } from './constants.js';
 
-// The search state lives in the URL (CLAUDE.md section 11) with the same names the API uses.
+// The search state lives in the URL (the project guide section 11) with the same names the API uses.
 
 /**
  * @typedef {Object} SearchFilters

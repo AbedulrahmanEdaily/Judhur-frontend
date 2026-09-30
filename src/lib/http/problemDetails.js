@@ -128,3 +128,19 @@ export function toProblem(error) {
   const { fieldErrors, errorCodes } = readErrors(body.errors);
   return { status, message, fieldErrors, errorCodes, requestId };
 }
+
+/**
+ * The one line to show when a button action fails (a toast or an inline message): for a 400 the
+ * business-rule or field message itself (e.g. «يجب رفع 3 صور على الأقل»), else the problem
+ * message.
+ *
+ * @param {unknown} error
+ */
+export function actionErrorMessage(error) {
+  const problem = toProblem(error);
+  const codeMessages = Object.values(problem.errorCodes);
+  if (codeMessages.length > 0) return codeMessages[0];
+  const fieldMessages = Object.values(problem.fieldErrors);
+  if (fieldMessages.length > 0) return fieldMessages[0];
+  return problem.message;
+}
