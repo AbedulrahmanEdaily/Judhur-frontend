@@ -15,7 +15,8 @@ function placeText(property) {
  * Figma "بطاقة عقار / Property Card" (33:2) from 1280px up, and the mobile card (83:547) below.
  * Only the API's data is shown: no heart (favorites step), photo count, frontage, street, AI
  * estimate, or seller row — the search summary has none of them.
- * Sold / rented listings get a pill in the photo-count slot.
+ * Sold / rented listings get a pill in the photo-count slot. The title is fixed at two lines
+ * (not in Figma, where every sample title fits one).
  *
  * @param {{ property: import('../../../api/types.js').PropertySummary }} props
  */
@@ -39,7 +40,11 @@ export function PropertyCard({ property }) {
       <div className="flex flex-col gap-2 px-3.5 pt-3 pb-3.5 xl:gap-3 xl:p-4">
         <ListingBadges propertyStatus={property.propertyStatus} className="gap-1.5 xl:gap-2" />
 
-        <h3 className="text-[15px] leading-[1.72] font-bold text-text xl:text-[18px] xl:leading-[1.7]">
+        {/* Always two lines tall, so the cards line up; a longer title ends with "…". */}
+        <h3
+          title={property.title}
+          className="line-clamp-2 min-h-[2lh] text-[15px] leading-[1.72] font-bold text-text xl:text-[18px] xl:leading-[1.7]"
+        >
           {property.title}
         </h3>
 
