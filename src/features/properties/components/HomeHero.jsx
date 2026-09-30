@@ -40,7 +40,9 @@ const priceOptions = [
  * Desktop: Figma "الواجهة" (49:589) — the photo under the "طبقة تعتيم" gradient, the tagline
  * pill, title, subtitle, and the four-field search bar.
  * Mobile: Figma "واجهة" (83:529) — a card with a single text search.
- * The house-and-olive-trees photo replaces the Figma Property Photo on both (not in Figma).
+ * The house-and-olive-trees photo replaces the Figma Property Photo on both (not in Figma). The
+ * desktop hero fills the screen under the 71px header and the mobile card is 420px tall, so the photo
+ * reads clearly (owner's request).
  */
 export function HomeHero() {
   const navigate = useNavigate();
@@ -75,7 +77,7 @@ export function HomeHero() {
 
   return (
     <>
-      <section className="relative hidden flex-col items-center justify-center gap-[26px] overflow-hidden px-[120px] py-[72px] xl:flex">
+      <section className="relative hidden min-h-[calc(100svh-71px)] flex-col items-center justify-center gap-[26px] overflow-hidden px-[120px] py-[72px] xl:flex">
         <img
           src={heroPhoto}
           alt=""
@@ -138,8 +140,12 @@ export function HomeHero() {
         <p className="relative text-center text-[13px] leading-[1.55] text-white/70">{text.hint}</p>
       </section>
 
-      <section className="relative flex flex-col gap-3 overflow-hidden rounded-lg px-[18px] py-[22px] xl:hidden">
-        <img src={heroPhoto} alt="" className="absolute inset-0 size-full object-cover" />
+      <section className="relative flex min-h-[420px] flex-col justify-end gap-3 overflow-hidden rounded-lg px-[18px] py-[22px] xl:hidden">
+        <img
+          src={heroPhoto}
+          alt=""
+          className="absolute inset-0 size-full object-cover object-[65%_center]"
+        />
         <div className="absolute inset-0 bg-home-hero-overlay" />
         <h1 className="relative text-[21px] leading-[1.65] font-bold text-white">
           {text.mobileTitle}
