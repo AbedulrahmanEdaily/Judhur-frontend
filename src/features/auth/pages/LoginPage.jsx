@@ -6,7 +6,6 @@ import { IconBackArrow } from '../../../components/icons/index.js';
 import { Checkbox } from '../../../components/ui/Checkbox.jsx';
 import { FormAlert } from '../../../components/form/FormAlert.jsx';
 import { applyServerErrors } from '../../../components/form/applyServerErrors.js';
-import sunsetPhoto from '../../../assets/photos/panel-sunset.svg';
 import { AuthInput } from '../components/AuthInput.jsx';
 import { AuthSplitLayout } from '../components/AuthSplitLayout.jsx';
 import { AuthSubmitButton } from '../components/AuthSubmitButton.jsx';
@@ -47,11 +46,7 @@ export default function LoginPage() {
   }
 
   return (
-    <AuthSplitLayout
-      photo={sunsetPhoto}
-      mobileTitle={text.mobileTitle}
-      mobileSubtitle={text.subtitle}
-    >
+    <AuthSplitLayout mobileTitle={text.mobileTitle} mobileSubtitle={text.subtitle}>
       <Link
         to="/"
         className="hidden w-fit items-center gap-1.5 rounded-sm text-[13px] leading-[1.75] font-semibold text-muted focus-visible:outline-2 focus-visible:outline-brand xl:flex"
