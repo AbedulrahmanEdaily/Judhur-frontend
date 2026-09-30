@@ -2,25 +2,27 @@
 
 Contract gaps between this frontend and the backend. When one is done: mark it `done`, update section 6 of `CLAUDE.md`, then remove the UI workaround.
 
+Statuses last updated from the backend contract of 2026-09-30.
+
 ## 1. Allow guests to browse
 
-- Status: open
-- Why the frontend needs it: the design has a guest state that browses, searches, and opens listings. The whole Properties controller currently requires the `User` role (guests get `401`, admins `403`).
-- Endpoint / change wanted: allow anonymous access on `GET /api/v1/Properties` and `GET /api/v1/Properties/{id}`. Decide separately whether admins may view listings (they must not _post_ them).
-- Current workaround in the UI: browse/search/details are public routes; a guest who hits them sees a "log in to browse" prompt.
+- Status: done
+- Why the frontend needs it: the design has a guest state that browses, searches, and opens listings.
+- Endpoint / change wanted: anonymous access on search and details. Done: `GET /api/v1/User/Properties` and `GET /api/v1/User/Properties/{id}` are open to guests, users, and admins.
+- Current workaround in the UI: none (no "log in to browse" prompt).
 
 ## 2. Point the confirmation email to the frontend
 
-- Status: open
-- Why the frontend needs it: the email link currently targets the backend's own `POST /confirm-email`, so clicking it does a `GET` and fails.
-- Endpoint / change wanted: set `Frontend:ConfirmEmailUrl` to `http://localhost:5173/confirm-email` in development (and the deployed URL in production). The frontend page reads `userId` and `token` and posts them.
-- Current workaround in the UI: none — the `/confirm-email` page is built against the contract; testing requires editing the link by hand.
+- Status: done
+- Why the frontend needs it: the email link used to target the backend's own `POST /confirm-email`, so clicking it did a `GET` and failed.
+- Endpoint / change wanted: `Frontend:ConfirmEmailUrl`. Done: it points to `http://localhost:5173/confirm-email` in development.
+- Current workaround in the UI: none.
 
 ## 3. Error code on non-validation ProblemDetails
 
 - Status: open
-- Why the frontend needs it: "email not confirmed" and "account locked" are both `403` on login and only distinguishable by the English `title`; the UI also can't show its own Arabic message per error.
-- Endpoint / change wanted: an extension member on every non-validation ProblemDetails, e.g. `"code": "Identity.EmailNotConfirmed"`, `"Identity.LockedOut"`, `"PropertyErrors.NotFound"`.
+- Why the frontend needs it: "email not confirmed" and "account locked" are both `403` on login and only distinguishable by the `title`; the UI also can't choose its own message per error.
+- Endpoint / change wanted: an extension member on every non-validation ProblemDetails, e.g. `"code": "Identity.EmailNotConfirmed"`, `"Identity.LockedOut"`, `"PropertyErrors.NotFound"`. Codes exist today only as keys inside `400` `errors`.
 - Current workaround in the UI: branch on `status` only; on login `403` show the server `title` plus a "resend confirmation email" link.
 
 ## 4. Current user endpoint
@@ -32,10 +34,10 @@ Contract gaps between this frontend and the backend. When one is done: mark it `
 
 ## 5. Arabic messages for account endpoints
 
-- Status: open
-- Why the frontend needs it: the UI is Arabic only; account validators and identity errors are English (property endpoints are already Arabic).
-- Endpoint / change wanted: Arabic messages for all `/api/Identity/Account/*` validation and identity errors.
-- Current workaround in the UI: client-side zod validation with Arabic messages makes server validation errors rare; server messages are shown as they come.
+- Status: done
+- Why the frontend needs it: the UI is Arabic only.
+- Endpoint / change wanted: Arabic messages for all `/api/Identity/Account/*` errors. Done: every validation and identity message is Arabic, including validation titles.
+- Current workaround in the UI: none. (Client-side zod validation stays — it is form UX, not a workaround.)
 
 ## 6. Register ignores `bio` and `profileImageUrl`
 
@@ -46,17 +48,17 @@ Contract gaps between this frontend and the backend. When one is done: mark it `
 
 ## 7. Richer search results
 
-- Status: open
-- Why the frontend needs it: search summaries have no image, created date, or coordinates, so cards use a placeholder image and there's no "map of results" view.
-- Endpoint / change wanted: add `mainImageUrl` and `createdAtUtc` to the `GET /api/v1/Properties` item shape; add `latitude`/`longitude` if a results map is wanted.
-- Current workaround in the UI: placeholder image on cards; no results map.
+- Status: partly done
+- Why the frontend needs it: cards need an image and a date; a "map of results" view needs coordinates.
+- Endpoint / change wanted: done — `mainImageUrl` on every `PropertySummary`. Still missing — `createdAtUtc`, and `latitude`/`longitude` if a results map is wanted, on the `GET /api/v1/User/Properties` item shape.
+- Current workaround in the UI: no date on cards; no results map (the Figma «الخريطة» screen stays unbuilt).
 
 ## 8. Owner details endpoint
 
-- Status: open
-- Why the frontend needs it: an owner can't open their own `Pending`/`Rejected` listing — the public details endpoint returns `404` for those.
-- Endpoint / change wanted: e.g. `GET /api/v1/Properties/mine/{propertyId}` returning the details shape plus `moderationStatus`, `rejectionReason`, `isActive`, `createdAtUtc`.
-- Current workaround in the UI: owners see those listings only as rows in `/my-properties`.
+- Status: done
+- Why the frontend needs it: an owner must open their own `Pending`/`Rejected` listing.
+- Endpoint / change wanted: done — `GET /api/v1/User/Properties/mine/{propertyId}`.
+- Current workaround in the UI: none.
 
 ## 9. Currency
 
@@ -67,24 +69,24 @@ Contract gaps between this frontend and the backend. When one is done: mark it `
 
 ## 10. CORS for deployment
 
-- Status: open
-- Why the frontend needs it: development goes through the Vite proxy, but a deployed frontend on another origin will be blocked.
-- Endpoint / change wanted: a CORS policy allowing the frontend origin, the `Authorization` header, and `Content-Type`.
-- Current workaround in the UI: Vite dev proxy on `/api`.
+- Status: partly done
+- Why the frontend needs it: a deployed frontend on another origin will be blocked.
+- Endpoint / change wanted: done — `http://localhost:5173` is allowed. Still missing — the deployed frontend origin, with the `Authorization` header and `Content-Type`.
+- Current workaround in the UI: the Vite dev proxy on `/api` (still the default in development).
 
-## 11. Image and document upload (Cloudinary)
+## 11. Image and document upload
 
-- Status: open
-- Why the frontend needs it: listings have no images, and approval will require at least 3; the ownership document is a plain URL string.
-- Endpoint / change wanted: upload endpoints for property images and the ownership document, and image URLs on details/summaries.
-- Current workaround in the UI: temporary URL field for the ownership document; images section in "قريباً" state.
+- Status: done
+- Why the frontend needs it: approval requires at least 3 images and an ownership document.
+- Endpoint / change wanted: done — image upload/delete/set-main and a private ownership-document upload (`CLAUDE.md` 6.7). `ownershipDocumentUrl` is no longer part of create.
+- Current workaround in the UI: none (the temporary document URL field and the images "قريباً" state are dropped from the plan).
 
-## 12. Everything in CLAUDE.md section 6.5
+## 12. Everything in CLAUDE.md section 6.11
 
-- Status: open
-- Why the frontend needs it: profile, Google sign-in, listing edit/deactivate/delete, admin moderation, favorites, messaging, reviews, reports, notifications, AI price estimate.
-- Endpoint / change wanted: requested one feature at a time, as its own entry, when the UI reaches it.
-- Current workaround in the UI: those screens are not built, or show a "قريباً" state.
+- Status: partly done
+- Why the frontend needs it: profile, Google sign-in, notifications, messaging, reviews, reports, AI price estimate, admin statistics and user management.
+- Endpoint / change wanted: done — listing edit/deactivate/delete/sold/rented, admin moderation, favorites. The rest is requested one feature at a time, as its own entry, when the UI reaches it.
+- Current workaround in the UI: those screens are not built.
 
 ## 13. Register without a user name
 
@@ -99,3 +101,10 @@ Contract gaps between this frontend and the backend. When one is done: mark it `
 - Why the frontend needs it: the forgot-password design (Figma 70:1314) says a secure **link** is emailed («أرسل رابط الاستعادة»), but the API emails a 6-digit **code**.
 - Endpoint / change wanted: decide one. Either email a link to `/reset-password?email=…&code=…`, or keep the code and the design copy gets updated.
 - Current workaround in the UI: the Figma copy is kept word for word; the next page (`/reset-password`, not in Figma) asks for the code.
+
+## 15. `requestId` on every ProblemDetails
+
+- Status: open
+- Why the frontend needs it: a `500` screen shows the `requestId` so a failure can be reported. The contract of 2026-09-25 put `requestId` (and `instance`) on every error body; the examples in the contract of 2026-09-30 leave them out.
+- Endpoint / change wanted: confirm that every ProblemDetails, the `400` validation body included, still carries `requestId`.
+- Current workaround in the UI: the `requestId` is shown when present and left out when missing.
