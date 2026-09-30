@@ -19,7 +19,7 @@ const visitorLinks = [
 const adminLinks = [
   { label: ar.nav.home, to: '/', end: true },
   { label: ar.nav.properties, to: '/properties' },
-  { label: ar.nav.approvals },
+  { label: ar.nav.approvals, to: '/admin/properties' },
   { label: ar.nav.users },
   { label: ar.nav.reports },
 ];
@@ -102,13 +102,13 @@ export function Header() {
           <div className="flex items-center gap-2.5">
             <AccountMenu />
             {isAdmin && (
-              <span
-                aria-disabled="true"
-                className="flex cursor-default items-center gap-1.5 rounded-md bg-accent-subtle px-3.5 py-2 text-[13px] leading-[1.65] font-semibold whitespace-nowrap text-text"
+              <Link
+                to="/admin/properties"
+                className="flex items-center gap-1.5 rounded-md bg-accent-subtle px-3.5 py-2 text-[13px] leading-[1.65] font-semibold whitespace-nowrap text-text transition-colors hover:bg-inset focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
               >
                 <IconAdminShield />
                 {ar.nav.adminPanel}
-              </span>
+              </Link>
             )}
             {/* Admins never post listings, so only regular users see this. */}
             {!isAdmin && (

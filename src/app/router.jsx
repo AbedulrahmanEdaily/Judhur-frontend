@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router';
+import { createBrowserRouter, Navigate } from 'react-router';
 import { AppLayout } from '../components/layout/AppLayout.jsx';
 import { Spinner } from '../components/ui/Spinner.jsx';
 import NotFoundPage from '../features/errors/pages/NotFoundPage.jsx';
@@ -84,6 +84,26 @@ export const router = createBrowserRouter([
             lazy: async () => ({
               Component: (await import('../features/properties/pages/EditPropertyPage.jsx'))
                 .default,
+            }),
+          },
+        ],
+      },
+      {
+        // Admin moderation. The statistics page has no API yet, so /admin opens the queue.
+        element: <RequireRole role="Admin" />,
+        children: [
+          { path: 'admin', element: <Navigate to="/admin/properties" replace /> },
+          {
+            path: 'admin/properties',
+            lazy: async () => ({
+              Component: (await import('../features/admin/pages/PendingPropertiesPage.jsx'))
+                .default,
+            }),
+          },
+          {
+            path: 'admin/properties/:propertyId',
+            lazy: async () => ({
+              Component: (await import('../features/admin/pages/ReviewPropertyPage.jsx')).default,
             }),
           },
         ],

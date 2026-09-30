@@ -77,6 +77,18 @@ export function AccountMenu() {
               <div className="my-1 h-px bg-border" />
             </>
           )}
+          {isAdmin && (
+            <>
+              <Link
+                to="/admin/properties"
+                onClick={() => setIsOpen(false)}
+                className="block rounded-sm px-3 py-2 text-body-sm text-text hover:bg-inset focus-visible:outline-2 focus-visible:outline-brand"
+              >
+                {ar.admin.nav.queue}
+              </Link>
+              <div className="my-1 h-px bg-border" />
+            </>
+          )}
           <button
             type="button"
             onClick={logout}

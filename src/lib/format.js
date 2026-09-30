@@ -43,3 +43,28 @@ export function formatArea(value) {
 export function formatDate(value) {
   return dateFormatter.format(typeof value === 'string' ? new Date(value) : value);
 }
+
+const relativeFormatter = new Intl.RelativeTimeFormat(LOCALE, { numeric: 'auto' });
+
+const RELATIVE_STEPS = [
+  { unit: 'minute', seconds: 60 },
+  { unit: 'hour', seconds: 60 * 60 },
+  { unit: 'day', seconds: 24 * 60 * 60 },
+];
+
+/**
+ * "قبل ساعتين", "أمس", "قبل 5 أيام" — for times in the last month; older ones get the date.
+ * @param {string | Date} value ISO-8601 string or Date
+ */
+export function formatRelativeTime(value) {
+  const date = typeof value === 'string' ? new Date(value) : value;
+  const secondsAgo = (Date.now() - date.getTime()) / 1000;
+  if (secondsAgo < 60) return relativeFormatter.format(0, 'minute');
+  if (secondsAgo > 30 * 24 * 60 * 60) return formatDate(date);
+
+  let step = RELATIVE_STEPS[0];
+  for (const candidate of RELATIVE_STEPS) {
+    if (secondsAgo >= candidate.seconds) step = candidate;
+  }
+  return relativeFormatter.format(-Math.floor(secondsAgo / step.seconds), step.unit);
+}

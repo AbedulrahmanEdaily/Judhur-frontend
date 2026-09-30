@@ -122,6 +122,14 @@ export function MobileTabBar() {
                 <p className="truncate text-body-sm text-text">{user?.email}</p>
               </div>
               <div className="my-1 h-px bg-border" />
+              <Link
+                to="/admin/properties"
+                onClick={() => setIsAccountOpen(false)}
+                className="block rounded-sm px-3 py-2 text-body-sm text-text hover:bg-inset"
+              >
+                {ar.admin.nav.queue}
+              </Link>
+              <div className="my-1 h-px bg-border" />
               <button
                 type="button"
                 onClick={logout}

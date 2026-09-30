@@ -32,7 +32,7 @@ const confirmColorClasses = {
  *   tone?: 'danger'|'warning',
  *   details?: import('react').ReactNode,
  *   confirmWord?: string,
- *   reason?: { label: string, placeholder?: string },
+ *   reason?: { label: string, placeholder?: string, maxLength?: number, suggestions?: string[] },
  *   loading?: boolean,
  *   icon?: import('react').ComponentType<import('react').SVGProps<SVGSVGElement>>,
  * }} props
@@ -139,8 +139,32 @@ export function ConfirmDialog({
               onChange={(event) => setReasonText(event.target.value)}
               placeholder={reason.placeholder}
               rows={1}
+              maxLength={reason.maxLength}
               className="resize-y rounded-md border border-border-strong bg-bg px-[13px] pt-[11px] pb-[29px] text-[13.5px] leading-[1.78] outline-none placeholder:text-muted focus:border-brand focus:ring-1 focus:ring-brand focus:ring-inset"
             />
+            {/* Not in Figma: quick picks that fill the box, and a live character count. */}
+            {reason.suggestions && (
+              <div className="-mt-2 flex flex-wrap gap-2">
+                {reason.suggestions.map((suggestion) => (
+                  <button
+                    key={suggestion}
+                    type="button"
+                    onClick={() => setReasonText(suggestion)}
+                    className="rounded-full border border-border bg-surface px-3 py-1 text-[12px] leading-[1.78] font-semibold text-text-secondary transition-colors hover:bg-inset focus-visible:outline-2 focus-visible:outline-brand"
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
+            )}
+            {reason.maxLength && (
+              <p
+                className="-mt-2 text-end text-[12px] leading-[1.78] text-muted"
+                aria-live="polite"
+              >
+                <span dir="ltr">{`${reasonText.length} / ${reason.maxLength}`}</span>
+              </p>
+            )}
           </div>
         )}
 
