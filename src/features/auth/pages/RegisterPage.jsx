@@ -18,17 +18,17 @@ import { ar } from '../../../locales/ar.js';
 
 const FIELD_NAMES = ['fullName', 'email', 'phoneNumber', 'city', 'password'];
 
-// Server error codes that belong to a form field.
-const ERROR_CODE_FIELDS = {
+// Server error keys that belong to a form field.
+const SERVER_KEY_FIELDS = {
   userName: 'email', // userName is sent as the email
-  'identity.DuplicateEmail': 'email',
-  'identity.DuplicateUserName': 'email',
-  'identity.PasswordTooShort': 'password',
-  'identity.PasswordRequiresDigit': 'password',
-  'identity.PasswordRequiresLower': 'password',
-  'identity.PasswordRequiresUpper': 'password',
-  'identity.PasswordRequiresNonAlphanumeric': 'password',
-  'identity.PasswordRequiresUniqueChars': 'password',
+  'Identity.DuplicateEmail': 'email',
+  'Identity.DuplicateUserName': 'email',
+  'Identity.PasswordTooShort': 'password',
+  'Identity.PasswordRequiresDigit': 'password',
+  'Identity.PasswordRequiresLower': 'password',
+  'Identity.PasswordRequiresUpper': 'password',
+  'Identity.PasswordRequiresNonAlphanumeric': 'password',
+  'Identity.PasswordRequiresUniqueChars': 'password',
 };
 
 /** Figma "إنشاء حساب — زائر" (69:1262). The mobile layout follows the mobile login frame. */
@@ -81,7 +81,7 @@ export default function RegisterPage() {
         error,
         setError,
         FIELD_NAMES,
-        ERROR_CODE_FIELDS,
+        SERVER_KEY_FIELDS,
       );
       let requestId = null;
       if (problem.status >= 500) requestId = problem.requestId;

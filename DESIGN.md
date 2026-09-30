@@ -235,38 +235,40 @@ Status key:
 
 ## d. Screen map
 
-Desktop frames are 1440 wide. The "Step" column refers to the build order in `CLAUDE.md` section 14.
+Desktop frames are 1440 wide. The "Step" column refers to the build order in `CLAUDE.md` section 14: `P1·n` is phase 1 (done), `P2·n` is phase 2.
 
 | Figma screen (node)                | Route                   | React page                                   | Step  | Mobile counterpart       | Status                                                                |
 | ---------------------------------- | ----------------------- | -------------------------------------------- | ----- | ------------------------ | --------------------------------------------------------------------- |
-| الرئيسية (49:472)                  | `/`                     | `features/properties/pages/HomePage.jsx`     | 5     | 83:472                   | not built (placeholder page)                                          |
-| نتائج البحث (52:782)               | `/properties`           | SearchPage                                   | 5     | 83:599                   | not built                                                             |
-| تفاصيل العقار (65:1087)            | `/properties/:id`       | PropertyDetailsPage                          | 6     | 83:671                   | not built                                                             |
-| تسجيل الدخول (69:1159)             | `/login`                | `features/auth/pages/LoginPage.jsx`          | 4     | 84:716                   | matches 2026-09-26                                                    |
-| إنشاء حساب (69:1262)               | `/register`             | `features/auth/pages/RegisterPage.jsx`       | 4     | none (built from 84:716) | matches 2026-09-26                                                    |
-| تأكيد البريد (70:1253)             | `/register/check-email` | `features/auth/pages/CheckEmailPage.jsx`     | 4     | none                     | matches 2026-09-26                                                    |
-| استعادة كلمة المرور (70:1314)      | `/forgot-password`      | `features/auth/pages/ForgotPasswordPage.jsx` | 4     | none                     | matches 2026-09-26                                                    |
+| الرئيسية (49:472)                  | `/`                     | `features/properties/pages/HomePage.jsx`     | P2·2  | 83:472                   | not built (placeholder page)                                          |
+| نتائج البحث (52:782)               | `/properties`           | SearchPage                                   | P2·2  | 83:599                   | not built                                                             |
+| تفاصيل العقار (65:1087)            | `/properties/:id`       | PropertyDetailsPage                          | P2·2  | 83:671                   | not built                                                             |
+| تسجيل الدخول (69:1159)             | `/login`                | `features/auth/pages/LoginPage.jsx`          | P1·4  | 84:716                   | matches 2026-09-26                                                    |
+| إنشاء حساب (69:1262)               | `/register`             | `features/auth/pages/RegisterPage.jsx`       | P1·4  | none (built from 84:716) | matches 2026-09-26                                                    |
+| تأكيد البريد (70:1253)             | `/register/check-email` | `features/auth/pages/CheckEmailPage.jsx`     | P1·4  | none                     | matches 2026-09-26                                                    |
+| استعادة كلمة المرور (70:1314)      | `/forgot-password`      | `features/auth/pages/ForgotPasswordPage.jsx` | P1·4  | none                     | matches 2026-09-26                                                    |
 | الخريطة (71:1300)                  | — (no route yet)        | —                                            | later | none                     | not built — needs coordinates in search results (BACKEND_REQUESTS #7) |
 | ملف البائع (73:1373)               | —                       | —                                            | later | none                     | not built — no public profile endpoint                                |
-| لوحتي (74:472)                     | `/dashboard`            | DashboardPage                                | 8     | 84:575                   | not built                                                             |
-| عقاراتي (75:592)                   | `/my-properties`        | MyPropertiesPage                             | 8     | none                     | not built                                                             |
-| المفضلة (75:815)                   | —                       | —                                            | later | none                     | not built — no favorites API (#12)                                    |
+| لوحتي (74:472)                     | `/dashboard`            | DashboardPage                                | P2·4  | 84:575                   | not built                                                             |
+| عقاراتي (75:592)                   | `/my-properties`        | MyPropertiesPage                             | P2·4  | none                     | not built                                                             |
+| المفضلة (75:815)                   | `/favorites`            | FavoritesPage                                | P2·5  | none                     | not built                                                             |
 | المحادثات (76:968)                 | —                       | —                                            | later | 84:530                   | not built — no messaging API (#12)                                    |
 | الإشعارات (76:1172)                | —                       | —                                            | later | none                     | not built — no notifications API (#12)                                |
-| أضف عقار 1 البيانات (77:1136)      | `/properties/new`       | CreatePropertyPage                           | 7     | 84:664                   | not built                                                             |
-| أضف عقار 2 الموقع (91:1902)        | `/properties/new`       | CreatePropertyPage                           | 7     | 84:664                   | not built                                                             |
-| أضف عقار 3 الصور (91:1991)         | `/properties/new`       | CreatePropertyPage                           | 7     | —                        | not built — uploads pending (#11)                                     |
-| أضف عقار 4 الوثائق (91:2080)       | `/properties/new`       | CreatePropertyPage                           | 7     | —                        | not built — uploads pending (#11)                                     |
-| أضف عقار تم الإرسال (91:2169)      | `/properties/new`       | CreatePropertyPage                           | 7     | —                        | not built                                                             |
+| أضف عقار 1 البيانات (77:1136)      | `/properties/new`       | CreatePropertyPage                           | P2·3  | 84:664                   | not built                                                             |
+| أضف عقار 2 الموقع (91:1902)        | `/properties/new`       | CreatePropertyPage                           | P2·3  | 84:664                   | not built                                                             |
+| أضف عقار 3 الصور (91:1991)         | `/properties/new`       | CreatePropertyPage (media step)              | P2·3  | —                        | not built                                                             |
+| أضف عقار 4 الوثائق (91:2080)       | `/properties/new`       | CreatePropertyPage (media step)              | P2·3  | —                        | not built                                                             |
+| أضف عقار تم الإرسال (91:2169)      | `/properties/new`       | CreatePropertyPage                           | P2·3  | —                        | not built                                                             |
 | المساعد الذكي (78:1229)            | —                       | —                                            | later | none                     | not built — no API (#12)                                              |
 | تقرير تقدير السعر (78:1472)        | —                       | —                                            | later | none                     | not built — no API (#12)                                              |
 | الملف الشخصي (79:1500)             | —                       | —                                            | later | none                     | not built — needs "me" (#4)                                           |
-| لوحة الإحصائيات (80:472)           | `/admin`                | admin pages                                  | 9     | none                     | not built                                                             |
-| طابور الموافقات (80:753)           | —                       | admin pages                                  | 9     | none                     | not built                                                             |
-| مراجعة عقار (81:751)               | —                       | admin pages                                  | 9     | none                     | not built                                                             |
-| إدارة المستخدمين (82:827)          | —                       | admin pages                                  | 9     | none                     | not built                                                             |
-| البلاغات (82:1026)                 | —                       | admin pages                                  | 9     | none                     | not built                                                             |
-| استهلاك الذكاء الاصطناعي (82:1236) | —                       | admin pages                                  | 9     | none                     | not built                                                             |
+| لوحة الإحصائيات (80:472)           | —                       | —                                            | later | none                     | not built — no statistics API (#12); `/admin` redirects to the queue  |
+| طابور الموافقات (80:753)           | `/admin/properties`     | PendingPropertiesPage                        | P2·6  | none                     | not built                                                             |
+| مراجعة عقار (81:751)               | `/admin/properties/:id` | ReviewPropertyPage                           | P2·6  | none                     | not built                                                             |
+| إدارة المستخدمين (82:827)          | —                       | —                                            | later | none                     | not built — no API (#12)                                              |
+| البلاغات (82:1026)                 | —                       | —                                            | later | none                     | not built — no reports API (#12)                                      |
+| استهلاك الذكاء الاصطناعي (82:1236) | —                       | —                                            | later | none                     | not built — no API (#12)                                              |
+
+The owner listing page (`/my-properties/:id`) and its edit page (`/my-properties/:id/edit`) are in `CLAUDE.md` section 11 but have no frame in the list above. Rule 10 applies before step P2·4 builds them.
 
 **Shell of every page** (`components/layout/AppLayout.jsx`):
 

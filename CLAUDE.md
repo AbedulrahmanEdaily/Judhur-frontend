@@ -3,7 +3,7 @@
 > Project context for Claude Code working in the **frontend repository**. Read this whole file before writing code.
 > The backend lives in a **separate repository** that you cannot see. Section 6 (API contract) is your only source of truth for the backend — never guess an endpoint, a field name, or a status code.
 >
-> Contract snapshot taken from backend commit `887f090` (2026-09-25).
+> Contract snapshot taken from the backend source on 2026-09-30 (backend `main` + the `feature/Favorite` branch).
 >
 > **Read DESIGN.md before any UI work; for anything visual it overrides this file.**
 
@@ -55,7 +55,7 @@ Supporting packages you may add: `async-mutex` (token refresh lock — required)
 - All user-facing text lives in `src/locales/ar.js` (one exported object, grouped by feature). No Arabic string literals scattered in components, so wording can be changed in one place.
 - Numbers use **Latin digits** inside Arabic text. Use `Intl.NumberFormat('ar-u-nu-latn', …)` and `Intl.DateTimeFormat('ar-u-nu-latn', …)` — plain `'ar'` would output Arabic-Indic digits.
 - Area is shown in square meters: `١٢٠ م²` style but with Latin digits → `120 م²`.
-- **Currency is not in the API yet** (see `BACKEND_REQUESTS.md` seed entry). Use a single constant `DEFAULT_CURRENCY = 'ILS'` in `src/lib/format.js` and format through one function, so it's a one-line change later.
+- **Currency is not in the API yet** (`BACKEND_REQUESTS.md` #9). Use a single constant `DEFAULT_CURRENCY = 'ILS'` in `src/lib/format.js` and format through one function, so it's a one-line change later.
 - Use Tailwind **logical** utilities so RTL works without mirroring by hand: `ms-*`/`me-*`, `ps-*`/`pe-*`, `start-*`/`end-*`, `text-start`/`text-end`, `border-s`/`border-e`, `rounded-s-*`/`rounded-e-*`. Avoid `ml/mr/pl/pr/left/right/text-left/text-right`.
 - Directional icons (arrows, chevrons, "back") must point the right way in RTL — use `rtl:rotate-180` or pick the mirrored icon.
 
@@ -159,9 +159,9 @@ Components use the semantic names (`bg-surface`, `text-brand`, `text-muted`), ne
 
 The backend runs at **`https://localhost:7000`** (self-signed dev certificate). Swagger UI: `https://localhost:7000/swagger`. When in doubt about a shape, Swagger on the running backend is the tie-breaker — and if it disagrees with section 6, tell Abdulrahman.
 
-### Vite dev proxy (no CORS needed in development)
+### Vite dev proxy (the default in development)
 
-The backend has **no CORS configuration**, so the browser can't call it directly from `http://localhost:5173`. In development, proxy `/api` through Vite so the browser only ever talks to its own origin:
+The backend allows CORS only from `http://localhost:5173` (a deployed origin is backend request #10). The Vite proxy stays the default: proxy `/api` through Vite so the browser only ever talks to its own origin:
 
 ```js
 // vite.config.js
@@ -204,59 +204,98 @@ The backend seeds an admin and a normal user on startup. Get the credentials fro
 
 ### 6.1 Global conventions
 
-- **Base paths**
-  - Account/auth: `/api/Identity/Account/...` (no version segment)
-  - Properties: `/api/v1/Properties/...` (URL-segment versioning; always `v1` for now)
-  - Paths are case-insensitive on the server; use exactly the casing shown here for consistency.
+#### Base paths
+
+| Group | Path | Versioned |
+|---|---|---|
+| Account / auth | `/api/Identity/Account/...` | no |
+| Public + seller properties | `/api/v1/User/Properties/...` | yes (always `v1` for now) |
+| Favorites | `/api/v1/User/Favorites/...` | yes |
+| Admin moderation | `/api/v1/Admin/Properties/...` | yes |
+
+- The path constants live in `src/api/baseQuery.js`. Paths are case-insensitive on the server; use exactly the casing shown here.
 - **JSON**: camelCase property names. **Enums are strings** (`"ForSale"`, not `1`). **Null properties are omitted** from responses — treat a missing key as `null`.
 - **IDs** are GUID strings. **Dates** are ISO-8601 with offset (`DateTimeOffset`). **Money and area** are JSON numbers (decimals).
 - **Auth header**: `Authorization: Bearer <accessToken>`.
 - **Roles** in the JWT: `User` or `Admin` (section 8.2).
 
+#### Who can call what
+
+| Endpoint group | Guest | User | Admin |
+|---|---|---|---|
+| `GET /User/Properties` and `GET /User/Properties/{id}` | ✅ | ✅ | ✅ |
+| Every other `/User/Properties/*` (seller actions) | `401` | ✅ | `403` |
+| `/User/Favorites/*` | `401` | ✅ | `403` |
+| `/Admin/Properties/*` | `401` | `403` | ✅ |
+
+Admins never create, own, or favorite listings. Hide those actions for admins in the UI.
+
+#### Server-side cache
+
+`GET /User/Properties` and `GET /User/Properties/{id}` are cached on the server for up to 10 minutes. Every change that affects what the public sees (approve, edit details, images, deactivate, delete, …) clears that cache immediately — never wait for it or work around it.
+
+#### Enums
+
+| Enum | Values | Notes |
+|---|---|---|
+| `PropertyType` | `Apartment` `House` `Land` `Office` `Storage` `Building` | |
+| `PropertyStatus` | `ForSale` `ForRent` `Sold` `Rented` | responses may contain all four; **create** and the **search filter** accept only `ForSale` / `ForRent` |
+| `PaymentType` | `Cash` `Installments` `DownPaymentAndInstallments` `Negotiable` | |
+| `LandClassification` | `A` `B` `C` | |
+| `LegalStatus` | `Tabo` `Maliye` `Taswiye` | |
+| `ModerationStatus` | `Pending` `Approved` `Rejected` | |
+
+The Arabic labels are in section 3.
+
 ### 6.2 Error format (ProblemDetails)
 
-Every error is `application/problem+json`. Two shapes:
+Every error is `application/problem+json`. **All messages are Arabic**, account endpoints included.
 
-**Validation error — `400`** (FluentValidation, or domain rules that are all validation errors):
+**Validation / business-rule error — `400`:**
 
 ```json
 {
-  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
-  "title": "One or more validation errors occurred.",
+  "title": "البيانات المدخلة غير صالحة.",
   "status": 400,
   "errors": {
-    "Email": ["Email is not a valid email address"],
-    "Password": ["Password must contain at least one digit"]
-  },
-  "instance": "POST /api/Identity/Account/register",
-  "requestId": "0HN..."
+    "Price": ["السعر يجب أن يكون أكبر من صفر."],
+    "PropertyErrors.MinImagesRequired": ["يجب رفع 3 صور على الأقل"]
+  }
 }
 ```
 
-- Keys under `errors` are **either a request property name in PascalCase** (`"Email"`, `"PhoneNumber"`, `"Price"`) **or an error code** (`"PropertyErrors.PageInvalid"`, `"Identity.PasswordTooShort"`, `"Identity.InvalidResetCode"`, `"Identity.InvalidConfirmationToken"`).
-- Map to form fields by lower-casing the first letter of the key and matching a registered field name (`PhoneNumber` → `phoneNumber`). Anything that doesn't match a field becomes a **form-level** error message.
-- Messages are Arabic for property endpoints and **currently English for account endpoints** (a backend fix is requested). Show them as they come — client-side validation (section 9) should make server validation errors rare.
+Keys under `errors` are one of two kinds:
+
+- **A request field in PascalCase** (`Price`, `Title`, `PhoneNumber`, `RejectionReason`) — from request validation. Map it to a form field by lower-casing the first letter (`PhoneNumber` → `phoneNumber`). A field key that matches no form field becomes a form-level message.
+- **An error code** — always `Group.Name` with a dot (`PropertyErrors.MinImagesRequired`, `PropertyErrors.CannotRemoveMainImage`, `Pagination.PageInvalid`, `Identity.InvalidResetCode`, `Identity.PasswordTooShort`) — from business rules. Show it as a form-level or toast message. The codes are stable, so the UI **may** branch on them or map one to a form field.
 
 **Any other error — `401` / `403` / `404` / `409` / `500`:**
 
 ```json
 {
-  "type": "...",
   "title": "العقار غير موجود",
   "status": 404,
-  "instance": "GET /api/v1/Properties/…",
+  "instance": "GET /api/v1/User/Properties/…",
   "requestId": "0HN..."
 }
 ```
 
 - The **human-readable message is in `title`**, not `detail`.
-- There is **no error code** on these responses yet (backend request #3 in section 13). Until it lands, branch on `status` only.
-- Unhandled server errors: `500` with a generic `title` and a `detail`. Show a generic Arabic "حدث خطأ غير متوقع" plus the `requestId` (small, selectable text) so it can be reported.
-- `409` can also come from a database uniqueness conflict, with an English generic `title`.
+- There is **no error code** on these responses (backend request #3 stays open). Branch on `status` only.
+- **Special `409`** — a database uniqueness conflict (for example two requests at the same moment):
+  ```json
+  {
+    "title": "تعارض في البيانات",
+    "status": 409,
+    "detail": "هذا الإجراء يتعارض مع بيانات موجودة، ربما قام أحد بتنفيذ الإجراء نفسه مسبقًا."
+  }
+  ```
+  Show `title` and `detail`, then refetch.
+- Unhandled server errors: `500` with a generic `title` and a `detail`. Show a generic Arabic "حدث خطأ غير متوقع" plus the `requestId` when present (small, selectable text) so it can be reported. (Whether `requestId` is still on every body is backend request #15.)
 - `429 Too Many Requests` from rate-limited endpoints may have an empty body — always handle it by status.
 - `401`/`403` produced by the auth middleware itself (missing/expired token, wrong role) may have an empty body or a bare ProblemDetails without a meaningful `title`.
 
-Write one helper, `src/lib/http/problemDetails.js`, that turns any RTK Query error into `{ status, message, fieldErrors, requestId }`, and use it everywhere.
+One helper, `src/lib/http/problemDetails.js`, turns any RTK Query error into `{ status, message, fieldErrors, errorCodes, requestId }` (field keys camelCased, error-code keys kept as sent). Use it everywhere; forms go through `components/form/applyServerErrors.js`.
 
 ### 6.3 Account endpoints — `/api/Identity/Account`
 
@@ -281,6 +320,7 @@ All bodies are JSON. None of these require an `Authorization` header.
 - `400` validation · `409` duplicate email or user name (message in `title`).
 - Phone regex (Palestinian/Israeli mobile formats): `^(?:\+?(?:970|972)\d{9}|05\d{8})$`
 - ⚠️ `bio` and `profileImageUrl` are accepted but **not saved** by the backend yet (backend request #6). Don't build UI that depends on them persisting.
+- ⚠️ `userName` is still required, but the design has no user-name field — the email is sent as `userName` (backend request #13).
 
 #### `POST /login`
 
@@ -293,7 +333,7 @@ All bodies are JSON. None of these require an `Authorization` header.
   { "accessToken": "jwt", "refreshToken": "base64 string", "expiresOnUtc": "2026-09-25T12:30:00+00:00" }
   ```
 - `401` wrong email or password.
-- `403` **either** email not confirmed **or** account locked (5 failed attempts → locked for 5 minutes). Both are `403`; they're distinguishable only by the English `title` until backend request #3 lands. Until then, on `403` show the server message plus a "resend confirmation email" link.
+- `403` **either** email not confirmed **or** account locked (5 failed attempts → locked for 5 minutes). Both are `403` with an Arabic `title` and no error code (backend request #3). On `403` show the server message plus a "resend confirmation email" link.
 - `400` validation.
 - **Single session per user:** logging in issues a new refresh token and deletes every older one. Logging in on another device ends the session here on its next refresh (section 8.4).
 
@@ -304,7 +344,7 @@ All bodies are JSON. None of these require an `Authorization` header.
 ```
 
 - `204` confirmed · `400` link invalid or expired.
-- The email contains a link `<ConfirmEmailUrl>?userId=<guid>&token=<url-encoded token>`. The frontend owns the page at **`/confirm-email`**: read both query params, `POST` them here, show success (→ login) or failure (→ "resend" form). ⚠️ The backend currently points that link at itself, not at the frontend (backend request #2).
+- The email contains a link to the frontend page **`/confirm-email`** (`http://localhost:5173/confirm-email` in development) with `?userId=<guid>&token=<url-encoded token>`. The page reads both query params, `POST`s them here, and shows success (→ login) or failure (→ "resend" form).
 - `URLSearchParams` already decodes the token — send it as read, do not decode twice.
 
 #### `POST /resend-confirmation`
@@ -322,7 +362,7 @@ All bodies are JSON. None of these require an `Authorization` header.
 { "email": "string" }
 ```
 
-- **Always `204`**. If the account exists, a **6-digit code** is emailed, valid for **5 minutes**.
+- **Always `204`**. If the account exists, a **6-digit code** is emailed, valid for **5 minutes** (the design says "link" — backend request #14).
 - Rate limit: **3 / 15 min / IP** → `429`.
 
 #### `POST /change-password`  (reset password with the emailed code)
@@ -354,9 +394,33 @@ All bodies are JSON. None of these require an `Authorization` header.
 
 - `204` always (unknown token is treated as already logged out). Clear local state even if the request fails.
 
-### 6.4 Property endpoints — `/api/v1/Properties`
+### 6.4 Shared response shapes
 
-⚠️ **The whole controller currently requires a logged-in user with the `User` role.** Guests get `401`, admins get `403` — including on browse/search/details. The UI design has a guest browsing state, so this is backend request #1. Build browse/search/details as public routes anyway; until the backend opens them, a guest who hits them sees a "log in to browse" prompt.
+```ts
+// PaginatedList<T>
+{ pageNumber: number, pageSize: number, totalPages: number, totalCount: number, items: T[] }
+
+// PropertyImage
+{ id: string, url: string, displayOrder: number, isMainImage: boolean }
+
+// UserInfo (the seller)
+{ id: string, fullName: string, phoneNumber?: string, profileImageUrl?: string }
+
+// PropertySummary — search results AND favorites list (same card)
+{
+  id: string, title: string, price: number,
+  paymentType: PaymentType, propertyType: PropertyType, propertyStatus: PropertyStatus,
+  area: number, city: string, region?: string,
+  mainImageUrl?: string          // missing if the listing has no main image
+}
+```
+
+- `images` arrays are always sorted by `displayOrder`. Exactly one image has `isMainImage: true` when the list is not empty.
+- Pagination query params everywhere: `page` (default `1`, ≥ 1) and `pageSize` (default `10`, 1–100). Invalid values → `400` with `Pagination.PageInvalid` / `Pagination.PageSizeInvalid`.
+
+### 6.5 Public property endpoints — `/api/v1/User/Properties`
+
+Open to guests, users, and admins.
 
 #### `GET /` — search / browse (paginated)
 
@@ -378,92 +442,60 @@ Query parameters (all optional; **omit** empty ones instead of sending `=`):
 | `sortColumn` | string | `createdAt` | `createdAt` · `price` · `city` · `landClassification` (anything else → `createdAt`) |
 | `sortDirection` | string | `desc` | `asc` · `desc` |
 
-- Only **approved and active** listings are returned.
-- Responses are cached on the server for up to 10 minutes; creating a listing clears that cache.
-- `200` →
-  ```json
-  {
-    "pageNumber": 1,
-    "pageSize": 10,
-    "totalPages": 3,
-    "totalCount": 27,
-    "items": [
-      {
-        "id": "guid",
-        "title": "string",
-        "price": 250000,
-        "paymentType": "Cash",
-        "propertyType": "Apartment",
-        "propertyStatus": "ForSale",
-        "area": 140,
-        "city": "string",
-        "region": "string (optional — may be missing)"
-      }
-    ]
-  }
-  ```
-- `400` invalid `page`/`pageSize` · `401`/`403` see the warning above.
-- ⚠️ Summaries have **no image, no coordinates, no created date**. Cards use a placeholder image; a "map of results" view isn't possible yet (backend request #7).
+- `200` → `PaginatedList<PropertySummary>`.
+- Returns approved **and** active listings only. Without a `propertyStatus` filter this **includes `Sold` and `Rented`** — show a "تم البيع" / "تم التأجير" ribbon on those cards.
+- `400` invalid `page`/`pageSize`.
+- ⚠️ Still no `createdAtUtc` or coordinates on summaries, so no "map of results" view yet (backend request #7).
 
-#### `GET /{propertyId}` — property details
+#### `GET /{propertyId}` — details
 
-- `200` →
-  ```json
-  {
-    "id": "guid",
-    "title": "string",
-    "description": "string (optional)",
-    "price": 250000,
-    "paymentType": "Installments",
-    "propertyType": "House",
-    "propertyStatus": "ForSale",
-    "area": 220,
-    "city": "string",
-    "region": "string (optional)",
-    "fullAddress": "string",
-    "latitude": 31.9038,
-    "longitude": 35.2034,
-    "landClassification": "A",
-    "legalStatus": "Tabo",
-    "user": {
-      "id": "guid",
-      "fullName": "string",
-      "phoneNumber": "string (optional)",
-      "profileImageUrl": "string (optional)"
-    }
-  }
-  ```
-- `user` is the **seller**. The ownership document URL is intentionally **not** exposed.
-- `404` if the listing doesn't exist **or** isn't approved and active (the API doesn't tell which). Show one "العقار غير متاح" screen.
-- Server-cached up to 10 minutes.
+```ts
+{
+  id, title, description?, price, paymentType, propertyType, propertyStatus,
+  area, city, region?, fullAddress, latitude, longitude,
+  landClassification, legalStatus,
+  user: UserInfo,                // the seller
+  images: PropertyImage[]
+}
+```
 
-#### `GET /mine` — the current user's own listings
+- **Phone rule:** `user.phoneNumber` is returned **only when the request carries a valid token**. For guests the key is missing. Show "سجّل الدخول لإظهار رقم الهاتف" with a login link instead of the call/WhatsApp buttons. The server caches the guest and signed-in versions separately.
+- ⚠️ RTK Query caches by argument, not by token, so the session start and end reset the whole API cache (section 8.4) — a details page cached as a guest is refetched with the phone, and vice versa.
+- The ownership document is **never** exposed here.
+- `404` if the listing does not exist, is not approved, or is inactive (the API doesn't tell which) → one "العقار غير متاح" screen.
 
-- Returns **every** listing the logged-in user owns, in every moderation state, newest first. **Not paginated** (a plain array). Not cached.
-- `200` →
-  ```json
-  [
-    {
-      "id": "guid",
-      "title": "string",
-      "price": 250000,
-      "paymentType": "Cash",
-      "propertyType": "Land",
-      "propertyStatus": "ForSale",
-      "area": 1000,
-      "city": "string",
-      "region": "string (optional)",
-      "moderationStatus": "Pending",
-      "rejectionReason": "string (only when Rejected)",
-      "isActive": true,
-      "createdAtUtc": "2026-09-24T18:00:00+00:00"
-    }
-  ]
-  ```
-- Show a status badge per `moderationStatus`; for `Rejected` show `rejectionReason`; for `isActive: false` show "موقوف".
-- A `Pending` or `Rejected` listing is **not** reachable through `GET /{id}` (it returns 404) — the owner sees it only through this list until an owner-scoped details endpoint exists (backend request #8).
+### 6.6 Seller endpoints — `/api/v1/User/Properties` (role `User`)
 
-#### `POST /` — create a listing
+All return `401` without a token and `403` for admins. **`404` also means "belongs to another user"** — never assume a listing exists.
+
+#### `GET /mine` — own listings
+
+Plain array (**not paginated**), newest first, every moderation state. Not cached.
+
+```ts
+{
+  id, title, price, paymentType, propertyType, propertyStatus, area, city, region?,
+  moderationStatus, rejectionReason?, isActive, createdAtUtc,
+  mainImageUrl?
+}[]
+```
+
+#### `GET /mine/{propertyId}` — owner details
+
+```ts
+{
+  id, title, description?, price, paymentType, propertyType, propertyStatus,
+  area, city, region?, fullAddress, latitude, longitude, landClassification, legalStatus,
+  hasOwnershipDocument: boolean, // the document itself is never returned to the owner
+  moderationStatus, rejectionReason?, reviewedAtUtc?,
+  isActive, createdAtUtc,
+  images: PropertyImage[]
+}
+```
+
+Used for the owner's listing page and to pre-fill the edit form. Works in every moderation state. `404` if missing or not owned.
+
+#### `POST /` — create
 
 ```json
 {
@@ -480,27 +512,186 @@ Query parameters (all optional; **omit** empty ones instead of sending `=`):
   "latitude": 31.9038,
   "longitude": 35.2034,
   "landClassification": "A",
-  "legalStatus": "Tabo",
-  "ownershipDocumentUrl": "string (required, ≤500)"
+  "legalStatus": "Tabo"
 }
 ```
 
 - Rules: `price > 0`, `area > 0`, `propertyStatus` **must be `ForSale` or `ForRent`**, latitude −90…90, longitude −180…180, all enums must be valid names.
-- `201 Created` → the created listing in the details shape (without `user`), plus a `Location` header. It starts **Pending** and **won't** appear in search until an admin approves it → after success, redirect to `/my-properties` with a "sent for review" toast. Don't navigate to `/properties/{id}` (it would 404).
+- There is **no** `ownershipDocumentUrl` — the document and the images are uploaded after creation (6.7).
+- `201` → the details shape with `images: []` and **no** `user`, plus a `Location` header. The listing starts `Pending`.
+- After `201`, continue to the media step (images + document) with the returned `id`. Don't navigate to `/properties/{id}` (it would 404 until approved).
 - `400` validation · `401` not logged in.
-- ⚠️ **No file upload exists yet** (Cloudinary integration is pending on the backend). `ownershipDocumentUrl` is a plain URL string for now, and there are **no property images** at all. Also: approval will require at least 3 images, so no listing can become public until image upload ships. Build the form with a clearly marked temporary URL field and an images section in "قريباً" state.
 
-### 6.5 Not built yet on the backend
+#### `PUT /{propertyId}/details`
+
+Same body as create **without** `description` and **without** `propertyStatus`.
+
+- `204`. ⚠️ **Any successful call sends the listing back to `Pending`** — an approved listing disappears from search until an admin approves it again; a rejected listing goes back to the admin queue. On approved listings, confirm first: "تعديل التفاصيل سيعيد العقار للمراجعة ويخفيه من البحث مؤقتاً".
+- `400` · `404`.
+
+#### `PUT /{propertyId}/description`
+
+```json
+{ "description": "string | null (≤2000)" }
+```
+
+- `204`. Send `null` or `""` to clear. Does **not** change moderation.
+
+### 6.7 Media — `/api/v1/User/Properties` (role `User`)
+
+Both uploads are `multipart/form-data`. Build a `FormData` and **do not set `Content-Type` yourself** (the browser adds the boundary).
+
+#### `POST /{propertyId}/images`
+
+| Form field | Type | Notes |
+|---|---|---|
+| `file` | file | required — JPG, PNG or WEBP, max 5 MB |
+| `isMainImage` | boolean | optional, default `false` |
+
+- `200` → the created `PropertyImage`.
+- The **first** image becomes main automatically. `isMainImage=true` on a later upload makes it the new main.
+- Max **10** images → `400` with `PropertyErrors.MaxImagesReached`.
+- ⚠️ **Upload images one at a time** (await each request before the next). Parallel uploads can collide on the image order and return the database `409` from 6.2.
+- Validate type and size on the client before uploading.
+
+#### `DELETE /{propertyId}/images/{imageId}`
+
+- `204`.
+- `400` `PropertyErrors.CannotRemoveMainImage` — set another image as main first. Disable the delete button on the main image.
+- `400` `PropertyErrors.MinImagesRequired` — an **approved** listing must keep at least 3 images.
+- `404` image or listing not found.
+
+#### `PUT /{propertyId}/images/{imageId}/main`
+
+- `204` · `404`.
+
+#### `PUT /{propertyId}/ownership-document`
+
+| Form field | Type | Notes |
+|---|---|---|
+| `file` | file | required — PDF, JPG, JPEG, PNG or WEBP, max 10 MB |
+
+- `204`. Replaces any previous document.
+- ⚠️ Replacing the document of an **approved or rejected** listing sends it back to `Pending` (confirm dialog on approved listings).
+- The document is private. The owner only ever sees `hasOwnershipDocument`. Public pages may show the "موثّق" badge for approved listings.
+
+### 6.8 Lifecycle actions — `/api/v1/User/Properties` (role `User`)
+
+All are `POST` with **no body** and return `204`.
+
+| Route | Allowed when | Otherwise |
+|---|---|---|
+| `/{id}/deactivate` | listing is active (any moderation state) | `409` already inactive |
+| `/{id}/reactivate` | approved **and** inactive | `409` |
+| `/{id}/resubmit` | `Rejected` | `409` |
+| `/{id}/mark-sold` | approved **and** `ForSale` | `409` |
+| `/{id}/mark-rented` | approved **and** `ForRent` | `409` |
+
+- `mark-sold` / `mark-rented` are **irreversible** → confirm dialog.
+- `resubmit` clears the rejection reason and puts the listing back in the admin queue. It exists because image changes do **not** reset moderation on their own.
+
+#### `DELETE /{propertyId}`
+
+- `204`. Soft delete — the listing disappears everywhere, including `/mine`. Confirm dialog required.
+
+#### Readiness checklist (very important)
+
+A `Pending` listing reaches the admin queue **only** when it has:
+
+1. at least **3 images**,
+2. a **main image**,
+3. an **ownership document** (`hasOwnershipDocument: true`).
+
+If any is missing, the listing is invisible to admins and waits forever. On every `Pending` or `Rejected` listing, show a checklist with these three items and what is missing. Approval re-checks them.
+
+#### What the owner UI shows per state
+
+| State | Badge | Show |
+|---|---|---|
+| `Pending` | قيد المراجعة | readiness checklist · edit details · edit description · media · document · deactivate · delete |
+| `Approved`, active | منشور | edit details (confirm: back to review) · edit description · media · document (confirm) · deactivate · mark sold **or** mark rented (by `propertyStatus`) · delete |
+| `Approved`, inactive | موقوف | reactivate · edit · media · delete |
+| `Rejected` | مرفوض + `rejectionReason` | the reason in a clear alert · readiness checklist · edit details or replace document (both send it back automatically) · media · **"إعادة الإرسال للمراجعة"** (resubmit) · delete |
+| `Sold` / `Rented` | تم البيع / تم التأجير | deactivate · delete (no way back to `ForSale` / `ForRent`) |
+
+Rule of thumb: if the owner only fixed images after a rejection, the "إعادة الإرسال" button is how the listing goes back to review.
+
+### 6.9 Favorites — `/api/v1/User/Favorites` (role `User`)
+
+| Method | Route | Success | Errors |
+|---|---|---|---|
+| `POST` | `/{propertyId}` | `204` | `404` not public · `409` already a favorite |
+| `DELETE` | `/{propertyId}` | `204` | `404` not in favorites |
+| `GET` | `/?page=&pageSize=` | `200` `PaginatedList<PropertySummary>`, most recently added first | `400` |
+| `GET` | `/ids` | `200` `string[]` (property ids) | — |
+
+- Only approved and active listings can be added. Removing always works, even if the listing was hidden later.
+- Favorites of listings that became hidden are **kept** but left out of both lists; they come back if the listing becomes public again.
+- The list returns the **same shape as search**, so reuse `PropertyCard`.
+
+**Heart icon on cards and details.** Search and details are cached for everyone, so they can't say whether a listing is a favorite. Instead:
+
+1. When the user is signed in with the `User` role, call `GET /ids` once (RTK Query) and keep it cached.
+2. Turn it into a `Set` with `selectFromResult` and check `favoriteIds.has(property.id)` per card — never search the array per card.
+3. Toggle with optimistic updates on the `/ids` cache. Treat `409` on add and `404` on remove as success (the server already has the state you wanted), then refetch.
+4. Guests see the heart as a login prompt. Admins see no heart.
+
+### 6.10 Admin moderation — `/api/v1/Admin/Properties` (role `Admin`)
+
+#### `GET /pending?page=&pageSize=`
+
+`200` → `PaginatedList<PendingProperty>`, **oldest first** (fair queue):
+
+```ts
+{ id, title, price, paymentType, propertyType, city, region?, mainImageUrl?, createdAtUtc }
+```
+
+Only `Pending` listings that pass the readiness checklist (6.8) appear here.
+
+#### `GET /{propertyId}` — review page
+
+```ts
+{
+  id, title, description?, price, paymentType, propertyType, propertyStatus,
+  area, city, region?, fullAddress, latitude, longitude, landClassification, legalStatus,
+  moderationStatus, rejectionReason?, reviewedAtUtc?, isActive, createdAtUtc,
+  images: PropertyImage[],
+  seller?: UserInfo,                     // missing if the seller account no longer exists
+  ownershipDocumentUrl?: string,         // signed link, valid for 10 minutes
+  ownershipDocumentExpiresAtUtc?: string
+}
+```
+
+- Works for **any** moderation state. `404` if missing.
+- Open the document in a new tab (`target="_blank" rel="noopener noreferrer"`). It can be a PDF or an image. After `ownershipDocumentExpiresAtUtc`, refetch the page to get a new link — **never** store or cache the link beyond that.
+
+#### `POST /{propertyId}/approve`
+
+- No body. `204` → back to the queue with a success toast.
+- `400` with one of `PropertyErrors.MinImagesRequired`, `PropertyErrors.MainImageRequired`, `PropertyErrors.OwnershipDocumentRequired`.
+- `409` already approved · `404`.
+
+#### `POST /{propertyId}/reject`
+
+```json
+{ "rejectionReason": "string (required, ≤500)" }
+```
+
+- `204`. The owner sees the reason on their listing.
+- `400` missing/too long · `409` the listing is approved (cannot be rejected) or already rejected · `404`.
+- Use a dialog with a textarea, a live character counter (500), and quick-pick reasons that fill the textarea (e.g. "الصور غير واضحة", "وثيقة الملكية غير واضحة", "المعلومات غير مكتملة").
+
+### 6.11 Not built yet on the backend
 
 Nothing below exists — don't call it. Build nothing that depends on it without a `BACKEND_REQUESTS.md` entry.
 
-- Current user profile ("me"), edit profile, change password while logged in, delete account
+- Current user profile (`me`), edit profile, change password while logged in, delete account
 - Google sign-in
-- Edit listing, edit description, deactivate/reactivate, mark sold/rented, delete listing
-- Property images and document upload
-- Admin: pending listings, approve, reject
-- Favorites, conversations/messages (planned real-time via SignalR), reviews, reports, notifications
+- Notifications (next on the backend — the seller will be notified on approve/reject)
+- Conversations / messages (SignalR), reviews, reports
 - AI price estimation
+- Currency on prices (still `DEFAULT_CURRENCY`)
+- Admin statistics, user management, and AI-usage screens (in Figma, no endpoints)
 
 ---
 
@@ -527,19 +718,25 @@ src/
       pages/                   # LoginPage, RegisterPage, CheckEmailPage, ConfirmEmailPage, ForgotPasswordPage, ResetPasswordPage
       components/
     properties/
-      propertiesApi.js         # getProperties, getPropertyById, getMyProperties, createProperty
+      propertiesApi.js         # public search/details + seller endpoints (6.5–6.8)
       constants.js             # enum lists + Arabic labels (section 3), sort options
       schemas.js
       hooks/useSearchFilters.js  # URL ⇄ filters (section 11)
-      pages/                   # HomePage, SearchPage, PropertyDetailsPage, CreatePropertyPage, MyPropertiesPage
+      pages/                   # HomePage, SearchPage, PropertyDetailsPage, CreatePropertyPage, MyPropertiesPage,
+                               # MyPropertyPage, EditPropertyPage
       components/              # PropertyCard, PropertyFilters, PropertyGallery, SellerCard, ModerationBadge, ...
+    favorites/
+      favoritesApi.js          # favorites list, ids, add, remove (6.9)
+      pages/FavoritesPage.jsx
     dashboard/pages/DashboardPage.jsx
-    admin/pages/               # placeholders until backend exists
+    admin/
+      adminApi.js              # pending queue, review, approve, reject (6.10)
+      pages/                   # PendingPropertiesPage, ReviewPropertyPage
     ui/uiSlice.js              # theme (+ future UI-only state)
   components/
     ui/                        # Button, Input, Select, Textarea, Checkbox, Modal, ConfirmDialog, Badge, VerifiedBadge,
                                # Spinner, Skeleton, EmptyState, ErrorState, Pagination, Toast
-    layout/                    # AppLayout, Header, Footer, MobileNav, AuthLayout
+    layout/                    # AppLayout, Header, Footer, MobileTopBar, MobileTabBar
     form/                      # FormField wrappers binding RHF + label + error text
   routes/
     RequireAuth.jsx
@@ -584,7 +781,7 @@ Mirror every response shape from section 6 in `src/api/types.js`:
  * @property {number} pageSize
  * @property {number} totalPages
  * @property {number} totalCount
- * @property {T[]} [items]
+ * @property {T[]} items
  */
 ```
 
@@ -646,7 +843,7 @@ Must-haves:
 - Retry the original request **once**. Never loop.
 - If the refresh fails (usually `401`), the session was ended elsewhere (for example a login on another device). End the session and show "انتهت جلستك، الرجاء تسجيل الدخول مجدداً".
 - Optional nicety: refresh proactively when `expiresOnUtc` is less than a minute away. The 401 path must still work on its own — the server allows **zero clock skew**.
-- `sessionEnded` must also call `api.util.resetApiState()` so no cached data from the previous user survives.
+- `sessionStarted` and `sessionEnded` both call `api.util.resetApiState()`: nothing cached for the previous user (or the guest) survives, and public details are refetched with or without the seller phone (6.5). A session that changes in another tab resets the cache the same way.
 
 ### 8.5 Logout
 
@@ -656,7 +853,7 @@ Call `POST /logout` with the refresh token, then **always** end the session loca
 
 - `RequireAuth` → redirect to `/login?redirect=<current path>`; after login, return there.
 - `RequireGuest` → logged-in users skip `/login` and `/register`.
-- `RequireRole role="Admin"` → admin area. Also hide seller actions ("أضف عقاراً") from admins — admins never post listings.
+- `RequireRole role="Admin"` → admin area. Also hide seller actions ("أضف عقاراً") and the favorite heart from admins — admins never post, own, or favorite listings.
 
 ---
 
@@ -708,24 +905,29 @@ The API key is visible in the browser by nature. Restrict it to the app's domain
 
 ## 11. Pages and routes
 
+API paths below are relative to the base paths in section 6.1.
+
 | Path | Access | Page | API |
 |---|---|---|---|
-| `/` | public | Home: hero with search box, quick filters, latest listings | `GET /Properties?pageSize=8` |
-| `/properties` | public* | Search with filters sidebar (drawer on mobile), sort, pagination | `GET /Properties` |
-| `/properties/:id` | public* | Details: gallery placeholder, key facts, description, map, seller card with call/WhatsApp link | `GET /Properties/{id}` |
+| `/` | public | Home: hero with search box, quick filters, latest listings | `GET /User/Properties?pageSize=8` |
+| `/properties` | public | Search with filters sidebar (drawer on mobile), sort, pagination; sold/rented ribbon on cards | `GET /User/Properties` |
+| `/properties/:id` | public | Details: gallery, key facts, description, map, seller card (phone rule, 6.5), heart | `GET /User/Properties/{id}` |
 | `/login` | guest | Login | `POST /login` |
 | `/register` | guest | Sign-up | `POST /register` |
 | `/register/check-email` | guest | "Check your email" + resend | `POST /resend-confirmation` |
 | `/confirm-email` | public | Confirms from the email link | `POST /confirm-email` |
 | `/forgot-password` | guest | Ask for a reset code | `POST /send-reset-password-code` |
 | `/reset-password` | guest | Code + new password | `POST /change-password` |
-| `/dashboard` | user | Buyer-first dashboard; "My listings" block only if they have any | `GET /Properties/mine`, `GET /Properties` |
-| `/my-properties` | user | Own listings with moderation badges and rejection reasons | `GET /Properties/mine` |
-| `/properties/new` | user (not admin) | Create listing (multi-step form + location picker) | `POST /Properties` |
-| `/admin` | admin | Placeholder — backend not ready | — |
+| `/dashboard` | user | Buyer-first dashboard; "My listings" block only if they have any | `GET /User/Properties/mine`, `GET /User/Properties` |
+| `/properties/new` | user (not admin) | Create listing (multi-step form + location picker) → media step (images + document) | `POST /User/Properties`, media endpoints (6.7) |
+| `/my-properties` | user | Own listings with thumbnails, moderation badges, and rejection reasons | `GET /User/Properties/mine` |
+| `/my-properties/:id` | user | Owner page: state badge, rejection alert, readiness checklist, actions (6.8), media manager | `GET /User/Properties/mine/{id}` + actions |
+| `/my-properties/:id/edit` | user | Edit details + description | `PUT …/details`, `PUT …/description` |
+| `/favorites` | user | Favorites grid | `GET /User/Favorites` |
+| `/admin` | admin | Redirects to the queue | — |
+| `/admin/properties` | admin | Pending queue | `GET /Admin/Properties/pending` |
+| `/admin/properties/:id` | admin | Review page, document link, approve, reject | `GET /Admin/Properties/{id}` + actions |
 | `*` | public | 404 | — |
-
-\* Currently blocked by the backend for guests and admins — see section 6.4.
 
 ### Search state lives in the URL
 
@@ -741,24 +943,34 @@ Loading (skeletons, not spinners, for lists and cards) · empty (friendly Arabic
 
 - **Server data only through RTK Query.** Never copy API data into a slice.
 - Slices: `auth` and `ui`. Add another only for real client-only state, and say why.
-- Tag types: `Property`, `MyProperties`.
-  - `getProperties` → provides `Property` (`LIST`)
-  - `getPropertyById` → provides `{ type: 'Property', id }`
-  - `getMyProperties` → provides `MyProperties`
-  - `createProperty` → invalidates `MyProperties` (it's pending, so the public list won't change yet)
+- Endpoints live in `src/features/<feature>/<feature>Api.js` with `baseApi.injectEndpoints`, like `authApi.js`.
+- Tag types:
+
+  | Tag | Provided by | Invalidated by |
+  |---|---|---|
+  | `Property` (`LIST`, `id`) | search, details | approve, reject, every seller mutation on that id, delete |
+  | `MyProperties` | `/mine` | create, every seller mutation, delete |
+  | `MyProperty` (`id`) | `/mine/{id}` | every seller mutation on that id |
+  | `Favorites` | favorites list | add, remove |
+  | `FavoriteIds` | `/ids` | add, remove (optimistic) |
+  | `PendingProperties` | admin queue | approve, reject |
+  | `ReviewProperty` (`id`) | admin review | approve, reject |
+
+- The whole API cache is reset when a session starts and when it ends (section 8.4), because public responses differ for guests and signed-in users.
 - Keep query args plain and serializable (an object of primitives) so caching works.
 - Use generated hooks (`useGetPropertiesQuery`, …) in pages. `skip` when a required arg is missing.
-- Don't set a long `keepUnusedDataFor` — the server already caches public lists for 10 minutes.
+- Don't set a long `keepUnusedDataFor` — the server already caches public responses for 10 minutes.
+- Never cache the admin document link beyond `ownershipDocumentExpiresAtUtc` (6.10).
 
 ---
 
 ## 13. `BACKEND_REQUESTS.md`
 
-The contract gap list between this repo and the backend. Create it at the repo root, seeded with the items below. Format per entry:
+The contract gap list between this repo and the backend, at the repo root. Format per entry:
 
 ```md
 ## <number>. <short title>
-- Status: open | done
+- Status: open | partly done | done
 - Why the frontend needs it:
 - Endpoint / change wanted: (method, path, request/response shape)
 - Current workaround in the UI:
@@ -766,36 +978,50 @@ The contract gap list between this repo and the backend. Create it at the repo r
 
 When Abdulrahman confirms something is done: mark it `done`, update section 6 of this file, then remove the workaround.
 
-### Seed entries (already known)
+### Status on 2026-09-30
 
-1. **Allow guests to browse.** `GET /api/v1/Properties` and `GET /api/v1/Properties/{id}` should allow anonymous access; the design has a guest state. Decide separately whether admins may view listings (they must not *post* them).
-2. **Point the confirmation email to the frontend.** Set `Frontend:ConfirmEmailUrl` to `http://localhost:5173/confirm-email` in development. It currently points at the backend's own `POST` endpoint, so clicking the email link does a `GET` and fails.
-3. **Add an error code to non-validation ProblemDetails** (for example an extension `"code": "Identity.EmailNotConfirmed"`). Without it the UI can't tell "email not confirmed" from "account locked" (both `403`), or show its own Arabic message per error.
-4. **`GET` current user** (for example `/api/Identity/Account/me`): id, fullName, email, phoneNumber, city, bio, profileImageUrl, roles. Needed for the header, dashboard, and profile page.
-5. **Arabic messages for account endpoints.** Validator messages and identity service errors are English today, unlike the property endpoints.
-6. **Register ignores `bio` and `profileImageUrl`.** They're accepted in the request but never saved.
-7. **Richer search results.** Add `mainImageUrl` and `createdAtUtc` to the search summary; add `latitude`/`longitude` too if a map view of results is wanted.
-8. **Owner details endpoint.** A way for the owner to open their own Pending/Rejected listing (the public details endpoint returns 404 for those).
-9. **Currency.** `price` has no currency; decide one fixed currency or add a field.
-10. **CORS for deployment.** Development uses the Vite proxy; a deployed frontend on another origin needs a CORS policy allowing its origin, the `Authorization` header, and `Content-Type`.
-11. **Image and document upload** (Cloudinary) — blocks real listing creation and approval (min 3 images).
-12. **Everything in section 6.5**, requested one feature at a time as the UI reaches it.
+| # | Title | Status |
+|---|---|---|
+| 1 | Allow guests to browse | done |
+| 2 | Confirmation email to the frontend | done |
+| 3 | Error code on non-validation ProblemDetails | open — codes exist only as keys inside `400` `errors` |
+| 4 | Current user endpoint | open |
+| 5 | Arabic messages for account endpoints | done |
+| 6 | Register ignores `bio` and `profileImageUrl` | open |
+| 7 | Richer search results | partly done — `mainImageUrl` added; `createdAtUtc` and coordinates missing |
+| 8 | Owner details endpoint | done — `GET /User/Properties/mine/{id}` |
+| 9 | Currency | open |
+| 10 | CORS for deployment | partly done — only `http://localhost:5173` is allowed |
+| 11 | Image and document upload | done — section 6.7 |
+| 12 | Section 6.11 features | partly done — see 6.11 for the rest |
+| 13 | Register without a user name | open |
+| 14 | Password reset by link or code | open |
+| 15 | `requestId` on every ProblemDetails | open |
 
 ---
 
 ## 14. Build order
 
-Build in this order; each step ends in a working app, and each is its own branch + PR.
+Each step ends in a working app, and each is its own branch + PR.
+
+### Phase 1 — done
 
 1. **Scaffold** — Vite + React (JS), Tailwind v4, Cairo, RTL, ESLint/Prettier, folder structure, env config, Vite proxy, `.npmrc`, `BACKEND_REQUESTS.md`.
-2. **Design system** — tokens (light/dark), theme toggle, `components/ui` primitives, `ConfirmDialog`, `VerifiedBadge`, layout (header, footer, mobile nav), 404 page.
+2. **Design system** — tokens (light/dark), theme toggle, `components/ui` primitives, `ConfirmDialog`, `VerifiedBadge`, layout (header, footer, mobile bars), 404 page.
 3. **API + auth core** — `baseApi`, `baseQueryWithReauth` with the mutex, `authSlice` + persistence, `problemDetails.js`, route guards.
-4. **Auth screens** — register → check email → confirm email → login → forgot/reset password → logout.
-5. **Browse** — home, search with URL-synced filters, pagination, `PropertyCard`, skeleton/empty/error states.
-6. **Details** — details page, seller card, HERE map with a single marker.
-7. **Create listing** — multi-step form, `LocationPicker` + reverse geocoding, temporary document URL field, images in "قريباً" state.
-8. **My listings + dashboard** — moderation badges, rejection reasons, buyer-first dashboard.
-9. **Admin area and the rest** — as backend endpoints land (section 13).
+4. **Auth screens** — register → check email → confirm email → login → forgot/reset password → logout. Then the Figma design audit (`DESIGN.md`).
+
+### Phase 2 — from the 2026-09-30 contract
+
+1. **Contract update** — this file + `BACKEND_REQUESTS.md`, new base paths, `problemDetails.js` understands error-code keys, API cache reset on login/logout.
+2. **Browse and details** — home, search with URL-synced filters, pagination, `PropertyCard` with `mainImageUrl` and the sold/rented ribbon; details page with gallery, key facts, seller card with the phone rule, HERE map with a single marker; skeleton/empty/error states.
+3. **Create listing + media** — multi-step form, `LocationPicker` + reverse geocoding, then the media step after create: sequential image upload, document upload, readiness checklist.
+4. **Owner area** — `/my-properties` with thumbnails, `/my-properties/:id` with state badge, rejection alert, checklist and every action from 6.8 (with confirm dialogs), media manager, `/my-properties/:id/edit`; the buyer-first dashboard.
+5. **Favorites** — `/ids` + heart everywhere, `/favorites` page.
+6. **Admin moderation** — queue, review page, document link, approve, reject dialog.
+7. **The rest** — as backend endpoints land (section 6.11 and `BACKEND_REQUESTS.md`).
+
+Every data screen keeps the four states (loading skeleton · empty · error with retry · success).
 
 ---
 

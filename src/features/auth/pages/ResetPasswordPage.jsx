@@ -20,15 +20,15 @@ import { ar } from '../../../locales/ar.js';
 const CODE_LIFETIME_MS = 5 * 60_000;
 const FIELD_NAMES = ['email', 'code', 'password'];
 
-// Server error codes that belong to a form field.
-const ERROR_CODE_FIELDS = {
-  'identity.InvalidResetCode': 'code',
-  'identity.PasswordTooShort': 'password',
-  'identity.PasswordRequiresDigit': 'password',
-  'identity.PasswordRequiresLower': 'password',
-  'identity.PasswordRequiresUpper': 'password',
-  'identity.PasswordRequiresNonAlphanumeric': 'password',
-  'identity.PasswordRequiresUniqueChars': 'password',
+// Server error keys that belong to a form field.
+const SERVER_KEY_FIELDS = {
+  'Identity.InvalidResetCode': 'code',
+  'Identity.PasswordTooShort': 'password',
+  'Identity.PasswordRequiresDigit': 'password',
+  'Identity.PasswordRequiresLower': 'password',
+  'Identity.PasswordRequiresUpper': 'password',
+  'Identity.PasswordRequiresNonAlphanumeric': 'password',
+  'Identity.PasswordRequiresUniqueChars': 'password',
 };
 
 /** The time (ms) when a code sent now stops working. */
@@ -87,7 +87,7 @@ export default function ResetPasswordPage() {
         error,
         setError,
         FIELD_NAMES,
-        ERROR_CODE_FIELDS,
+        SERVER_KEY_FIELDS,
       );
       let requestId = null;
       if (problem.status >= 500) requestId = problem.requestId;

@@ -71,52 +71,37 @@
  */
 
 // ---------------------------------------------------------------------------
-// Properties — /api/v1/Properties
+// Shared shapes (CLAUDE.md 6.4)
 // ---------------------------------------------------------------------------
 
 /**
- * @typedef {Object} PropertySummary Item of `GET /` (search).
- * @property {string} id
- * @property {string} title
- * @property {number} price
- * @property {PaymentType} paymentType
- * @property {PropertyType} propertyType
- * @property {PropertyStatus} propertyStatus
- * @property {number} area
- * @property {string} city
- * @property {string} [region]
+ * @template T
+ * @typedef {Object} PaginatedList
+ * @property {number} pageNumber
+ * @property {number} pageSize
+ * @property {number} totalPages
+ * @property {number} totalCount
+ * @property {T[]} items
  */
 
 /**
- * @typedef {Object} PropertySeller
+ * @typedef {Object} PropertyImage Arrays of images are sorted by `displayOrder`.
+ * @property {string} id
+ * @property {string} url
+ * @property {number} displayOrder
+ * @property {boolean} isMainImage exactly one per non-empty list
+ */
+
+/**
+ * @typedef {Object} UserInfo The seller.
  * @property {string} id
  * @property {string} fullName
- * @property {string} [phoneNumber]
+ * @property {string} [phoneNumber] only when the request carries a valid token
  * @property {string} [profileImageUrl]
  */
 
 /**
- * @typedef {Object} PropertyDetails `GET /{propertyId}`; `POST /` returns it without `user`.
- * @property {string} id
- * @property {string} title
- * @property {string} [description]
- * @property {number} price
- * @property {PaymentType} paymentType
- * @property {PropertyType} propertyType
- * @property {PropertyStatus} propertyStatus
- * @property {number} area
- * @property {string} city
- * @property {string} [region]
- * @property {string} fullAddress
- * @property {number} latitude
- * @property {number} longitude
- * @property {LandClassification} landClassification
- * @property {LegalStatus} legalStatus
- * @property {PropertySeller} [user]
- */
-
-/**
- * @typedef {Object} MyProperty Item of `GET /mine` (plain array, not paginated).
+ * @typedef {Object} PropertySummary Item of search and of the favorites list (same card).
  * @property {string} id
  * @property {string} title
  * @property {number} price
@@ -126,30 +111,12 @@
  * @property {number} area
  * @property {string} city
  * @property {string} [region]
- * @property {ModerationStatus} moderationStatus
- * @property {string} [rejectionReason] only when Rejected
- * @property {boolean} isActive
- * @property {string} createdAtUtc ISO-8601 with offset
+ * @property {string} [mainImageUrl] missing if the listing has no main image
  */
 
-/**
- * @typedef {Object} CreatePropertyRequest Body of `POST /`.
- * @property {string} title
- * @property {string | null} description
- * @property {number} price
- * @property {PaymentType} paymentType
- * @property {PropertyType} propertyType
- * @property {'ForSale'|'ForRent'} propertyStatus
- * @property {number} area
- * @property {string} city
- * @property {string | null} region
- * @property {string} fullAddress
- * @property {number} latitude
- * @property {number} longitude
- * @property {LandClassification} landClassification
- * @property {LegalStatus} legalStatus
- * @property {string} ownershipDocumentUrl
- */
+// ---------------------------------------------------------------------------
+// Public properties — /api/v1/User/Properties (CLAUDE.md 6.5)
+// ---------------------------------------------------------------------------
 
 /**
  * @typedef {Object} PropertySearchParams Query of `GET /`. Omit empty values.
@@ -169,13 +136,163 @@
  */
 
 /**
- * @template T
- * @typedef {Object} PaginatedList
- * @property {number} pageNumber
- * @property {number} pageSize
- * @property {number} totalPages
- * @property {number} totalCount
- * @property {T[]} [items]
+ * @typedef {Object} PropertyDetails `GET /{propertyId}`. `POST /` returns it with
+ *   `images: []` and without `user`.
+ * @property {string} id
+ * @property {string} title
+ * @property {string} [description]
+ * @property {number} price
+ * @property {PaymentType} paymentType
+ * @property {PropertyType} propertyType
+ * @property {PropertyStatus} propertyStatus
+ * @property {number} area
+ * @property {string} city
+ * @property {string} [region]
+ * @property {string} fullAddress
+ * @property {number} latitude
+ * @property {number} longitude
+ * @property {LandClassification} landClassification
+ * @property {LegalStatus} legalStatus
+ * @property {UserInfo} [user]
+ * @property {PropertyImage[]} images
+ */
+
+// ---------------------------------------------------------------------------
+// Seller — /api/v1/User/Properties (CLAUDE.md 6.6–6.8)
+// ---------------------------------------------------------------------------
+
+/**
+ * @typedef {Object} MyProperty Item of `GET /mine` (plain array, not paginated).
+ * @property {string} id
+ * @property {string} title
+ * @property {number} price
+ * @property {PaymentType} paymentType
+ * @property {PropertyType} propertyType
+ * @property {PropertyStatus} propertyStatus
+ * @property {number} area
+ * @property {string} city
+ * @property {string} [region]
+ * @property {ModerationStatus} moderationStatus
+ * @property {string} [rejectionReason] only when Rejected
+ * @property {boolean} isActive
+ * @property {string} createdAtUtc ISO-8601 with offset
+ * @property {string} [mainImageUrl]
+ */
+
+/**
+ * @typedef {Object} MyPropertyDetails `GET /mine/{propertyId}` — any moderation state.
+ * @property {string} id
+ * @property {string} title
+ * @property {string} [description]
+ * @property {number} price
+ * @property {PaymentType} paymentType
+ * @property {PropertyType} propertyType
+ * @property {PropertyStatus} propertyStatus
+ * @property {number} area
+ * @property {string} city
+ * @property {string} [region]
+ * @property {string} fullAddress
+ * @property {number} latitude
+ * @property {number} longitude
+ * @property {LandClassification} landClassification
+ * @property {LegalStatus} legalStatus
+ * @property {boolean} hasOwnershipDocument the document itself is never returned to the owner
+ * @property {ModerationStatus} moderationStatus
+ * @property {string} [rejectionReason]
+ * @property {string} [reviewedAtUtc]
+ * @property {boolean} isActive
+ * @property {string} createdAtUtc
+ * @property {PropertyImage[]} images
+ */
+
+/**
+ * @typedef {Object} CreatePropertyRequest Body of `POST /`.
+ * @property {string} title
+ * @property {string | null} description
+ * @property {number} price
+ * @property {PaymentType} paymentType
+ * @property {PropertyType} propertyType
+ * @property {'ForSale'|'ForRent'} propertyStatus
+ * @property {number} area
+ * @property {string} city
+ * @property {string | null} region
+ * @property {string} fullAddress
+ * @property {number} latitude
+ * @property {number} longitude
+ * @property {LandClassification} landClassification
+ * @property {LegalStatus} legalStatus
+ */
+
+/**
+ * @typedef {Object} UpdatePropertyDetailsRequest Body of `PUT /{propertyId}/details` — the
+ *   create body without `description` and `propertyStatus`. Sends the listing back to Pending.
+ * @property {string} title
+ * @property {number} price
+ * @property {PaymentType} paymentType
+ * @property {PropertyType} propertyType
+ * @property {number} area
+ * @property {string} city
+ * @property {string | null} region
+ * @property {string} fullAddress
+ * @property {number} latitude
+ * @property {number} longitude
+ * @property {LandClassification} landClassification
+ * @property {LegalStatus} legalStatus
+ */
+
+/**
+ * @typedef {Object} UpdatePropertyDescriptionRequest Body of `PUT /{propertyId}/description`.
+ * @property {string | null} description
+ */
+
+// ---------------------------------------------------------------------------
+// Admin moderation — /api/v1/Admin/Properties (CLAUDE.md 6.10)
+// ---------------------------------------------------------------------------
+
+/**
+ * @typedef {Object} PendingProperty Item of `GET /pending` (oldest first).
+ * @property {string} id
+ * @property {string} title
+ * @property {number} price
+ * @property {PaymentType} paymentType
+ * @property {PropertyType} propertyType
+ * @property {string} city
+ * @property {string} [region]
+ * @property {string} [mainImageUrl]
+ * @property {string} createdAtUtc
+ */
+
+/**
+ * @typedef {Object} ReviewProperty `GET /{propertyId}` — any moderation state.
+ * @property {string} id
+ * @property {string} title
+ * @property {string} [description]
+ * @property {number} price
+ * @property {PaymentType} paymentType
+ * @property {PropertyType} propertyType
+ * @property {PropertyStatus} propertyStatus
+ * @property {number} area
+ * @property {string} city
+ * @property {string} [region]
+ * @property {string} fullAddress
+ * @property {number} latitude
+ * @property {number} longitude
+ * @property {LandClassification} landClassification
+ * @property {LegalStatus} legalStatus
+ * @property {ModerationStatus} moderationStatus
+ * @property {string} [rejectionReason]
+ * @property {string} [reviewedAtUtc]
+ * @property {boolean} isActive
+ * @property {string} createdAtUtc
+ * @property {PropertyImage[]} images
+ * @property {UserInfo} [seller] missing if the seller account no longer exists
+ * @property {string} [ownershipDocumentUrl] signed link, valid for 10 minutes — never store it
+ * @property {string} [ownershipDocumentExpiresAtUtc]
+ */
+
+/**
+ * @typedef {Object} RejectPropertyRequest Body of `POST /{propertyId}/reject`.
+ * @property {string} rejectionReason required, ≤500
  */
 
 // ---------------------------------------------------------------------------
@@ -188,7 +305,8 @@
  * @property {string} [title] the human-readable message
  * @property {number} [status]
  * @property {string} [detail]
- * @property {Record<string, string[]>} [errors] validation errors (400)
+ * @property {Record<string, string[]>} [errors] 400 only — keys are PascalCase request fields
+ *   or `Group.Name` error codes
  * @property {string} [instance]
  * @property {string} [requestId]
  */
