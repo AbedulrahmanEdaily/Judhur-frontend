@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import clsx from 'clsx';
+import { IconToastUndo } from '../../../components/icons/index.js';
 import { toLatinDigits } from '../../../lib/digits.js';
 import { formatNumber } from '../../../lib/format.js';
 import { ar } from '../../../locales/ar.js';
@@ -88,8 +89,17 @@ export function SearchFiltersPanel({ filters, onApply, className }) {
     });
   }
 
+  // «مسح الكل» clears the filters and keeps the sort. The draft is cleared here too, because
+  // the URL may already be empty and then the draftKey check above would not run.
   function handleClearAll() {
+    setDraft(draftFrom(EMPTY_FILTERS));
     onApply({ ...EMPTY_FILTERS, sort: filters.sort });
+  }
+
+  // «إعادة الضبط» puts everything back to the defaults: filters, text search and sort.
+  function handleReset() {
+    setDraft(draftFrom(EMPTY_FILTERS));
+    onApply(EMPTY_FILTERS);
   }
 
   return (
@@ -187,13 +197,23 @@ export function SearchFiltersPanel({ filters, onApply, className }) {
       </FilterSection>
       <div className="h-px bg-border" />
 
-      <button
-        type="button"
-        onClick={handleApply}
-        className="bg-brand py-3.5 text-center text-[14.5px] leading-[1.7] font-semibold text-inverse transition-colors hover:bg-brand-hover focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-inverse"
-      >
-        {text.apply}
-      </button>
+      <div className="flex">
+        <button
+          type="button"
+          onClick={handleReset}
+          className="flex items-center gap-1.5 border-e border-border bg-surface px-5 py-3.5 text-[14px] leading-[1.7] font-semibold text-text-secondary transition-colors hover:bg-inset hover:text-text focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-brand"
+        >
+          <IconToastUndo />
+          {text.reset}
+        </button>
+        <button
+          type="button"
+          onClick={handleApply}
+          className="flex-1 bg-brand py-3.5 text-center text-[14.5px] leading-[1.7] font-semibold text-inverse transition-colors hover:bg-brand-hover focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-inverse"
+        >
+          {text.apply}
+        </button>
+      </div>
     </div>
   );
 }

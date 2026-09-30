@@ -245,6 +245,7 @@ export const ar = {
     emptyText: 'جرّب تغيّر الفلاتر أو تمسحها وتبحث من جديد.',
     closeFilters: 'إغلاق الفلاتر',
     sortMenu: 'ترتيب النتائج',
+    reset: 'إعادة الضبط', // not in Figma: filters, text search and sort back to the defaults
   },
   property: {
     // Figma "بطاقة عقار" (33:2) and "تفاصيل العقار — زائر" (65:1087)
