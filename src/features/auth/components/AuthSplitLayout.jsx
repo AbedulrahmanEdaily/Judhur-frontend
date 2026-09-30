@@ -1,3 +1,4 @@
+import authPanelPhoto from '../../../assets/photos/auth-panel.jpg';
 import { Logo } from '../../../components/layout/Logo.jsx';
 import { IconCheckSmall13 } from '../../../components/icons/index.js';
 import { ar } from '../../../locales/ar.js';
@@ -5,17 +6,17 @@ import { ar } from '../../../locales/ar.js';
 /**
  * Login / register layout.
  * Desktop (Figma 69:1159, 69:1262): the form panel (880, 110×60 padding) next to the 560px
- * identity panel — a Property Photo under the "طبقة تعتيم" gradient, pinned to Dark mode.
+ * identity panel — a photo under the "طبقة تعتيم" gradient, pinned to Dark mode. The photo (an
+ * old stone arch over a hillside town) replaced the Figma Property Photo at the owner's request.
  * Mobile (Figma 84:716): the gradient "الهوية" header, then the form from the top (24×28 padding).
  *
  * @param {{
- *   photo: string,
  *   mobileTitle: string,
  *   mobileSubtitle: string,
  *   children: import('react').ReactNode,
  * }} props
  */
-export function AuthSplitLayout({ photo, mobileTitle, mobileSubtitle, children }) {
+export function AuthSplitLayout({ mobileTitle, mobileSubtitle, children }) {
   return (
     <div className="flex min-h-dvh flex-col bg-bg xl:flex-row">
       <div className="flex flex-col items-center gap-3 bg-auth-hero px-6 pt-10 pb-[34px] text-center xl:hidden">
@@ -31,7 +32,7 @@ export function AuthSplitLayout({ photo, mobileTitle, mobileSubtitle, children }
       </main>
 
       <aside className="dark relative hidden w-[560px] shrink-0 flex-col justify-center gap-[22px] overflow-hidden px-16 py-[70px] xl:flex">
-        <img src={photo} alt="" className="absolute inset-0 size-full" />
+        <img src={authPanelPhoto} alt="" className="absolute inset-0 size-full object-cover" />
         <div className="absolute inset-0 bg-auth-overlay" />
 
         <div className="relative flex items-center gap-3.5">

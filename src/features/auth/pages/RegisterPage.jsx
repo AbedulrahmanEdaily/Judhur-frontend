@@ -5,7 +5,6 @@ import { Link, useNavigate } from 'react-router';
 import { Checkbox } from '../../../components/ui/Checkbox.jsx';
 import { FormAlert } from '../../../components/form/FormAlert.jsx';
 import { applyServerErrors } from '../../../components/form/applyServerErrors.js';
-import morningPhoto from '../../../assets/photos/panel-morning.svg';
 import { AuthInput } from '../components/AuthInput.jsx';
 import { AuthSplitLayout } from '../components/AuthSplitLayout.jsx';
 import { AuthSubmitButton } from '../components/AuthSubmitButton.jsx';
@@ -90,7 +89,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <AuthSplitLayout photo={morningPhoto} mobileTitle={text.title} mobileSubtitle={text.subtitle}>
+    <AuthSplitLayout mobileTitle={text.title} mobileSubtitle={text.subtitle}>
       <h1 className="hidden text-[30px] leading-[1.75] font-bold text-text xl:block">
         {text.title}
       </h1>
