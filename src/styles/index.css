@@ -7,6 +7,8 @@
  * Semantic names used across the app; the Figma variable is noted next to each one.
  */
 :root {
+  /* Native controls (select lists, date pickers, scrollbars) follow the theme. */
+  color-scheme: light;
   --color-bg: #ffffff; /* bg/canvas */
   --color-surface: #f6f8f7; /* bg/surface */
   --color-raised: #ffffff; /* bg/raised */
@@ -50,6 +52,7 @@
 }
 
 .dark {
+  color-scheme: dark;
   --color-bg: #0b1512;
   --color-surface: #132119;
   --color-raised: #1a2b22;

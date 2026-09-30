@@ -722,6 +722,7 @@ src/
       constants.js             # enum lists + Arabic labels (section 3), sort options
       schemas.js
       searchFilters.js         # URL ⇄ filters, plain functions (section 11)
+      listingState.js          # owner state (published/paused/pending/rejected/sold/rented) + readiness checklist
       pages/                   # HomePage, SearchPage, PropertyDetailsPage, CreatePropertyPage, MyPropertiesPage,
                                # MyPropertyPage, EditPropertyPage
       components/              # PropertyCard, PropertyFilters, PropertyGallery, SellerCard, ModerationBadge, ...
@@ -736,7 +737,7 @@ src/
   components/
     ui/                        # Button, Input, Select, Textarea, Checkbox, Modal, ConfirmDialog, Badge, VerifiedBadge,
                                # Spinner, Skeleton, EmptyState, ErrorState, Pagination, Toast
-    layout/                    # AppLayout, Header, Footer, MobileTopBar, MobileTabBar
+    layout/                    # AppLayout, Header, Footer, MobileTopBar, MobileTabBar, AccountShell (sidebar), PageTopBar
     form/                      # FormField wrappers binding RHF + label + error text
   routes/
     RequireAuth.jsx
@@ -874,25 +875,20 @@ Call `POST /logout` with the refresh token, then **always** end the session loca
 
 ### 10.1 Setup
 
-```bash
-npm config set @here:registry https://repo.platform.here.com/artifactory/api/npm/maps-api-for-javascript/
-npm install @here/maps-api-for-javascript
-```
-
-Commit an `.npmrc` with that registry line so fresh clones install correctly. Import with `import H from '@here/maps-api-for-javascript';`.
+The library is loaded at runtime from HERE's CDN (`https://js.api.here.com/v3/3.1/` — `mapsjs-core`, `-service`, `-mapevents`, `-ui` and `mapsjs-ui.css`), in order, the first time a map mounts (`src/lib/maps/platform.js`). The npm package (`@here/maps-api-for-javascript`, on HERE's own registry in `.npmrc`) could not be installed: that registry is blocked in the build environment. Switching to it later only changes `loadHere()`.
 
 The API key is visible in the browser by nature. Restrict it to the app's domains in the HERE platform settings where possible, and keep it only in `VITE_HERE_API_KEY`.
 
 ### 10.2 Code layout (`src/lib/maps/`)
 
-- `platform.js` — creates **one** `H.service.Platform({ apikey })` lazily and reuses it.
-- `HereMap.jsx` — generic map component: `useRef` container + `useEffect` that creates `H.Map` with `platform.createDefaultLayers().vector.normal.map`, adds `new H.mapevents.Behavior(new H.mapevents.MapEvents(map))` and `H.ui.UI.createDefault(map, layers)`, listens to window resize → `map.getViewPort().resize()`, and **disposes on unmount** (`map.dispose()`). Props: `center`, `zoom`, `markers`, `onClick`, `className`.
-- `LocationPicker.jsx` — used in the create-listing form: click (or drag the marker) to set a point. Convert the tap with `map.screenToGeo(evt.currentPointer.viewportX, evt.currentPointer.viewportY)`. Reports `{ latitude, longitude }` to React Hook Form through a `Controller`.
+- `platform.js` — loads the library once (`loadHere()`), creates **one** `H.service.Platform({ apikey })` lazily and reuses it, `hasMapKey()`, and the default view.
+- `HereMap.jsx` — generic map component: `useRef` container + `useEffect` that creates `H.Map` with `platform.createDefaultLayers().vector.normal.map`, adds `new H.mapevents.Behavior(new H.mapevents.MapEvents(map))` and `H.ui.UI.createDefault(map, layers)`, listens to window resize → `map.getViewPort().resize()`, and **disposes on unmount** (`map.dispose()`). Props: `center`, `zoom`, `marker` (one), `onPick`, `label`, `className`, `fallback` (rendered when the library can't load).
+- `LocationPicker.jsx` — used in the create-listing form: click (or drag the marker) to set a point. Convert the tap with `map.screenToGeo(evt.currentPointer.viewportX, evt.currentPointer.viewportY)`. Reports `{ latitude, longitude }` through `onPick`; the form keeps them in two text fields (`setValue`), which also work without a map.
 - `geocoding.js` — thin wrappers over HERE Geocoding & Search (REST, same API key):
   - reverse geocode after picking a point → suggest `fullAddress` / `city` (the user can edit; never overwrite something they typed)
   - address search box → move the map to the result
   - request Arabic results (`lang=ar`) and restrict to the area around Palestine.
-- Lazy-load map components (`React.lazy`) so pages without a map don't download the library.
+- Pages without a map never download the library: it is loaded only when `HereMap` mounts.
 
 ### 10.3 Behaviour
 
@@ -1016,8 +1012,8 @@ Each step ends in a working app, and each is its own branch + PR.
 
 1. **Contract update** — this file + `BACKEND_REQUESTS.md`, new base paths, `problemDetails.js` understands error-code keys, API cache reset on login/logout.
 2. **Browse and details** — home, search with URL-synced filters, pagination, `PropertyCard` with `mainImageUrl` and the sold/rented ribbon; details page with gallery, key facts, seller card with the phone rule, HERE map with a single marker; skeleton/empty/error states.
-3. **Create listing + media** — multi-step form, `LocationPicker` + reverse geocoding, then the media step after create: sequential image upload, document upload, readiness checklist.
-4. **Owner area** — `/my-properties` with thumbnails, `/my-properties/:id` with state badge, rejection alert, checklist and every action from 6.8 (with confirm dialogs), media manager, `/my-properties/:id/edit`; the buyer-first dashboard.
+3. **Create listing + media** (done) — multi-step form, `LocationPicker` + reverse geocoding, then the media step after create: sequential image upload, document upload, readiness checklist.
+4. **Owner area** (done) — `/my-properties` with thumbnails, `/my-properties/:id` with state badge, rejection alert, checklist and every action from 6.8 (with confirm dialogs), media manager, `/my-properties/:id/edit`; the buyer-first dashboard.
 5. **Favorites** — `/ids` + heart everywhere, `/favorites` page.
 6. **Admin moderation** — queue, review page, document link, approve, reject dialog.
 7. **The rest** — as backend endpoints land (section 6.11 and `BACKEND_REQUESTS.md`).

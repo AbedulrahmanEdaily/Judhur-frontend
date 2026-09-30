@@ -9,7 +9,11 @@ import {
   IconTabPlus,
   IconTabSearch,
 } from '../icons/index.js';
-import { selectCurrentUser, selectIsAuthenticated } from '../../features/auth/authSlice.js';
+import {
+  selectCurrentUser,
+  selectIsAdmin,
+  selectIsAuthenticated,
+} from '../../features/auth/authSlice.js';
 import { useLogout } from '../../features/auth/hooks/useLogout.js';
 import { ar } from '../../locales/ar.js';
 
@@ -26,11 +30,13 @@ const activeClasses = 'font-semibold text-brand-text';
 export function MobileTabBar() {
   const { pathname } = useLocation();
   const isAuthenticated = useSelector(selectIsAuthenticated);
+  const isAdmin = useSelector(selectIsAdmin);
   const user = useSelector(selectCurrentUser);
   const { logout, isLoggingOut } = useLogout();
   const [isAccountOpen, setIsAccountOpen] = useState(false);
   const isHome = pathname === '/';
   const isSearch = pathname === '/properties';
+  const isAccount = pathname === '/dashboard' || pathname.startsWith('/my-properties');
 
   return (
     <nav
@@ -55,12 +61,23 @@ export function MobileTabBar() {
         {ar.nav.tabSearch}
       </Link>
 
-      <span aria-disabled="true" className={clsx(itemClasses, inactiveClasses)}>
-        <span className="rounded-full bg-brand p-[9px] text-inverse">
-          <IconTabPlus />
+      {/* Admins never post listings; guests reach login through the page's guard. */}
+      {!isAdmin && (
+        <Link to="/properties/new" className={clsx(itemClasses, inactiveClasses)}>
+          <span className="rounded-full bg-brand p-[9px] text-inverse">
+            <IconTabPlus />
+          </span>
+          {ar.nav.tabAdd}
+        </Link>
+      )}
+      {isAdmin && (
+        <span aria-disabled="true" className={clsx(itemClasses, inactiveClasses)}>
+          <span className="rounded-full bg-brand p-[9px] text-inverse">
+            <IconTabPlus />
+          </span>
+          {ar.nav.tabAdd}
         </span>
-        {ar.nav.tabAdd}
-      </span>
+      )}
 
       <span aria-disabled="true" className={clsx(itemClasses, inactiveClasses)}>
         <IconTabChat />
@@ -74,8 +91,20 @@ export function MobileTabBar() {
         </Link>
       )}
 
-      {/* The account page is not built yet; signed-in users get a small email + logout panel. */}
-      {isAuthenticated && (
+      {/* «حسابي» opens «لوحتي» (84:575), which has the logout. Admins have no account pages yet,
+          so they get a small email + logout panel. */}
+      {isAuthenticated && !isAdmin && (
+        <Link
+          to="/dashboard"
+          aria-current={isAccount ? 'page' : undefined}
+          className={clsx(itemClasses, isAccount ? activeClasses : inactiveClasses)}
+        >
+          <IconTabAccount />
+          {ar.nav.tabAccount}
+        </Link>
+      )}
+
+      {isAuthenticated && isAdmin && (
         <div className="relative flex flex-1">
           <button
             type="button"

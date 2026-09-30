@@ -40,6 +40,8 @@ export const PROPERTY_STATUS_TONES = {
   Rented: 'neutral',
 };
 
+export const PAYMENT_TYPES = ['Cash', 'Installments', 'DownPaymentAndInstallments', 'Negotiable'];
+
 export const PAYMENT_TYPE_LABELS = {
   Cash: 'نقداً',
   Installments: 'تقسيط',
@@ -112,3 +114,14 @@ export const HERO_PRICE_RANGES = [
   { minPrice: 150000, maxPrice: 300000 },
   { minPrice: 300000, maxPrice: null },
 ];
+
+// Upload rules of the media endpoints (CLAUDE.md 6.7), checked before uploading.
+export const IMAGE_FILE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+export const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+export const MAX_IMAGES = 10;
+export const DOCUMENT_FILE_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
+export const MAX_DOCUMENT_SIZE = 10 * 1024 * 1024;
+
+// A Pending listing reaches the admin queue only with this many images, a main image and an
+// ownership document (CLAUDE.md 6.8).
+export const MIN_IMAGES = 3;

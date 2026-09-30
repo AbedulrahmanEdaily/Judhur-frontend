@@ -112,9 +112,9 @@ export function Header() {
             )}
             {/* Admins never post listings, so only regular users see this. */}
             {!isAdmin && (
-              <span aria-disabled="true" className={clsx(primaryActionClasses, 'cursor-default')}>
+              <Link to="/properties/new" className={primaryActionClasses}>
                 {ar.nav.addProperty}
-              </span>
+              </Link>
             )}
             <button
               type="button"

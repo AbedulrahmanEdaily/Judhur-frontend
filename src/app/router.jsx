@@ -4,6 +4,7 @@ import { Spinner } from '../components/ui/Spinner.jsx';
 import NotFoundPage from '../features/errors/pages/NotFoundPage.jsx';
 import RouteErrorPage from '../features/errors/pages/RouteErrorPage.jsx';
 import { RequireGuest } from '../routes/RequireGuest.jsx';
+import { RequireRole } from '../routes/RequireRole.jsx';
 
 // Shown while the first lazy page loads.
 const pageLoading = (
@@ -40,6 +41,52 @@ export const router = createBrowserRouter([
         lazy: async () => ({
           Component: (await import('../features/properties/pages/PropertyDetailsPage.jsx')).default,
         }),
+      },
+      {
+        // Seller and account pages: role User only (guests go to login, admins go home — admins
+        // never post, own, or favorite listings).
+        element: <RequireRole role="User" />,
+        children: [
+          {
+            path: 'properties/new',
+            // The mobile create frame (84:664) has its own top bar and a fixed action bar.
+            handle: { hideMobileTopBar: true, hideMobileTabBar: true },
+            lazy: async () => ({
+              Component: (await import('../features/properties/pages/CreatePropertyPage.jsx'))
+                .default,
+            }),
+          },
+          {
+            path: 'dashboard',
+            handle: { hideMobileTopBar: true },
+            lazy: async () => ({
+              Component: (await import('../features/dashboard/pages/DashboardPage.jsx')).default,
+            }),
+          },
+          {
+            path: 'my-properties',
+            handle: { hideMobileTopBar: true },
+            lazy: async () => ({
+              Component: (await import('../features/properties/pages/MyPropertiesPage.jsx'))
+                .default,
+            }),
+          },
+          {
+            path: 'my-properties/:propertyId',
+            handle: { hideMobileTopBar: true },
+            lazy: async () => ({
+              Component: (await import('../features/properties/pages/MyPropertyPage.jsx')).default,
+            }),
+          },
+          {
+            path: 'my-properties/:propertyId/edit',
+            handle: { hideMobileTopBar: true },
+            lazy: async () => ({
+              Component: (await import('../features/properties/pages/EditPropertyPage.jsx'))
+                .default,
+            }),
+          },
+        ],
       },
       // Not lazy: the error page renders it too.
       { path: '*', element: <NotFoundPage /> },
