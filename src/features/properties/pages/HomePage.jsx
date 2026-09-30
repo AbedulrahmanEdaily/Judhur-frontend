@@ -7,7 +7,7 @@ import { WhySection } from '../components/WhySection.jsx';
 import { useGetPropertiesQuery } from '../propertiesApi.js';
 
 // Figma shows one row of four cards.
-const FEATURED_QUERY = { pageSize: 4 };
+const FEATURED_QUERY = 'pageSize=4';
 
 /**
  * Figma "الرئيسية — زائر" (49:472) from 1280px up, "الرئيسية — موبايل" (83:472) below it.

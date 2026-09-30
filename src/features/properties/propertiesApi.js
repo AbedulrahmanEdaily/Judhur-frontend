@@ -5,10 +5,10 @@ export const propertiesApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     /**
      * Public search (guests too). 200 → PaginatedList<PropertySummary>. 400 bad page/pageSize.
-     * `params` holds only the filters that are set (see searchFilters.js).
+     * `queryString` holds only the filters that are set (toApiQuery in searchFilters.js).
      */
     getProperties: builder.query({
-      query: (params) => ({ url: USER_PROPERTIES_PATH, params }),
+      query: (queryString) => `${USER_PROPERTIES_PATH}?${queryString}`,
       providesTags: [{ type: 'Property', id: 'LIST' }],
     }),
 

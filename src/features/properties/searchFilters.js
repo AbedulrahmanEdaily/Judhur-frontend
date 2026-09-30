@@ -18,10 +18,10 @@ import {
  * @property {string} city
  * @property {number | null} minPrice
  * @property {number | null} maxPrice
- * @property {string} propertyType
+ * @property {string[]} propertyType any of these (BACKEND_REQUESTS #16)
  * @property {string} propertyStatus
- * @property {string} landClassification
- * @property {string} legalStatus
+ * @property {string[]} landClassification any of these
+ * @property {string[]} legalStatus any of these
  * @property {string} sort "<sortColumn>-<sortDirection>"
  * @property {number} page
  */
@@ -32,10 +32,10 @@ export const EMPTY_FILTERS = {
   city: '',
   minPrice: null,
   maxPrice: null,
-  propertyType: '',
+  propertyType: [],
   propertyStatus: '',
-  landClassification: '',
-  legalStatus: '',
+  landClassification: [],
+  legalStatus: [],
   sort: DEFAULT_SORT,
   page: 1,
 };
@@ -44,6 +44,11 @@ export const EMPTY_FILTERS = {
 function pickAllowed(value, allowed) {
   if (value && allowed.includes(value)) return value;
   return '';
+}
+
+/** The values from the URL that are in `allowed`, once each, in the `allowed` order. */
+function pickAllowedList(values, allowed) {
+  return allowed.filter((value) => values.includes(value));
 }
 
 /** A positive number from the URL, else null. */
@@ -74,10 +79,13 @@ export function readSearchFilters(searchParams) {
     city: (searchParams.get('city') ?? '').trim(),
     minPrice: readPositiveNumber(searchParams.get('minPrice')),
     maxPrice: readPositiveNumber(searchParams.get('maxPrice')),
-    propertyType: pickAllowed(searchParams.get('propertyType'), PROPERTY_TYPES),
+    propertyType: pickAllowedList(searchParams.getAll('propertyType'), PROPERTY_TYPES),
     propertyStatus: pickAllowed(searchParams.get('propertyStatus'), LISTING_STATUSES),
-    landClassification: pickAllowed(searchParams.get('landClassification'), LAND_CLASSIFICATIONS),
-    legalStatus: pickAllowed(searchParams.get('legalStatus'), LEGAL_STATUSES),
+    landClassification: pickAllowedList(
+      searchParams.getAll('landClassification'),
+      LAND_CLASSIFICATIONS,
+    ),
+    legalStatus: pickAllowedList(searchParams.getAll('legalStatus'), LEGAL_STATUSES),
     sort,
     page,
   };
@@ -85,7 +93,7 @@ export function readSearchFilters(searchParams) {
 
 /**
  * Filters → the URL query (and the API query, minus paging). Empty values and the defaults
- * are left out.
+ * are left out. A list filter repeats its name once per value: `propertyType=Land&propertyType=House`.
  * @param {SearchFilters} filters
  */
 export function toSearchParams(filters) {
@@ -94,12 +102,12 @@ export function toSearchParams(filters) {
   if (filters.city) params.set('city', filters.city);
   if (filters.minPrice) params.set('minPrice', String(filters.minPrice));
   if (filters.maxPrice) params.set('maxPrice', String(filters.maxPrice));
-  if (filters.propertyType) params.set('propertyType', filters.propertyType);
+  for (const type of filters.propertyType) params.append('propertyType', type);
   if (filters.propertyStatus) params.set('propertyStatus', filters.propertyStatus);
-  if (filters.landClassification) {
-    params.set('landClassification', filters.landClassification);
+  for (const landClass of filters.landClassification) {
+    params.append('landClassification', landClass);
   }
-  if (filters.legalStatus) params.set('legalStatus', filters.legalStatus);
+  for (const legalStatus of filters.legalStatus) params.append('legalStatus', legalStatus);
   if (filters.sort !== DEFAULT_SORT) {
     const [sortColumn, sortDirection] = filters.sort.split('-');
     params.set('sortColumn', sortColumn);
@@ -110,17 +118,18 @@ export function toSearchParams(filters) {
 }
 
 /**
- * Filters → the plain object RTK Query sends as `GET /User/Properties` params.
+ * Filters → the query string for `GET /User/Properties`. It is a string (not an object)
+ * because RTK Query would join a list with commas instead of repeating the name.
  * @param {SearchFilters} filters
  */
 export function toApiQuery(filters) {
-  const query = Object.fromEntries(toSearchParams(filters));
+  const params = toSearchParams(filters);
   const [sortColumn, sortDirection] = filters.sort.split('-');
-  query.sortColumn = sortColumn;
-  query.sortDirection = sortDirection;
-  query.page = String(filters.page);
-  query.pageSize = String(SEARCH_PAGE_SIZE);
-  return query;
+  params.set('sortColumn', sortColumn);
+  params.set('sortDirection', sortDirection);
+  params.set('page', String(filters.page));
+  params.set('pageSize', String(SEARCH_PAGE_SIZE));
+  return params.toString();
 }
 
 /** `/properties?…` for a set of filters (used by links and the hero search). */
@@ -131,18 +140,18 @@ export function searchPath(filters) {
 }
 
 /**
- * How many filters are set (the mobile «فلاتر (4)» button). The text search, sort and page
- * are not counted.
+ * How many filters are set (the mobile «فلاتر (4)» button); each ticked value counts once.
+ * The text search, sort and page are not counted.
  * @param {SearchFilters} filters
  */
 export function countActiveFilters(filters) {
   let count = 0;
   if (filters.city) count += 1;
   if (filters.minPrice || filters.maxPrice) count += 1;
-  if (filters.propertyType) count += 1;
   if (filters.propertyStatus) count += 1;
-  if (filters.landClassification) count += 1;
-  if (filters.legalStatus) count += 1;
+  count += filters.propertyType.length;
+  count += filters.landClassification.length;
+  count += filters.legalStatus.length;
   return count;
 }
 

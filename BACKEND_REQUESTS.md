@@ -113,5 +113,5 @@ Statuses last updated from the backend contract of 2026-09-30.
 
 - Status: open
 - Why the frontend needs it: the search filters in Figma (52:865) are checkboxes, so a buyer can pick several property types, land classes, or document types at once (for example «أرض» and «شقة», or «منطقة أ» and «منطقة ب»).
-- Endpoint / change wanted: `GET /api/v1/User/Properties` accepting repeated values for `propertyType`, `landClassification`, and `legalStatus` (e.g. `?propertyType=Land&propertyType=Apartment`), matching any of them.
-- Current workaround in the UI: the checkboxes keep their look but allow one choice each — ticking one unticks the others.
+- Endpoint / change wanted: `GET /api/v1/User/Properties` accepting repeated values for `propertyType`, `landClassification`, and `legalStatus` (e.g. `?propertyType=Land&propertyType=Apartment&landClassification=A&landClassification=B`), matching any value inside one filter and all filters together (type IN (…) AND class IN (…) AND document IN (…)). No comma-separated form — each value is its own parameter.
+- Current workaround in the UI: none — the checkboxes already allow several values and the request repeats the name once per value, exactly as above. Until the backend binds a list, ASP.NET keeps only the first value, so the results match the first ticked value only.

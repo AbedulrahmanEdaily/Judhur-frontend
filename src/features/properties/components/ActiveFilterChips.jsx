@@ -18,32 +18,33 @@ function activeChips(filters) {
   if (filters.searchTerm) {
     chips.push({ key: 'searchTerm', label: text.searchTermChip(filters.searchTerm) });
   }
-  if (filters.propertyType) {
-    chips.push({ key: 'propertyType', label: PROPERTY_TYPE_LABELS[filters.propertyType] });
+  for (const type of filters.propertyType) {
+    chips.push({ key: 'propertyType', value: type, label: PROPERTY_TYPE_LABELS[type] });
   }
   if (filters.city) chips.push({ key: 'city', label: filters.city });
   if (filters.minPrice || filters.maxPrice) {
     chips.push({ key: 'price', label: formatPriceRange(filters.minPrice, filters.maxPrice) });
   }
-  if (filters.landClassification) {
+  for (const landClass of filters.landClassification) {
     chips.push({
       key: 'landClassification',
-      label: LAND_CLASSIFICATION_LABELS[filters.landClassification],
+      value: landClass,
+      label: LAND_CLASSIFICATION_LABELS[landClass],
     });
   }
-  if (filters.legalStatus) {
-    chips.push({ key: 'legalStatus', label: LEGAL_STATUS_LABELS[filters.legalStatus] });
+  for (const legalStatus of filters.legalStatus) {
+    chips.push({ key: 'legalStatus', value: legalStatus, label: LEGAL_STATUS_LABELS[legalStatus] });
   }
   return chips;
 }
 
 /**
  * Figma "فلاتر مفعّلة" (53:865): «مفعّل:» then one brand/subtle chip per active filter with a
- * 12px close icon at the end. Clicking a chip removes that filter.
+ * 12px close icon at the end — one chip per ticked value. Clicking a chip removes that value.
  *
  * @param {{
  *   filters: import('../searchFilters.js').SearchFilters,
- *   onRemove: (key: string) => void,
+ *   onRemove: (key: string, value?: string) => void,
  * }} props
  */
 export function ActiveFilterChips({ filters, onRemove }) {
@@ -55,9 +56,9 @@ export function ActiveFilterChips({ filters, onRemove }) {
       <span className="text-[12.5px] leading-[1.7] text-muted">{text.active}</span>
       {chips.map((chip) => (
         <button
-          key={chip.key}
+          key={`${chip.key}-${chip.value}`}
           type="button"
-          onClick={() => onRemove(chip.key)}
+          onClick={() => onRemove(chip.key, chip.value)}
           aria-label={text.removeFilter(chip.label)}
           className="flex items-center gap-[7px] rounded-full bg-brand-subtle py-1.5 ps-3 pe-2.5 text-[12.5px] leading-[1.7] font-semibold text-brand-text focus-visible:outline-2 focus-visible:outline-brand"
         >

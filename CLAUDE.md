@@ -434,11 +434,11 @@ Query parameters (all optional; **omit** empty ones instead of sending `=`):
 | `city` | string | — | **exact** match |
 | `minPrice` | number | — | inclusive |
 | `maxPrice` | number | — | inclusive |
-| `propertyType` | enum | — | `Apartment` `House` `Land` `Office` `Storage` `Building` |
+| `propertyType` | enum | — | `Apartment` `House` `Land` `Office` `Storage` `Building` — the UI repeats it per value (BACKEND_REQUESTS #16) |
 | `propertyStatus` | enum | — | **only** `ForSale` or `ForRent` here |
 | `paymentType` | enum | — | `Cash` `Installments` `DownPaymentAndInstallments` `Negotiable` |
-| `landClassification` | enum | — | `A` `B` `C` |
-| `legalStatus` | enum | — | `Tabo` `Maliye` `Taswiye` |
+| `landClassification` | enum | — | `A` `B` `C` — repeated per value (#16) |
+| `legalStatus` | enum | — | `Tabo` `Maliye` `Taswiye` — repeated per value (#16) |
 | `sortColumn` | string | `createdAt` | `createdAt` · `price` · `city` · `landClassification` (anything else → `createdAt`) |
 | `sortDirection` | string | `desc` | `asc` · `desc` |
 
@@ -931,7 +931,7 @@ API paths below are relative to the base paths in section 6.1.
 
 ### Search state lives in the URL
 
-Filters, sort, and page are stored in the query string (`useSearchParams`), not in Redux, so results are shareable and survive refresh. `searchFilters.js` parses the URL into the API params (dropping empty and invalid values) and builds the URL back. Changing any filter resets `page` to 1. The text search runs on submit (header and home search boxes), not while typing. The API takes one value per filter (BACKEND_REQUESTS #16).
+Filters, sort, and page are stored in the query string (`useSearchParams`), not in Redux, so results are shareable and survive refresh. `searchFilters.js` parses the URL into the API params (dropping empty and invalid values) and builds the URL back. Changing any filter resets `page` to 1. The text search runs on submit (header and home search boxes), not while typing. `propertyType`, `landClassification` and `legalStatus` take several values, sent as a repeated name (`?propertyType=Land&propertyType=House`); `toApiQuery` returns a query string because RTK Query would join a list with commas. Until the backend accepts it (BACKEND_REQUESTS #16) only the first value filters.
 
 ### Every data-driven screen has four states
 
@@ -997,7 +997,7 @@ When Abdulrahman confirms something is done: mark it `done`, update section 6 of
 | 13 | Register without a user name | open |
 | 14 | Password reset by link or code | open |
 | 15 | `requestId` on every ProblemDetails | open |
-| 16 | Several values per search filter | open |
+| 16 | Several values per search filter | open — the UI already sends repeated values |
 
 ---
 
