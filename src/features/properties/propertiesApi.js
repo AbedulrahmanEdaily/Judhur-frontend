@@ -40,7 +40,7 @@ export const propertiesApi = baseApi.injectEndpoints({
     }),
 
     // --- Seller (role User): 401 without a token, 403 for admins, 404 also for another
-    // user's listing (CLAUDE.md 6.6–6.8).
+    // user's listing (the project guide 6.6–6.8).
 
     /** 200 → MyProperty[] (not paginated, newest first, every moderation state). */
     getMyProperties: builder.query({

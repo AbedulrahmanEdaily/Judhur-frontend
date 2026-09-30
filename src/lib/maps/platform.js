@@ -2,11 +2,11 @@ import { HERE_API_KEY } from '../../config/env.js';
 
 // HERE Maps API for JavaScript 3.1, loaded from HERE's own CDN the first time a map mounts, so
 // pages without a map never download it. (The npm package lives on HERE's private registry,
-// which the build environment cannot reach — see CLAUDE.md section 10.)
+// which the build environment cannot reach — see the project guide section 10.)
 const HERE_CDN = 'https://js.api.here.com/v3/3.1';
 const SCRIPTS = ['mapsjs-core.js', 'mapsjs-service.js', 'mapsjs-mapevents.js', 'mapsjs-ui.js'];
 
-/** Palestine, roughly — the default view (CLAUDE.md 10.3). */
+/** Palestine, roughly — the default view (the project guide 10.3). */
 export const DEFAULT_CENTER = { lat: 31.9, lng: 35.2 };
 export const DEFAULT_ZOOM = 8;
 

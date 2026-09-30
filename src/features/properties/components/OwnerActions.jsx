@@ -14,7 +14,7 @@ const linkClasses =
   'inline-flex items-center justify-center rounded-md border border-border-strong bg-surface px-[15px] py-[7px] text-[13px] leading-[1.6] font-semibold text-text transition-colors hover:bg-inset focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand';
 
 /**
- * The owner's buttons for one listing, by state (CLAUDE.md 6.8 "What the owner UI shows per
+ * The owner's buttons for one listing, by state (the project guide 6.8 "What the owner UI shows per
  * state"). Deactivate, mark sold / rented and delete go through ConfirmDialog; reactivate and
  * resubmit run at once. Not in Figma — Button and ConfirmDialog from the design system.
  *

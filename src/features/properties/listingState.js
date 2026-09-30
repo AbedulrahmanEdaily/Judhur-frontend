@@ -1,6 +1,6 @@
 import { MIN_IMAGES } from './constants.js';
 
-// The owner's view of a listing (CLAUDE.md 6.8 "What the owner UI shows per state"): one state
+// The owner's view of a listing (the project guide 6.8 "What the owner UI shows per state"): one state
 // made from the sale status, the moderation status and whether it is active.
 
 /**

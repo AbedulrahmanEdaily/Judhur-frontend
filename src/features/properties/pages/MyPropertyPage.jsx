@@ -25,7 +25,7 @@ const text = ar.ownerProperty;
 /**
  * The owner's page of one listing, in every moderation state (not in Figma — built from the
  * «عقاراتي» frame, tokens and the design-system parts): state badge, the rejection reason, the
- * readiness checklist (Pending / Rejected), the actions of CLAUDE.md 6.8, the images, the
+ * readiness checklist (Pending / Rejected), the actions of the project guide 6.8, the images, the
  * document and the saved data.
  */
 export default function MyPropertyPage() {

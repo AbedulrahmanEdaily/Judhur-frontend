@@ -6,7 +6,7 @@ import { MIN_IMAGES } from '../constants.js';
 const text = ar.ownerProperty;
 
 /**
- * The three things a Pending or Rejected listing needs before an admin can see it (CLAUDE.md
+ * The three things a Pending or Rejected listing needs before an admin can see it (the project guide
  * 6.8). Not in Figma: a card from tokens, each line with a success check or a danger cross and
  * «مكتمل» / «ناقص» (so the color is not the only signal).
  *

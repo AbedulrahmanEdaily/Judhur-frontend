@@ -11,7 +11,7 @@ import {
   PROPERTY_TYPES,
 } from './constants.js';
 
-// Mirrors the backend rules of POST /User/Properties (CLAUDE.md 6.6). The server stays the
+// Mirrors the backend rules of POST /User/Properties (the project guide 6.6). The server stays the
 // authority. Form values are strings (what the inputs hold); the parsed output is the request.
 
 const messages = ar.listing.validation;

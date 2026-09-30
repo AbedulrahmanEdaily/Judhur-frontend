@@ -8,7 +8,7 @@ const DETAILS_ZOOM = 14;
 
 /**
  * Figma "الموقع على الخريطة" (67:1177): the 300px map area (bg/inset, radius 14). A HERE map
- * with one fixed marker at the listing (CLAUDE.md 10.3); without a key, or when HERE can't load,
+ * with one fixed marker at the listing (the project guide 10.3); without a key, or when HERE can't load,
  * the static card with the brand pin and the place name. The "nearby" row is not in the API.
  *
  * @param {{ place: string, latitude: number, longitude: number }} props

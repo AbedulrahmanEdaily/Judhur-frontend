@@ -1,4 +1,4 @@
-// API enum values with their Arabic labels (CLAUDE.md section 3). Never show a raw enum value.
+// API enum values with their Arabic labels (the project guide section 3). Never show a raw enum value.
 
 // Figma lists land first (search filter 52:882, home categories 50:588).
 export const PROPERTY_TYPES = ['Land', 'Apartment', 'House', 'Office', 'Storage', 'Building'];
@@ -115,7 +115,7 @@ export const HERO_PRICE_RANGES = [
   { minPrice: 300000, maxPrice: null },
 ];
 
-// Upload rules of the media endpoints (CLAUDE.md 6.7), checked before uploading.
+// Upload rules of the media endpoints (the project guide 6.7), checked before uploading.
 export const IMAGE_FILE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 export const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 export const MAX_IMAGES = 10;
@@ -123,5 +123,5 @@ export const DOCUMENT_FILE_TYPES = ['application/pdf', 'image/jpeg', 'image/png'
 export const MAX_DOCUMENT_SIZE = 10 * 1024 * 1024;
 
 // A Pending listing reaches the admin queue only with this many images, a main image and an
-// ownership document (CLAUDE.md 6.8).
+// ownership document (the project guide 6.8).
 export const MIN_IMAGES = 3;
