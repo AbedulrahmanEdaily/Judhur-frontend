@@ -25,6 +25,22 @@ export const router = createBrowserRouter([
           Component: (await import('../features/properties/pages/HomePage.jsx')).default,
         }),
       },
+      {
+        path: 'properties',
+        // The mobile search frame (83:599) has its own top bar.
+        handle: { hideMobileTopBar: true },
+        lazy: async () => ({
+          Component: (await import('../features/properties/pages/SearchPage.jsx')).default,
+        }),
+      },
+      {
+        path: 'properties/:propertyId',
+        // The mobile details frame (83:671) starts with the photo and ends with its own action bar.
+        handle: { hideMobileTopBar: true, hideMobileTabBar: true },
+        lazy: async () => ({
+          Component: (await import('../features/properties/pages/PropertyDetailsPage.jsx')).default,
+        }),
+      },
       // Not lazy: the error page renders it too.
       { path: '*', element: <NotFoundPage /> },
     ],

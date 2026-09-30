@@ -1,3 +1,4 @@
+import { Link } from 'react-router';
 import { Logo } from './Logo.jsx';
 import { ar } from '../../locales/ar.js';
 
@@ -30,7 +31,9 @@ export function Footer() {
 
           <div className="flex flex-col items-end gap-2.5 whitespace-nowrap">
             <p className={headingClasses}>{ar.footer.linksTitle}</p>
-            <span className={itemClasses}>{ar.nav.properties}</span>
+            <Link to="/properties" className={itemClasses}>
+              {ar.nav.properties}
+            </Link>
             <span className={itemClasses}>{ar.nav.map}</span>
             <span className={itemClasses}>{ar.nav.addProperty}</span>
           </div>

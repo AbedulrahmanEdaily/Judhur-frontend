@@ -1,0 +1,71 @@
+import { Link } from 'react-router';
+import { IconPin } from '../../../components/icons/index.js';
+import { formatArea, formatPrice } from '../../../lib/format.js';
+import { PROPERTY_STATUS_LABELS } from '../constants.js';
+import { ListingBadges } from './ListingBadges.jsx';
+import { PropertyPhoto } from './PropertyPhoto.jsx';
+
+/** "نابلس — رفيديا", or just the city. */
+function placeText(property) {
+  if (property.region) return `${property.city} — ${property.region}`;
+  return property.city;
+}
+
+/**
+ * Figma "بطاقة عقار / Property Card" (33:2) from 1280px up, and the mobile card (83:547) below.
+ * Only the API's data is shown: no heart (favorites step), photo count, frontage, street, AI
+ * estimate, or seller row — the search summary has none of them.
+ * Sold / rented listings get a pill in the photo-count slot.
+ *
+ * @param {{ property: import('../../../api/types.js').PropertySummary }} props
+ */
+export function PropertyCard({ property }) {
+  const isClosed = property.propertyStatus === 'Sold' || property.propertyStatus === 'Rented';
+
+  return (
+    <Link
+      to={`/properties/${property.id}`}
+      className="flex flex-col overflow-hidden rounded-lg border border-border bg-raised transition-shadow hover:shadow-menu focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+    >
+      <div className="relative h-[150px] shrink-0 overflow-hidden xl:h-[186px]">
+        <PropertyPhoto src={property.mainImageUrl} alt={property.title} />
+        {isClosed && (
+          <span className="absolute start-3 top-3 rounded-full bg-black/45 px-3 py-1.5 text-[11px] leading-[1.7] font-semibold text-white">
+            {PROPERTY_STATUS_LABELS[property.propertyStatus]}
+          </span>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-2 px-3.5 pt-3 pb-3.5 xl:gap-3 xl:p-4">
+        <ListingBadges propertyStatus={property.propertyStatus} className="gap-1.5 xl:gap-2" />
+
+        <h3 className="text-[15px] leading-[1.72] font-bold text-text xl:text-[18px] xl:leading-[1.7]">
+          {property.title}
+        </h3>
+
+        {/* Mobile: one muted line "city — region · area". */}
+        <p className="text-[12px] leading-[1.72] whitespace-pre-wrap text-muted xl:hidden">
+          {`${placeText(property)}  ·  ${formatArea(property.area)}`}
+        </p>
+
+        {/* Desktop: the place with its pin, then the area. */}
+        <p className="hidden items-center gap-1.5 text-[13px] leading-[1.7] text-text-secondary xl:flex">
+          <IconPin className="shrink-0 text-muted" />
+          {placeText(property)}
+        </p>
+        <p className="hidden text-[12.5px] leading-[1.7] text-muted xl:block">
+          {formatArea(property.area)}
+        </p>
+        <div className="hidden h-px bg-border xl:block" />
+
+        {/* Figma sets prices left to right: "45,000 ₪". */}
+        <p
+          dir="ltr"
+          className="self-start text-[18px] leading-[1.72] font-bold whitespace-nowrap text-brand-text xl:text-[21px] xl:leading-[1.7]"
+        >
+          {formatPrice(property.price)}
+        </p>
+      </div>
+    </Link>
+  );
+}

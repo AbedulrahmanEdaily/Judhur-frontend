@@ -108,3 +108,10 @@ Statuses last updated from the backend contract of 2026-09-30.
 - Why the frontend needs it: a `500` screen shows the `requestId` so a failure can be reported. The contract of 2026-09-25 put `requestId` (and `instance`) on every error body; the examples in the contract of 2026-09-30 leave them out.
 - Endpoint / change wanted: confirm that every ProblemDetails, the `400` validation body included, still carries `requestId`.
 - Current workaround in the UI: the `requestId` is shown when present and left out when missing.
+
+## 16. Several values per search filter
+
+- Status: open
+- Why the frontend needs it: the search filters in Figma (52:865) are checkboxes, so a buyer can pick several property types, land classes, or document types at once (for example «أرض» and «شقة», or «منطقة أ» and «منطقة ب»).
+- Endpoint / change wanted: `GET /api/v1/User/Properties` accepting repeated values for `propertyType`, `landClassification`, and `legalStatus` (e.g. `?propertyType=Land&propertyType=Apartment`), matching any of them.
+- Current workaround in the UI: the checkboxes keep their look but allow one choice each — ticking one unticks the others.

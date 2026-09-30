@@ -11,14 +11,14 @@ import { ar } from '../../locales/ar.js';
 
 // Links without `to` point at pages that are not built yet: they stay visible, not clickable.
 const visitorLinks = [
-  { label: ar.nav.home, to: '/' },
-  { label: ar.nav.properties },
+  { label: ar.nav.home, to: '/', end: true },
+  { label: ar.nav.properties, to: '/properties' },
   { label: ar.nav.map },
   { label: ar.nav.about },
 ];
 const adminLinks = [
-  { label: ar.nav.home, to: '/' },
-  { label: ar.nav.properties },
+  { label: ar.nav.home, to: '/', end: true },
+  { label: ar.nav.properties, to: '/properties' },
   { label: ar.nav.approvals },
   { label: ar.nav.users },
   { label: ar.nav.reports },
@@ -61,7 +61,7 @@ export function Header() {
                 {link.to ? (
                   <NavLink
                     to={link.to}
-                    end
+                    end={link.end}
                     className={({ isActive }) =>
                       clsx(
                         'rounded-sm focus-visible:outline-2 focus-visible:outline-brand',
