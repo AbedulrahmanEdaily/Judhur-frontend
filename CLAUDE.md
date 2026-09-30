@@ -733,6 +733,7 @@ src/
     admin/
       adminApi.js              # pending queue, review, approve, reject (6.10)
       pages/                   # PendingPropertiesPage, ReviewPropertyPage
+      components/              # AdminShell (sidebar), ReviewDocumentCard, RejectPropertyDialog
     ui/uiSlice.js              # theme (+ future UI-only state)
   components/
     ui/                        # Button, Input, Select, Textarea, Checkbox, Modal, ConfirmDialog, Badge, VerifiedBadge,
@@ -1015,7 +1016,7 @@ Each step ends in a working app, and each is its own branch + PR.
 3. **Create listing + media** (done) — multi-step form, `LocationPicker` + reverse geocoding, then the media step after create: sequential image upload, document upload, readiness checklist.
 4. **Owner area** (done) — `/my-properties` with thumbnails, `/my-properties/:id` with state badge, rejection alert, checklist and every action from 6.8 (with confirm dialogs), media manager, `/my-properties/:id/edit`; the buyer-first dashboard.
 5. **Favorites** — `/ids` + heart everywhere, `/favorites` page.
-6. **Admin moderation** — queue, review page, document link, approve, reject dialog.
+6. **Admin moderation** (done) — queue, review page, document link, approve, reject dialog.
 7. **The rest** — as backend endpoints land (section 6.11 and `BACKEND_REQUESTS.md`).
 
 Every data screen keeps the four states (loading skeleton · empty · error with retry · success).
