@@ -5,7 +5,9 @@ import { selectAuth, sessionEnded, sessionRefreshed } from '../features/auth/aut
 import { loadStoredTokens } from '../features/auth/authStorage.js';
 
 export const ACCOUNT_PATH = '/api/Identity/Account';
-export const PROPERTIES_PATH = '/api/v1/Properties';
+export const USER_PROPERTIES_PATH = '/api/v1/User/Properties';
+export const FAVORITES_PATH = '/api/v1/User/Favorites';
+export const ADMIN_PROPERTIES_PATH = '/api/v1/Admin/Properties';
 
 const REFRESH_URL = `${ACCOUNT_PATH}/refresh-token`;
 

@@ -18,8 +18,9 @@ import {
 import { ar } from '../../locales/ar.js';
 
 /**
- * Session side effects: persist tokens, and on session end clear storage and every cached
- * response so nothing from the previous user survives.
+ * Session side effects: persist tokens, and reset every cached response when a session starts
+ * or ends. Nothing from the previous user survives, and public responses that differ for guests
+ * and signed-in users (the seller phone on details) are fetched again.
  *
  * @param {import('@reduxjs/toolkit').ListenerMiddlewareInstance['startListening']} startListening
  */
@@ -30,6 +31,13 @@ export function registerAuthListeners(startListening) {
       const auth = selectAuth(/** @type {any} */ (getState()));
       if (auth.status === 'authenticated') storeTokens(auth);
       else dispatch(sessionEnded('expired')); // the tokens could not be read
+    },
+  });
+
+  startListening({
+    actionCreator: sessionStarted,
+    effect: (_action, { dispatch }) => {
+      dispatch(baseApi.util.resetApiState());
     },
   });
 
@@ -67,8 +75,8 @@ export function syncSessionAcrossTabs(store) {
     if (stored.refreshToken === current.refreshToken) return;
 
     const next = sessionFromTokens(stored);
-    if (current.user && next.user?.id !== current.user.id) {
-      // A different account signed in elsewhere: drop this user's cached data first.
+    if (next.user?.id !== current.user?.id) {
+      // Someone signed in elsewhere (from a guest tab, or as another account): refetch everything.
       store.dispatch(baseApi.util.resetApiState());
     }
     store.dispatch(sessionRefreshed(stored));

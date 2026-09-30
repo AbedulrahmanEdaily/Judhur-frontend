@@ -4,7 +4,10 @@ import { ar } from '../../locales/ar.js';
  * @typedef {Object} Problem
  * @property {number | null} status HTTP status, or null for network/timeout errors
  * @property {string} message text to show (server `title` when meaningful, else Arabic by status)
- * @property {Record<string, string>} fieldErrors first message per `errors` key, key camelCased
+ * @property {Record<string, string>} fieldErrors 400 only: first message per request field,
+ *   key camelCased (`PhoneNumber` → `phoneNumber`)
+ * @property {Record<string, string>} errorCodes 400 only: first message per error code, key kept
+ *   as sent (`PropertyErrors.MinImagesRequired`)
  * @property {string | null} requestId from the ProblemDetails body, for reporting 500s
  */
 
@@ -41,19 +44,32 @@ function fallbackMessage(status) {
   }
 }
 
-/** `PhoneNumber` → `phoneNumber`; error codes like `Identity.InvalidResetCode` keep their shape. */
-const camelFirst = (key) => key.charAt(0).toLowerCase() + key.slice(1);
-
-/** @param {unknown} errors */
-function readFieldErrors(errors) {
+/**
+ * Splits the `errors` of a 400 into request fields and error codes. An error code always has
+ * a dot (`Group.Name`); a request field is a PascalCase name without one.
+ *
+ * @param {unknown} errors
+ */
+function readErrors(errors) {
   /** @type {Record<string, string>} */
   const fieldErrors = {};
-  if (!errors || typeof errors !== 'object') return fieldErrors;
+  /** @type {Record<string, string>} */
+  const errorCodes = {};
+  if (!errors || typeof errors !== 'object') return { fieldErrors, errorCodes };
+
   for (const [key, messages] of Object.entries(errors)) {
-    const first = Array.isArray(messages) ? messages.find((m) => typeof m === 'string') : null;
-    if (first) fieldErrors[camelFirst(key)] = first;
+    if (!Array.isArray(messages)) continue;
+    const firstMessage = messages.find((message) => typeof message === 'string');
+    if (!firstMessage) continue;
+
+    if (key.includes('.')) {
+      errorCodes[key] = firstMessage;
+    } else {
+      const fieldName = key.charAt(0).toLowerCase() + key.slice(1);
+      fieldErrors[fieldName] = firstMessage;
+    }
   }
-  return fieldErrors;
+  return { fieldErrors, errorCodes };
 }
 
 /**
@@ -67,10 +83,22 @@ export function toProblem(error) {
   const err = /** @type {any} */ (error);
 
   if (err?.status === 'FETCH_ERROR') {
-    return { status: null, message: ar.errors.network, fieldErrors: {}, requestId: null };
+    return {
+      status: null,
+      message: ar.errors.network,
+      fieldErrors: {},
+      errorCodes: {},
+      requestId: null,
+    };
   }
   if (err?.status === 'TIMEOUT_ERROR') {
-    return { status: null, message: ar.errors.timeout, fieldErrors: {}, requestId: null };
+    return {
+      status: null,
+      message: ar.errors.timeout,
+      fieldErrors: {},
+      errorCodes: {},
+      requestId: null,
+    };
   }
 
   let status = null;
@@ -89,8 +117,14 @@ export function toProblem(error) {
   const titleIsUseful = title !== '' && !GENERIC_TITLES.has(title.toLowerCase());
   if (titleIsUseful && status !== null && status < 500) message = title;
 
+  // The database-conflict 409 explains itself in `detail` ("someone already did this").
+  if (status === 409 && typeof body.detail === 'string' && body.detail.trim() !== '') {
+    message = `${message} — ${body.detail.trim()}`;
+  }
+
   let requestId = null;
   if (typeof body.requestId === 'string') requestId = body.requestId;
 
-  return { status, message, fieldErrors: readFieldErrors(body.errors), requestId };
+  const { fieldErrors, errorCodes } = readErrors(body.errors);
+  return { status, message, fieldErrors, errorCodes, requestId };
 }
