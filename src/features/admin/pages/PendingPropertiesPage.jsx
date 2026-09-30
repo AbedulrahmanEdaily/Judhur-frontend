@@ -110,17 +110,19 @@ export default function PendingPropertiesPage() {
                     <p className="truncate text-[11.5px] leading-[1.75] text-muted">{details}</p>
                   </div>
                 </div>
+                {/* Fixed widths on desktop keep price, type and wait in straight columns. */}
                 <span
                   dir="ltr"
-                  className="text-[13.5px] leading-[1.75] font-semibold whitespace-nowrap text-text"
+                  className="text-[13.5px] leading-[1.75] font-semibold whitespace-nowrap text-text xl:w-[130px] xl:text-end"
                 >
                   {formatPrice(property.price)}
                 </span>
-                <Badge tone="neutral">{PROPERTY_TYPE_LABELS[property.propertyType]}</Badge>
-                <span className="text-[12.5px] leading-[1.75] whitespace-nowrap text-muted">
+                <span className="xl:w-[80px]">
+                  <Badge tone="neutral">{PROPERTY_TYPE_LABELS[property.propertyType]}</Badge>
+                </span>
+                <span className="text-[12.5px] leading-[1.75] whitespace-nowrap text-muted xl:w-[110px]">
                   {formatRelativeTime(property.createdAtUtc)}
                 </span>
-                <span className="hidden flex-1 xl:block" />
                 <div className="flex items-center gap-2">
                   <button
                     type="button"

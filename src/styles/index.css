@@ -195,7 +195,12 @@
 
 /* Home hero "طبقة تعتيم" over the Property Photo (89:4549). */
 @utility bg-home-hero-overlay {
-  background-image: linear-gradient(to bottom, rgb(9 28 23 / 0.62), rgb(9 28 23 / 0.82));
+  background-image: linear-gradient(
+    to bottom,
+    rgb(9 28 23 / 0.3),
+    rgb(9 28 23 / 0.45) 55%,
+    rgb(9 28 23 / 0.7)
+  );
 }
 
 /* Scrollable rows (home cities) without a visible scrollbar; they have arrow buttons. */
