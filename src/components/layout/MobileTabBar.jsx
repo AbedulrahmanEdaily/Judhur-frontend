@@ -30,6 +30,7 @@ export function MobileTabBar() {
   const { logout, isLoggingOut } = useLogout();
   const [isAccountOpen, setIsAccountOpen] = useState(false);
   const isHome = pathname === '/';
+  const isSearch = pathname === '/properties';
 
   return (
     <nav
@@ -45,10 +46,14 @@ export function MobileTabBar() {
         {ar.nav.home}
       </Link>
 
-      <span aria-disabled="true" className={clsx(itemClasses, inactiveClasses)}>
+      <Link
+        to="/properties"
+        aria-current={isSearch ? 'page' : undefined}
+        className={clsx(itemClasses, isSearch ? activeClasses : inactiveClasses)}
+      >
         <IconTabSearch />
         {ar.nav.tabSearch}
-      </span>
+      </Link>
 
       <span aria-disabled="true" className={clsx(itemClasses, inactiveClasses)}>
         <span className="rounded-full bg-brand p-[9px] text-inverse">

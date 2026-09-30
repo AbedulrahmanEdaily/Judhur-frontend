@@ -6,8 +6,6 @@
 export const ar = {
   app: {
     name: 'جذور',
-    tagline: 'سوق العقارات الفلسطيني', // not in Figma (placeholder home)
-    comingSoon: 'قريباً',
     logoAlt: 'شعار جذور',
   },
   common: {
@@ -16,6 +14,7 @@ export const ar = {
     retry: 'إعادة المحاولة',
     loading: 'جارٍ التحميل…',
     backHome: 'العودة للرئيسية',
+    breadcrumb: 'مسار الصفحة', // not in Figma (screen readers)
   },
   nav: {
     home: 'الرئيسية',
@@ -173,6 +172,124 @@ export const ar = {
       signedInAs: 'مسجّل الدخول باسم',
       logout: 'تسجيل الخروج',
     },
+  },
+  home: {
+    // Figma "الرئيسية — زائر" (49:472)
+    tagline: 'منصة عقارية فلسطينية بتصنيف أراضي موثّق',
+    title: 'أرضك وبيتك — بمعلومات كاملة قبل ما تقرر',
+    subtitle:
+      'كل عقار على جذور بيجي بتصنيف أرضه (أ/ب/ج)، وثيقة ملكيته، وتقدير سعر بالذكاء الاصطناعي — عشان تعرف شو بتشتري.',
+    purpose: 'الغرض',
+    city: 'المدينة',
+    propertyType: 'نوع العقار',
+    price: 'السعر',
+    allCities: 'كل المدن',
+    anyPrice: 'أي سعر',
+    anyType: 'أي نوع', // not in Figma
+    search: 'ابحث',
+    hint: 'أو جرّب البحث بالعامية: «بدي أرض بنابلس تحت 50 ألف»',
+    featured: 'عقارات مختارة',
+    seeAll: 'شوف الكل',
+    featuredEmpty: 'ما في عقارات منشورة لسا', // not in Figma
+    featuredEmptyHint: 'أول ما تنعتمد عروض جديدة رح تظهر هون.', // not in Figma
+    aiTitle: 'الذكاء الاصطناعي في خدمتك',
+    aiSubtitle: 'ميزتان ما بتلاقيهم في أي منصة عقارية فلسطينية تانية',
+    aiPriceTitle: 'مقدّر السعر الذكي',
+    aiPriceText:
+      'بيحلّل موقع الأرض وتصنيفها ومساحتها والبنية التحتية حواليها، وبيعطيك سعر عادل تقارنه بالسعر المعلن — عشان تعرف إذا العرض منطقي.',
+    aiPriceTag: 'يعطي نتيجة خلال 5 ثوانٍ',
+    aiChatTitle: 'المساعد الذكي بالعامية',
+    aiChatText:
+      'احكي معه زي ما بتحكي مع صاحبك: «بدي أرض بجنين تحت 30 ألف على شارع». بيفهم العامية الفلسطينية وبيحوّلها لفلاتر بحث.',
+    aiChatTag: 'يفهم العامية والفصحى',
+    citiesTitle: 'تصفّح حسب المدينة',
+    whyClassificationTitle: 'تصنيف أ / ب / ج',
+    whyClassificationText: 'بتعرف الوضع القانوني للأرض قبل ما توقّع، مش بعدين',
+    whyDocumentTitle: 'وثيقة ملكية موثّقة',
+    whyDocumentText: 'الإدارة بتراجع الوثيقة قبل النشر، وما بتظهر لحدا غيرها',
+    whyPhotosTitle: 'صور إلزامية',
+    whyPhotosText: 'كل عرض لازم 3 صور حقيقية على الأقل — ما في إعلانات فاضية',
+    // Figma "الرئيسية — موبايل" (83:472)
+    mobileTitle: 'أرضك وبيتك — بمعلومات كاملة',
+    mobileSubtitle: 'تصنيف الأرض ووثيقتها وتقدير سعرها — كلها قدامك.',
+  },
+  search: {
+    // Figma "نتائج البحث — زائر" (52:782)
+    allProperties: 'العقارات', // not in Figma: the title with no type filter
+    in: (city) => `في ${city}`,
+    count: (count) => `${count} عقار`,
+    mobileCount: (count) => `${count} نتيجة`,
+    sortLabel: 'ترتيب:',
+    active: 'مفعّل:',
+    removeFilter: (label) => `إزالة ${label}`, // not in Figma (screen readers)
+    filters: 'الفلاتر',
+    clearAll: 'مسح الكل',
+    purpose: 'الغرض',
+    propertyType: 'نوع العقار',
+    priceRange: 'نطاق السعر',
+    from: 'من',
+    to: 'إلى',
+    landClassification: 'تصنيف الأرض',
+    legalStatus: 'نوع الوثيقة',
+    apply: 'طبّق الفلاتر',
+    toggleSection: (title) => `إظهار أو إخفاء ${title}`, // not in Figma (screen readers)
+    mobileFilters: (count) => `فلاتر (${count})`,
+    back: 'رجوع',
+    // not in Figma
+    priceFrom: (price) => `من ${price}`,
+    priceTo: (price) => `حتى ${price}`,
+    searchTermChip: (term) => `«${term}»`,
+    emptyTitle: 'ما في عقارات بتطابق بحثك',
+    emptyText: 'جرّب تغيّر الفلاتر أو تمسحها وتبحث من جديد.',
+    closeFilters: 'إغلاق الفلاتر',
+  },
+  property: {
+    // Figma "بطاقة عقار" (33:2) and "تفاصيل العقار — زائر" (65:1087)
+    verified: 'موثّق',
+    share: 'مشاركة',
+    linkCopied: 'تم نسخ رابط العقار', // not in Figma
+    area: 'المساحة',
+    document: 'الوثيقة',
+    legalTitle: 'الوضع القانوني للأرض',
+    // Figma has the text for (أ) only; (ب) and (ج) are not in Figma.
+    landTitles: {
+      A: 'منطقة (أ) — سيادة فلسطينية كاملة',
+      B: 'منطقة (ب) — إدارة مدنية فلسطينية',
+      C: 'منطقة (ج) — قيود على البناء',
+    },
+    landTexts: {
+      A: 'الأرض ضمن مناطق السيطرة الفلسطينية الكاملة إدارياً وأمنياً. البناء والترخيص بيمرّوا عبر البلدية الفلسطينية بدون قيود إضافية.',
+      B: 'الإدارة المدنية فلسطينية والسيطرة الأمنية مشتركة. الترخيص عبر البلدية الفلسطينية، وبعض المواقع إلها قيود.',
+      C: 'الأرض ضمن المناطق المصنّفة (ج). البناء والترخيص بيحتاجوا موافقات إضافية — تأكّد من الوضع قبل ما تشتري.',
+    },
+    // Figma "تفاصيل العقار — موبايل" (83:671) — the short text; (ب) and (ج) are not in Figma.
+    landMobileTexts: {
+      A: 'البناء والترخيص عبر البلدية الفلسطينية بدون قيود إضافية.',
+      B: 'الترخيص عبر البلدية الفلسطينية، وبعض المواقع إلها قيود.',
+      C: 'البناء بيحتاج موافقات إضافية — تأكّد قبل ما تشتري.',
+    },
+    documentNote: (document) =>
+      `وثيقة الملكية (${document}) راجعتها إدارة جذور قبل النشر. الوثيقة نفسها ما بتنعرض للعامة حفاظاً على خصوصية المالك — بتنشاف بس لفريق المراجعة.`,
+    description: 'وصف العقار',
+    mapTitle: 'الموقع على الخريطة',
+    askingPrice: 'السعر المطلوب',
+    perSquareMeter: (price) => `${price} / م²`,
+    price: 'السعر',
+    requestPhone: 'اطلب رقم الهاتف',
+    loginForPhone: 'سجّل الدخول لإظهار رقم الهاتف',
+    tipsTitle: 'نصائح للتعامل الآمن',
+    tips: [
+      'خلّي التواصل داخل جذور — المحادثة محفوظة ومرجع إلك.',
+      'لا تدفع عربون قبل ما تشوف الأرض والوثيقة على الطبيعة.',
+      'تأكّد من مطابقة رقم القطعة والحوض في الطابو.',
+    ],
+    moreImages: (count) => `+${count} صور أخرى`,
+    showImage: (number) => `عرض الصورة ${number}`, // not in Figma (screen readers)
+    back: 'رجوع',
+    // not in Figma
+    notFoundTitle: 'العقار غير متاح',
+    notFoundText: 'يمكن انحذف أو انباع أو لسا بانتظار المراجعة.',
+    backToSearch: 'رجوع للعقارات',
   },
   errors: {
     unexpected: 'حدث خطأ غير متوقع',

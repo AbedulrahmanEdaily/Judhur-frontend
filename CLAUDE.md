@@ -721,7 +721,7 @@ src/
       propertiesApi.js         # public search/details + seller endpoints (6.5–6.8)
       constants.js             # enum lists + Arabic labels (section 3), sort options
       schemas.js
-      hooks/useSearchFilters.js  # URL ⇄ filters (section 11)
+      searchFilters.js         # URL ⇄ filters, plain functions (section 11)
       pages/                   # HomePage, SearchPage, PropertyDetailsPage, CreatePropertyPage, MyPropertiesPage,
                                # MyPropertyPage, EditPropertyPage
       components/              # PropertyCard, PropertyFilters, PropertyGallery, SellerCard, ModerationBadge, ...
@@ -909,7 +909,7 @@ API paths below are relative to the base paths in section 6.1.
 
 | Path | Access | Page | API |
 |---|---|---|---|
-| `/` | public | Home: hero with search box, quick filters, latest listings | `GET /User/Properties?pageSize=8` |
+| `/` | public | Home: hero with search box, type categories, the four latest listings | `GET /User/Properties?pageSize=4` |
 | `/properties` | public | Search with filters sidebar (drawer on mobile), sort, pagination; sold/rented ribbon on cards | `GET /User/Properties` |
 | `/properties/:id` | public | Details: gallery, key facts, description, map, seller card (phone rule, 6.5), heart | `GET /User/Properties/{id}` |
 | `/login` | guest | Login | `POST /login` |
@@ -931,7 +931,7 @@ API paths below are relative to the base paths in section 6.1.
 
 ### Search state lives in the URL
 
-Filters, sort, and page are stored in the query string (`useSearchParams`), not in Redux, so results are shareable and survive refresh. `useSearchFilters` parses the URL into the API params (dropping empty values) and writes changes back. Changing any filter resets `page` to 1. Debounce the text search (~400 ms).
+Filters, sort, and page are stored in the query string (`useSearchParams`), not in Redux, so results are shareable and survive refresh. `searchFilters.js` parses the URL into the API params (dropping empty and invalid values) and builds the URL back. Changing any filter resets `page` to 1. The text search runs on submit (header and home search boxes), not while typing. The API takes one value per filter (BACKEND_REQUESTS #16).
 
 ### Every data-driven screen has four states
 
@@ -997,6 +997,7 @@ When Abdulrahman confirms something is done: mark it `done`, update section 6 of
 | 13 | Register without a user name | open |
 | 14 | Password reset by link or code | open |
 | 15 | `requestId` on every ProblemDetails | open |
+| 16 | Several values per search filter | open |
 
 ---
 
