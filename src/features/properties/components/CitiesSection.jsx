@@ -3,6 +3,7 @@ import { Link } from 'react-router';
 import { IconBackChevron } from '../../../components/icons/index.js';
 import { ar } from '../../../locales/ar.js';
 import nablusPhoto from '../../../assets/photos/cities/nablus.jpg';
+import qalqilyaPhoto from '../../../assets/photos/cities/qalqilya.jpg';
 import { CITIES } from '../constants.js';
 import { searchPath } from '../searchFilters.js';
 import { PropertyPhoto } from './PropertyPhoto.jsx';
@@ -10,6 +11,7 @@ import { PropertyPhoto } from './PropertyPhoto.jsx';
 // A real photo of the city where we have one (supplied by the owner, not in Figma).
 const cityPhotos = {
   نابلس: nablusPhoto,
+  قلقيلية: qalqilyaPhoto,
 };
 
 // The Figma illustration order (51:760), repeated for the cities without a photo yet.
