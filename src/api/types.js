@@ -119,18 +119,20 @@
 // ---------------------------------------------------------------------------
 
 /**
- * @typedef {Object} PropertySearchParams Query of `GET /`. Omit empty values.
+ * @typedef {Object} PropertySearchParams Query of `GET /`. Omit empty values. The list filters
+ *   repeat their name once per value (`city=نابلس&city=جنين`): OR inside one filter, AND between
+ *   filters. At most 20 cities (`PropertyErrors.TooManyCitiesInFilter`).
  * @property {number} [page]
  * @property {number} [pageSize]
  * @property {string} [searchTerm]
- * @property {string} [city]
+ * @property {string[]} [city]
  * @property {number} [minPrice]
  * @property {number} [maxPrice]
- * @property {PropertyType} [propertyType]
- * @property {'ForSale'|'ForRent'} [propertyStatus]
- * @property {PaymentType} [paymentType]
- * @property {LandClassification} [landClassification]
- * @property {LegalStatus} [legalStatus]
+ * @property {PropertyType[]} [propertyType]
+ * @property {('ForSale'|'ForRent')[]} [propertyStatus] the UI sends one value
+ * @property {PaymentType[]} [paymentType]
+ * @property {LandClassification[]} [landClassification]
+ * @property {LegalStatus[]} [legalStatus]
  * @property {'createdAt'|'price'|'city'|'landClassification'} [sortColumn]
  * @property {'asc'|'desc'} [sortDirection]
  */

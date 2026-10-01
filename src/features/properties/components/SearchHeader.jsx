@@ -9,7 +9,7 @@ const text = ar.search;
 
 /**
  * "أراضي للبيع في نابلس" (desktop) or "أراضي في نابلس" (mobile, no purpose). With several
- * types ticked the title stays «العقارات».
+ * types ticked the title stays «العقارات»; with several cities it names none.
  */
 function searchTitle(filters, withPurpose) {
   let title = text.allProperties;
@@ -17,7 +17,7 @@ function searchTitle(filters, withPurpose) {
   if (withPurpose && filters.propertyStatus) {
     title = `${title} ${PROPERTY_STATUS_LABELS[filters.propertyStatus]}`;
   }
-  if (filters.city) title = `${title} ${text.in(filters.city)}`;
+  if (filters.city.length === 1) title = `${title} ${text.in(filters.city[0])}`;
   return title;
 }
 
@@ -72,8 +72,8 @@ export function SearchHeader({ filters, totalCount, onOpenFilters }) {
                 {ar.nav.home}
               </Link>
             </li>
-            {filters.city && <li aria-hidden="true">/</li>}
-            {filters.city && <li>{filters.city}</li>}
+            {filters.city.length === 1 && <li aria-hidden="true">/</li>}
+            {filters.city.length === 1 && <li>{filters.city[0]}</li>}
             {filters.propertyType.length === 1 && <li aria-hidden="true">/</li>}
             {filters.propertyType.length === 1 && (
               <li>{PROPERTY_TYPE_PLURALS[filters.propertyType[0]]}</li>

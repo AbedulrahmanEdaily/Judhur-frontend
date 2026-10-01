@@ -233,6 +233,8 @@ export const ar = {
     to: 'إلى',
     landClassification: 'تصنيف الأرض',
     legalStatus: 'نوع الوثيقة',
+    city: 'المدينة', // not in Figma: the city and payment sections
+    paymentType: 'طريقة الدفع',
     apply: 'طبّق الفلاتر',
     toggleSection: (title) => `إظهار أو إخفاء ${title}`, // not in Figma (screen readers)
     mobileFilters: (count) => `فلاتر (${count})`,

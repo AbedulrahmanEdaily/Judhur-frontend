@@ -17,6 +17,9 @@ import { EMPTY_FILTERS, readSearchFilters, toApiQuery, toSearchParams } from '..
 
 const text = ar.search;
 
+// The only search error with its own message (more than 20 cities); shown as the server sends it.
+const TOO_MANY_CITIES = 'PropertyErrors.TooManyCitiesInFilter';
+
 /**
  * Figma "نتائج البحث — زائر" (52:782) from 1280px up and "نتائج البحث — موبايل" (83:599) below.
  * Filters, sort and page live in the URL, so a search can be shared and survives a refresh.
@@ -62,9 +65,11 @@ export default function SearchPage() {
     );
   } else if (error) {
     const problem = toProblem(error);
+    let message = problem.message;
+    if (problem.errorCodes[TOO_MANY_CITIES]) message = problem.errorCodes[TOO_MANY_CITIES];
     let requestId;
     if (problem.status >= 500) requestId = problem.requestId;
-    results = <ErrorState message={problem.message} requestId={requestId} onRetry={refetch} />;
+    results = <ErrorState message={message} requestId={requestId} onRetry={refetch} />;
   } else if (!data || data.items.length === 0) {
     results = (
       <EmptyState

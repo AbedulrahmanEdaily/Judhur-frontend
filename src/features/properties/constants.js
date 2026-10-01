@@ -105,6 +105,9 @@ export const CITIES = [
   'غزة',
 ];
 
+// The API takes at most 20 cities in one search (PropertyErrors.TooManyCitiesInFilter).
+export const MAX_SEARCH_CITIES = 20;
+
 export const SEARCH_PAGE_SIZE = 12;
 
 // Price ranges of the home search bar — not in Figma (it shows only «أي سعر»).

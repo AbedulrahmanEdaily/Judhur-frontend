@@ -5,11 +5,14 @@ import { toLatinDigits } from '../../../lib/digits.js';
 import { formatNumber } from '../../../lib/format.js';
 import { ar } from '../../../locales/ar.js';
 import {
+  CITIES,
   LAND_CLASSIFICATION_LABELS,
   LAND_CLASSIFICATIONS,
   LEGAL_STATUS_LABELS,
   LEGAL_STATUSES,
   LISTING_STATUSES,
+  PAYMENT_TYPE_LABELS,
+  PAYMENT_TYPES,
   PROPERTY_STATUS_LABELS,
   PROPERTY_TYPE_LABELS,
   PROPERTY_TYPES,
@@ -34,7 +37,9 @@ function parsePrice(value) {
 function draftFrom(filters) {
   return {
     propertyStatus: filters.propertyStatus,
+    city: filters.city,
     propertyType: filters.propertyType,
+    paymentType: filters.paymentType,
     minPrice: filters.minPrice ? formatNumber(filters.minPrice) : '',
     maxPrice: filters.maxPrice ? formatNumber(filters.maxPrice) : '',
     landClassification: filters.landClassification,
@@ -44,7 +49,9 @@ function draftFrom(filters) {
 
 /**
  * Figma "الفلاتر" (52:865). Choices are staged here and reach the URL only on «طبّق الفلاتر».
- * The purpose is one choice; the checkbox lists take several (BACKEND_REQUESTS #16).
+ * The purpose is one choice; the checkbox lists take several (OR inside a list, AND between lists).
+ * The city and payment sections are not in Figma: they copy the other checkbox sections, and the
+ * twelve cities sit in two columns to keep the panel short.
  *
  * @param {{
  *   filters: import('../searchFilters.js').SearchFilters,
@@ -80,7 +87,9 @@ export function SearchFiltersPanel({ filters, onApply, className }) {
     onApply({
       ...filters,
       propertyStatus: draft.propertyStatus,
+      city: draft.city,
       propertyType: draft.propertyType,
+      paymentType: draft.paymentType,
       minPrice: parsePrice(draft.minPrice),
       maxPrice: parsePrice(draft.maxPrice),
       landClassification: draft.landClassification,
@@ -144,6 +153,20 @@ export function SearchFiltersPanel({ filters, onApply, className }) {
       </FilterSection>
       <div className="h-px bg-border" />
 
+      <FilterSection title={text.city}>
+        <div className="grid grid-cols-2 gap-3">
+          {CITIES.map((city) => (
+            <FilterOption
+              key={city}
+              label={city}
+              checked={draft.city.includes(city)}
+              onChange={(checked) => toggle('city', city, checked)}
+            />
+          ))}
+        </div>
+      </FilterSection>
+      <div className="h-px bg-border" />
+
       <FilterSection title={text.propertyType}>
         {PROPERTY_TYPES.map((type) => (
           <FilterOption
@@ -169,6 +192,18 @@ export function SearchFiltersPanel({ filters, onApply, className }) {
             onChange={(value) => setDraft({ ...draft, maxPrice: value })}
           />
         </div>
+      </FilterSection>
+      <div className="h-px bg-border" />
+
+      <FilterSection title={text.paymentType}>
+        {PAYMENT_TYPES.map((paymentType) => (
+          <FilterOption
+            key={paymentType}
+            label={PAYMENT_TYPE_LABELS[paymentType]}
+            checked={draft.paymentType.includes(paymentType)}
+            onChange={(checked) => toggle('paymentType', paymentType, checked)}
+          />
+        ))}
       </FilterSection>
       <div className="h-px bg-border" />
 

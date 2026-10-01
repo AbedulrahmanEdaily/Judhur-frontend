@@ -59,10 +59,12 @@ export function HomeHero() {
     if (priceRange !== '') range = HERO_PRICE_RANGES[Number(priceRange)];
     const types = [];
     if (propertyType) types.push(propertyType);
+    const cities = [];
+    if (city) cities.push(city);
     navigate(
       searchPath({
         propertyStatus: purpose,
-        city,
+        city: cities,
         propertyType: types,
         minPrice: range.minPrice,
         maxPrice: range.maxPrice,
