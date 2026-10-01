@@ -195,6 +195,8 @@ VITE_GOOGLE_CLIENT_ID=      # Google OAuth Web client ID (public); empty → the
 
 Real values go in `.env.local` (git-ignored). Read them only in `src/config/env.js` and import from there.
 
+Exception: the Google OAuth Web client ID is public (it ships in the page anyway), so it is committed in `.env.development` and `.env.production` and works without any local setup. `.env.local` still overrides it.
+
 ### Dev accounts
 
 The backend seeds an admin and a normal user on startup. Get the credentials from Abdulrahman (they're in the backend's database initializer) — never commit them to this repo. Newly registered users must confirm their email before they can log in.
