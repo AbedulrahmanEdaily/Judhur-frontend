@@ -51,7 +51,7 @@ function draftFrom(filters) {
  * Figma "الفلاتر" (52:865). Choices are staged here and reach the URL only on «طبّق الفلاتر».
  * The purpose is one choice; the checkbox lists take several (OR inside a list, AND between lists).
  * The city and payment sections are not in Figma: they copy the other checkbox sections, and the
- * twelve cities sit in two columns to keep the panel short.
+ * cities sit in two columns to keep the panel short.
  *
  * @param {{
  *   filters: import('../searchFilters.js').SearchFilters,
