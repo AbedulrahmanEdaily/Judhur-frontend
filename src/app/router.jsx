@@ -3,6 +3,7 @@ import { AppLayout } from '../components/layout/AppLayout.jsx';
 import { Spinner } from '../components/ui/Spinner.jsx';
 import NotFoundPage from '../features/errors/pages/NotFoundPage.jsx';
 import RouteErrorPage from '../features/errors/pages/RouteErrorPage.jsx';
+import { RequireAuth } from '../routes/RequireAuth.jsx';
 import { RequireGuest } from '../routes/RequireGuest.jsx';
 import { RequireRole } from '../routes/RequireRole.jsx';
 
@@ -90,6 +91,20 @@ export const router = createBrowserRouter([
             handle: { hideMobileTopBar: true },
             lazy: async () => ({
               Component: (await import('../features/properties/pages/EditPropertyPage.jsx'))
+                .default,
+            }),
+          },
+        ],
+      },
+      {
+        // Any signed-in role: users and admins both get notifications.
+        element: <RequireAuth />,
+        children: [
+          {
+            path: 'notifications',
+            handle: { hideMobileTopBar: true },
+            lazy: async () => ({
+              Component: (await import('../features/notifications/pages/NotificationsPage.jsx'))
                 .default,
             }),
           },

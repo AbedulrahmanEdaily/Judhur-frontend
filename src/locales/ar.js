@@ -568,7 +568,7 @@ export const ar = {
   },
   favorites: {
     // Figma "المفضلة — مستخدم" (75:815). Figma's subtitle adds «— بنعلمك لو تغيّر سعر أي واحد
-    // فيهم.»; there are no notifications yet, so that promise is left out.
+    // فيهم.»; notifications cover only approve / reject, so that promise is left out.
     title: 'المفضلة',
     subtitle: (count) => `${count} عقارات محفوظة`,
     save: 'حفظ', // details «حفظ» (65:1177)
@@ -580,6 +580,23 @@ export const ar = {
     emptyTitle: 'ما حفظت ولا عقار لسا',
     emptyText: 'اضغط على القلب بأي عقار بيعجبك، وبتلاقيه هون.',
     browse: 'تصفّح العقارات',
+    previousPage: 'رجوع للصفحة السابقة',
+  },
+  notifications: {
+    // Figma "الإشعارات — مستخدم" (76:1172)
+    title: 'الإشعارات',
+    unread: (count) => `${count} إشعارات غير مقروءة`,
+    markAllRead: 'علّم الكل كمقروء',
+    today: 'اليوم',
+    yesterday: 'أمس',
+    // not in Figma
+    unreadOne: 'إشعار واحد غير مقروء',
+    markAllReadMenu: 'تعليم الكل كمقروء', // the bell dropdown
+    viewAll: 'عرض الكل',
+    bell: (count) => `الإشعارات، ${count} غير مقروءة`,
+    unreadMark: 'غير مقروء',
+    emptyTitle: 'لا توجد إشعارات بعد',
+    emptyText: 'لما ينقبل أو ينرفض عقار إلك، بيوصلك إشعار هون.',
     previousPage: 'رجوع للصفحة السابقة',
   },
   admin: {

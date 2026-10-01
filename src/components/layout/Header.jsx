@@ -1,12 +1,13 @@
 import { useSelector } from 'react-redux';
 import { Link, NavLink } from 'react-router';
 import clsx from 'clsx';
-import { IconAdminShield, IconBell, IconChat } from '../icons/index.js';
+import { IconAdminShield, IconChat } from '../icons/index.js';
 import { AccountMenu } from './AccountMenu.jsx';
 import { HeaderSearch } from './HeaderSearch.jsx';
 import { Logo } from './Logo.jsx';
 import { ThemeToggle } from './ThemeToggle.jsx';
 import { selectIsAdmin, selectIsAuthenticated } from '../../features/auth/authSlice.js';
+import { NotificationsBell } from '../../features/notifications/components/NotificationsBell.jsx';
 import { ar } from '../../locales/ar.js';
 
 // Links without `to` point at pages that are not built yet: they stay visible, not clickable.
@@ -116,14 +117,7 @@ export function Header() {
                 {ar.nav.addProperty}
               </Link>
             )}
-            <button
-              type="button"
-              aria-disabled="true"
-              aria-label={ar.nav.notifications}
-              className={iconButtonClasses}
-            >
-              <IconBell />
-            </button>
+            <NotificationsBell className={iconButtonClasses} />
             <button
               type="button"
               aria-disabled="true"

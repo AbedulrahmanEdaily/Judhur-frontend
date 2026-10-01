@@ -16,6 +16,8 @@ export const baseApi = createApi({
     'FavoriteIds',
     'PendingProperties',
     'ReviewProperty',
+    'Notifications',
+    'UnreadCount',
   ],
   endpoints: () => ({}),
 });

@@ -5,6 +5,7 @@ import { PageTopBar } from '../../../components/layout/PageTopBar.jsx';
 import {
   IconAlertBell,
   IconFieldChevron,
+  IconNavNotifications,
   IconPlus17,
   IconRowChats,
   IconRowFavorites,
@@ -21,6 +22,7 @@ import { Skeleton } from '../../../components/ui/Skeleton.jsx';
 import { selectCurrentUser } from '../../auth/authSlice.js';
 import { useLogout } from '../../auth/hooks/useLogout.js';
 import { useFavoriteIds } from '../../favorites/useFavoriteIds.js';
+import { useUnreadCount } from '../../notifications/useUnreadCount.js';
 import { PropertyPhoto } from '../../properties/components/PropertyPhoto.jsx';
 import {
   OWNER_STATE_LABELS,
@@ -54,6 +56,7 @@ export default function DashboardPage() {
   const { logout, isLoggingOut } = useLogout();
   const mine = useGetMyPropertiesQuery();
   const favorites = useFavoriteIds();
+  const unread = useUnreadCount();
   const latest = useGetPropertiesQuery(LATEST_QUERY);
 
   const myProperties = mine.data ?? [];
@@ -260,19 +263,39 @@ export default function DashboardPage() {
               <IconFieldChevron className="shrink-0 rotate-90 text-muted" />
             </Link>
           </li>
-          {[
-            { label: nav.chats, Icon: IconRowChats },
-            { label: nav.profile, Icon: IconRowProfile },
-          ].map(({ label, Icon }) => (
-            <li key={label} aria-disabled="true" className="flex items-center gap-3 px-4 py-[15px]">
-              <Icon className="shrink-0 text-muted" />
-              <span className="text-[14.5px] leading-[1.72] text-text-secondary">{label}</span>
+          <li aria-disabled="true" className="flex items-center gap-3 px-4 py-[15px]">
+            <IconRowChats className="shrink-0 text-muted" />
+            <span className="text-[14.5px] leading-[1.72] text-text-secondary">{nav.chats}</span>
+            <span className="flex-1" />
+            <span className="rounded-full bg-inset px-2 py-0.5 text-[11px] leading-[1.72] font-semibold text-muted">
+              {nav.soon}
+            </span>
+          </li>
+          {/* Not in the mobile Figma list: the notifications page has no other way in on a phone. */}
+          <li>
+            <Link
+              to="/notifications"
+              className="flex items-center gap-3 px-4 py-[15px] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand"
+            >
+              <IconNavNotifications width={19} height={19} className="shrink-0 text-muted" />
+              <span className="text-[14.5px] leading-[1.72] text-text">{nav.notifications}</span>
               <span className="flex-1" />
-              <span className="rounded-full bg-inset px-2 py-0.5 text-[11px] leading-[1.72] font-semibold text-muted">
-                {nav.soon}
-              </span>
-            </li>
-          ))}
+              {unread.count > 0 && (
+                <span className="rounded-full bg-inset px-2 py-0.5 text-[11px] leading-[1.72] font-semibold text-muted">
+                  {formatNumber(unread.count)}
+                </span>
+              )}
+              <IconFieldChevron className="shrink-0 rotate-90 text-muted" />
+            </Link>
+          </li>
+          <li aria-disabled="true" className="flex items-center gap-3 px-4 py-[15px]">
+            <IconRowProfile className="shrink-0 text-muted" />
+            <span className="text-[14.5px] leading-[1.72] text-text-secondary">{nav.profile}</span>
+            <span className="flex-1" />
+            <span className="rounded-full bg-inset px-2 py-0.5 text-[11px] leading-[1.72] font-semibold text-muted">
+              {nav.soon}
+            </span>
+          </li>
           <li>
             <button
               type="button"
