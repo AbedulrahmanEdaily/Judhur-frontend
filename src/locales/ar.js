@@ -97,7 +97,9 @@ export const ar = {
     google: 'المتابعة باستخدام Google',
     // not in Figma: Google sign-in states and the first-time step
     googleFailed: 'تعذّر التحقق من حساب Google',
-    googleLoadFailed: 'تعذّر تحميل زر Google. حدّث الصفحة وجرّب مرة ثانية.',
+    googleCancelled: 'ألغيت الدخول بحساب Google.',
+    googleExpired: 'انتهت محاولة الدخول بحساب Google. جرّب مرة ثانية.',
+    googleBack: 'رجوع لتسجيل الدخول',
     googleSigningIn: 'جاري الدخول بحساب Google…',
     googleStep: {
       title: 'خطوة أخيرة',

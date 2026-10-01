@@ -108,7 +108,7 @@ If the Figma MCP is available in your session, read variables and components fro
 - Four access states: **guest**, **user** (buys and sells), **user who has listings**, **admin**.
 - A user with no listings sees a dashboard built around buyer value (search, saved/latest listings). The "My listings" section appears only after they add one — never show an empty seller dashboard.
 - **Every destructive action** (delete a listing, delete an account, deactivate, logout from all…) goes through a confirmation dialog. Never fire it on the first click.
-- Google sign-in sits next to email sign-in and sign-up (`POST /google`, section 6.3; Google's own button, section 8.6).
+- Google sign-in sits next to email sign-in and sign-up (`POST /google`, section 6.3; the Figma button sends the user to Google's sign-in page, section 8.6).
 
 ### Tokens
 
@@ -874,12 +874,14 @@ Must-haves:
 
 Call `POST /logout` with the refresh token, then **always** end the session locally (even if the call fails) and navigate to `/`.
 
-### 8.6 Google sign-in
+### 8.6 Google sign-in (redirect)
 
-- `src/lib/googleIdentity.js` loads `https://accounts.google.com/gsi/client` once (the first time a Google button mounts), runs `google.accounts.id.initialize({ client_id, callback })` once, and forwards each credential to the button on screen.
-- `GoogleSignInButton` (login and register) draws Google's official button with `google.accounts.id.renderButton` — `locale: 'ar'`, `text: 'continue_with'`, `size: 'large'`, as wide as the form up to Google's 400px limit, `filled_black` in dark mode. Without `VITE_GOOGLE_CLIENT_ID` it renders nothing; if the script can't load it shows a short note and the email form still works.
-- `{ credential }` is the `idToken` → `googleSignIn({ idToken })`. `Identity.GoogleRegistrationIncomplete` → the page shows `GoogleProfileStep` (phone + city, `googleProfileSchema`) with the same token held in `useState`.
-- The Web client's authorized JavaScript origins in the Google Cloud console must include each frontend origin (`http://localhost:5173` in development).
+- `GoogleSignInButton` (login and register) is the Figma button (70:1856) with Google's "G". A click calls `startGoogleSignIn` (`features/auth/googleSignIn.js`), which sends the browser to Google's sign-in page: `https://accounts.google.com/o/oauth2/v2/auth` with `client_id`, `redirect_uri=<origin>/auth/google`, `response_type=id_token`, `scope=openid email profile`, a `nonce`, a random `state` and `prompt=select_account`. No Google script is loaded.
+- Before leaving, `{ state, returnTo, startPath }` is kept in `sessionStorage` (no token). `returnTo` is the login page's `?redirect=` (or `/`); `startPath` is the page to go back to.
+- Google returns to `/auth/google` (`GoogleCallbackPage`, outside `RequireGuest`). `readGoogleCallback` reads `id_token` from the URL fragment, checks the `state`, removes the fragment from the address bar at once, and clears the stored attempt. A cancel on Google (`error=access_denied`) or a wrong/missing state shows a message and «رجوع لتسجيل الدخول», with no API call.
+- The idToken goes to `googleSignIn({ idToken })` as is (never decoded). Success → `sessionStarted` → on to `returnTo`. `Identity.GoogleRegistrationIncomplete` → `GoogleProfileStep` (phone + city, `googleProfileSchema`) on the same page, with the token in `useState` only.
+- Without `VITE_GOOGLE_CLIENT_ID` the button and the divider are hidden.
+- Google Cloud console, OAuth Web client: add `<origin>/auth/google` under **Authorized redirect URIs** for each frontend origin (`http://localhost:5173/auth/google` in development). Without it Google answers `redirect_uri_mismatch`.
 
 ### 8.7 Route guards
 
@@ -942,6 +944,7 @@ API paths below are relative to the base paths in section 6.1.
 | `/login` | guest | Login + Google | `POST /login`, `POST /google` |
 | `/register` | guest | Sign-up + Google | `POST /register`, `POST /google` |
 | `/register/check-email` | guest | "Check your email" + resend | `POST /resend-confirmation` |
+| `/auth/google` | public | Google sends the user back here; signs in, or asks phone + city the first time | `POST /google` |
 | `/confirm-email` | public | Confirms from the email link | `POST /confirm-email` |
 | `/forgot-password` | guest | Ask for a reset code | `POST /send-reset-password-code` |
 | `/reset-password` | guest | Code + new password | `POST /change-password` |

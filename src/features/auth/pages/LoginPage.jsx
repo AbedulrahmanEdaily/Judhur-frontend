@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Link } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import { IconBackArrow } from '../../../components/icons/index.js';
 import { Checkbox } from '../../../components/ui/Checkbox.jsx';
 import { FormAlert } from '../../../components/form/FormAlert.jsx';
@@ -9,20 +9,19 @@ import { applyServerErrors } from '../../../components/form/applyServerErrors.js
 import { AuthInput } from '../components/AuthInput.jsx';
 import { AuthSplitLayout } from '../components/AuthSplitLayout.jsx';
 import { AuthSubmitButton } from '../components/AuthSubmitButton.jsx';
-import { GoogleProfileStep } from '../components/GoogleProfileStep.jsx';
 import { GoogleSignInButton } from '../components/GoogleSignInButton.jsx';
 import { PasswordField } from '../components/PasswordField.jsx';
 import { useLoginMutation } from '../authApi.js';
 import { loginSchema } from '../schemas.js';
+import { safeRedirectPath } from '../../../routes/redirect.js';
 import { ar } from '../../../locales/ar.js';
 
 /** Figma "تسجيل الدخول — زائر" (69:1159) and "تسجيل الدخول — موبايل" (84:716). */
 export default function LoginPage() {
   const text = ar.auth.login;
+  const [searchParams] = useSearchParams();
   const [login] = useLoginMutation();
   const [failure, setFailure] = useState(null);
-  // A first-time Google user's idToken while they add phone and city (state only, never stored).
-  const [googleIdToken, setGoogleIdToken] = useState(null);
 
   const {
     register,
@@ -48,17 +47,6 @@ export default function LoginPage() {
     }
   }
 
-  if (googleIdToken) {
-    return (
-      <AuthSplitLayout
-        mobileTitle={ar.auth.googleStep.title}
-        mobileSubtitle={ar.auth.googleStep.subtitle}
-      >
-        <GoogleProfileStep idToken={googleIdToken} onBack={() => setGoogleIdToken(null)} />
-      </AuthSplitLayout>
-    );
-  }
-
   return (
     <AuthSplitLayout mobileTitle={text.mobileTitle} mobileSubtitle={text.subtitle}>
       <Link
@@ -75,7 +63,7 @@ export default function LoginPage() {
         {text.subtitle}
       </p>
 
-      <GoogleSignInButton onNeedsProfile={setGoogleIdToken} />
+      <GoogleSignInButton returnTo={safeRedirectPath(searchParams.get('redirect'))} />
 
       <form
         onSubmit={handleSubmit(onSubmit)}

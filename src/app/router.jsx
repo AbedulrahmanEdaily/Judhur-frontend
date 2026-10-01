@@ -161,6 +161,14 @@ export const router = createBrowserRouter([
         ],
       },
       {
+        // Google returns here after its sign-in page (outside RequireGuest: the page itself
+        // sends the user on once the session starts).
+        path: 'auth/google',
+        lazy: async () => ({
+          Component: (await import('../features/auth/pages/GoogleCallbackPage.jsx')).default,
+        }),
+      },
+      {
         path: 'confirm-email',
         lazy: async () => ({
           Component: (await import('../features/auth/pages/ConfirmEmailPage.jsx')).default,
