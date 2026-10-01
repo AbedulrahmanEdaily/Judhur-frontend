@@ -91,11 +91,12 @@ export function GoogleSignInButton({ onNeedsProfile }) {
         </p>
       )}
       {!loadFailed && (
-        // Google draws its 44px button in here.
+        // Google draws its 44px button in here, in an iframe. A light color-scheme keeps the
+        // iframe transparent in dark mode (else the browser paints a white box behind it).
         <div
           ref={containerRef}
           aria-busy={isLoading}
-          className="flex min-h-11 w-full justify-center"
+          className="flex min-h-11 w-full justify-center [color-scheme:light]"
         />
       )}
       {isLoading && (
