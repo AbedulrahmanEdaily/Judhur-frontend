@@ -37,7 +37,11 @@ export function MobileTabBar() {
   const isHome = pathname === '/';
   const isSearch = pathname === '/properties';
   const isAccount =
-    pathname === '/dashboard' || pathname === '/favorites' || pathname.startsWith('/my-properties');
+    pathname === '/dashboard' ||
+    pathname === '/favorites' ||
+    pathname === '/profile' ||
+    pathname === '/notifications' ||
+    pathname.startsWith('/my-properties');
 
   return (
     <nav
@@ -123,6 +127,13 @@ export function MobileTabBar() {
                 <p className="truncate text-body-sm text-text">{user?.email}</p>
               </div>
               <div className="my-1 h-px bg-border" />
+              <Link
+                to="/profile"
+                onClick={() => setIsAccountOpen(false)}
+                className="block rounded-sm px-3 py-2 text-body-sm text-text hover:bg-inset"
+              >
+                {ar.auth.account.profile}
+              </Link>
               <Link
                 to="/admin/properties"
                 onClick={() => setIsAccountOpen(false)}

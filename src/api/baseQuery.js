@@ -9,6 +9,7 @@ export const USER_PROPERTIES_PATH = '/api/v1/User/Properties';
 export const FAVORITES_PATH = '/api/v1/User/Favorites';
 export const ADMIN_PROPERTIES_PATH = '/api/v1/Admin/Properties';
 export const NOTIFICATIONS_PATH = '/api/v1/User/Notifications';
+export const SELLERS_PATH = '/api/v1/User/Sellers';
 
 const REFRESH_URL = `${ACCOUNT_PATH}/refresh-token`;
 

@@ -18,6 +18,8 @@ export const baseApi = createApi({
     'ReviewProperty',
     'Notifications',
     'UnreadCount',
+    'MyProfile',
+    'SellerProfile',
   ],
   endpoints: () => ({}),
 });

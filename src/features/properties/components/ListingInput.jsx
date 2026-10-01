@@ -5,13 +5,14 @@ import clsx from 'clsx';
  * Text field of the listing forms — Figma "أضف عقار" field (77:1240): label 13.5/1.72 semibold
  * (13 on mobile, 84:689), 7px gap (6 on mobile), box radius md with a 1px border/strong on
  * bg/canvas and 14×12 padding (13×11 here, as the stroke is inside in Figma), value 14.5 (14 on
- * mobile), and the unit (₪, م²) muted 12.5 at the end with a 10px gap. Works with register().
+ * mobile), and the unit (₪, م²) muted 12.5 — or a small button — at the end with a 10px gap.
+ * Works with register().
  *
  * @param {import('react').InputHTMLAttributes<HTMLInputElement> & {
  *   label: string,
  *   error?: string,
  *   hint?: string,
- *   suffix?: string,
+ *   suffix?: import('react').ReactNode,
  *   ref?: import('react').Ref<HTMLInputElement>,
  * }} props
  */

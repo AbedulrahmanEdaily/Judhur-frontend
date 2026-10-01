@@ -84,6 +84,8 @@ export const ar = {
       password: 'كلمة المرور لازم تحقق كل الشروط',
       code: 'الرمز يتكوّن من 6 أرقام',
       terms: 'لازم توافق على الشروط عشان تكمّل',
+      samePassword: 'كلمة المرور الجديدة لازم تختلف عن الحالية',
+      passwordsDiffer: 'كلمتا المرور مش متطابقتين',
     },
     // Figma register chips (69:1364…). "حرف صغير" is not in Figma — the API requires it.
     passwordRules: {
@@ -181,6 +183,7 @@ export const ar = {
     account: {
       menu: 'قائمة الحساب',
       signedInAs: 'مسجّل الدخول باسم',
+      profile: 'حسابي',
       logout: 'تسجيل الخروج',
     },
   },
@@ -265,6 +268,8 @@ export const ar = {
     verified: 'موثّق',
     share: 'مشاركة',
     linkCopied: 'تم نسخ رابط العقار', // not in Figma
+    viewSeller: 'عرض صفحة البائع', // not in Figma
+    sellerPage: (name) => `صفحة البائع ${name}`, // not in Figma (screen readers)
     area: 'المساحة',
     document: 'الوثيقة',
     legalTitle: 'الوضع القانوني للأرض',
@@ -554,6 +559,7 @@ export const ar = {
     viewDetails: 'عرض التفاصيل',
     // not in Figma
     welcome: 'مرحباً بك',
+    welcomeName: (firstName) => `مرحباً ${firstName}`, // Figma «مرحباً محمد»
     subtitle: 'تابع عقاراتك، أو دوّر على عقارك الجاي.',
     subtitlePending: (count) => `عندك ${count} قيد مراجعة الإدارة.`,
     buyerSubtitle: 'دوّر على عقارك الجاي، ولما يكون عندك عقار للبيع أو الإيجار أضفه من هون.',
@@ -580,6 +586,56 @@ export const ar = {
     emptyTitle: 'ما حفظت ولا عقار لسا',
     emptyText: 'اضغط على القلب بأي عقار بيعجبك، وبتلاقيه هون.',
     browse: 'تصفّح العقارات',
+    previousPage: 'رجوع للصفحة السابقة',
+  },
+  profile: {
+    // Figma "الملف الشخصي — مستخدم" (79:1500)
+    title: 'الملف الشخصي',
+    subtitle: 'بياناتك هاي بتظهر للمشترين على صفحة ملفك العام.',
+    personalTitle: 'البيانات الشخصية',
+    photo: 'صورة الملف',
+    changePhoto: 'غيّر الصورة',
+    bio: 'نبذة عنك',
+    save: 'احفظ التعديلات',
+    securityTitle: 'الأمان',
+    securityWithPassword: 'دخولك حالياً عبر البريد وكلمة المرور.',
+    currentPassword: 'كلمة المرور الحالية',
+    newPassword: 'كلمة المرور الجديدة',
+    // not in Figma
+    photoHint: 'JPG أو PNG أو WEBP · حتى 5 ميجا',
+    photoType: 'نوع الصورة لازم يكون JPG أو PNG أو WEBP',
+    photoSize: 'حجم الصورة لازم ما يزيد عن 5 ميجا',
+    photoSaved: 'انحفظت صورة الملف',
+    deletePhoto: 'احذف الصورة',
+    photoDeleted: 'انحذفت صورة الملف',
+    confirmDeletePhoto: {
+      title: 'حذف صورة الملف؟',
+      description: 'بترجع صورتك للحرف الأول من اسمك، وبتقدر ترفع صورة جديدة بأي وقت.',
+      confirm: 'احذف الصورة',
+    },
+    emailReadOnly: 'البريد هو اسم الدخول، وما بينغيّر من هون.',
+    saved: 'انحفظت بياناتك',
+    viewPublic: 'شوف صفحتك العامة',
+    securityGoogle: 'دخولك حالياً عبر Google. عيّن كلمة مرور لتقدر تدخل بالبريد كمان.',
+    confirmPassword: 'تأكيد كلمة المرور الجديدة',
+    changePassword: 'تغيير كلمة المرور',
+    setPassword: 'تعيين كلمة مرور',
+    passwordChanged: 'تغيّرت كلمة المرور',
+    passwordSet: 'صار عندك كلمة مرور، وبتقدر تدخل فيها بالبريد',
+    loadError: 'ما قدرنا نجيب بياناتك',
+  },
+  sellers: {
+    // Figma "ملف البائع — زائر" (73:1373)
+    memberSince: (date) => `عضو منذ ${date}`,
+    listingsCount: (count) => `${count} عقار معروض`,
+    listingsTab: (count) => `عقاراته (${count})`,
+    // not in Figma
+    listingsTitle: 'عقاراته',
+    noListingsTitle: 'ما عنده عقارات معروضة حالياً',
+    noListingsText: 'لما ينشر عقار جديد بيظهر هون.',
+    notFoundTitle: 'البائع غير موجود',
+    notFoundText: 'يمكن الرابط غلط أو الحساب انحذف.',
+    backToSearch: 'تصفّح العقارات',
     previousPage: 'رجوع للصفحة السابقة',
   },
   notifications: {

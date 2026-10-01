@@ -17,7 +17,6 @@ const text = ar.accountNav;
 
 // Pages without an API yet stay in the list, not clickable, marked «قريباً».
 const chatsItem = { label: text.chats, Icon: IconNavChats };
-const profileItem = { label: text.profile, Icon: IconNavProfile };
 
 const itemClasses =
   'flex items-center gap-2.5 rounded-md px-3.5 py-[11px] text-[14.5px] leading-[1.72] focus-visible:outline-2 focus-visible:outline-brand';
@@ -108,7 +107,10 @@ export function AccountShell({ listingsCount, children }) {
               </span>
             )}
           </NavLink>
-          {renderUpcomingItem(profileItem)}
+          <NavLink to="/profile" className={navItemClasses}>
+            <IconNavProfile className="shrink-0" />
+            {text.profile}
+          </NavLink>
         </nav>
         <div className="flex min-w-0 flex-1 flex-col gap-4 xl:gap-5">{children}</div>
       </div>
