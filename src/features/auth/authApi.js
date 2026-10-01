@@ -26,6 +26,30 @@ export const authApi = baseApi.injectEndpoints({
       },
     }),
 
+    /**
+     * Sign in with Google: `idToken` is the credential from Google's button. 200 → TokenResponse,
+     * the session starts like a normal login. 400 `Identity.GoogleRegistrationIncomplete` → a
+     * first-time Google user: send the same idToken again with `phoneNumber` and `city`.
+     * 401 the Google token could not be verified · 403 unverified Google email or locked account.
+     */
+    googleSignIn: builder.mutation({
+      query: ({ idToken, phoneNumber, city }) => {
+        const body = { idToken };
+        if (phoneNumber) body.phoneNumber = phoneNumber;
+        if (city) body.city = city;
+        return { url: `${ACCOUNT_PATH}/google`, method: 'POST', body };
+      },
+      async onQueryStarted(args, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          setRememberSession(true);
+          dispatch(sessionStarted(data));
+        } catch {
+          // The page shows the error.
+        }
+      },
+    }),
+
     /** 201, empty body — a confirmation email is sent. 409 duplicate email/user name. */
     register: builder.mutation({
       query: (body) => ({ url: `${ACCOUNT_PATH}/register`, method: 'POST', body }),
@@ -60,6 +84,7 @@ export const authApi = baseApi.injectEndpoints({
 
 export const {
   useLoginMutation,
+  useGoogleSignInMutation,
   useRegisterMutation,
   useResendConfirmationMutation,
   useSendResetPasswordCodeMutation,

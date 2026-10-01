@@ -95,7 +95,16 @@ export const ar = {
     showPassword: 'إظهار كلمة المرور',
     hidePassword: 'إخفاء كلمة المرور',
     google: 'المتابعة باستخدام Google',
-    googleSoon: 'الدخول باستخدام Google قريباً', // not in Figma
+    // not in Figma: Google sign-in states and the first-time step
+    googleFailed: 'تعذّر التحقق من حساب Google',
+    googleLoadFailed: 'تعذّر تحميل زر Google. حدّث الصفحة وجرّب مرة ثانية.',
+    googleSigningIn: 'جاري الدخول بحساب Google…',
+    googleStep: {
+      title: 'خطوة أخيرة',
+      subtitle: 'هاي أول مرة بتدخل بحساب Google. ضيف رقم هاتفك ومدينتك وبنكمّل إنشاء حسابك.',
+      submit: 'إكمال إنشاء الحساب',
+      back: 'رجوع',
+    },
     orEmail: 'أو بالبريد الإلكتروني',
     orEmailShort: 'أو بالبريد',
     panel: {

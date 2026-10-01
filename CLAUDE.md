@@ -108,7 +108,7 @@ If the Figma MCP is available in your session, read variables and components fro
 - Four access states: **guest**, **user** (buys and sells), **user who has listings**, **admin**.
 - A user with no listings sees a dashboard built around buyer value (search, saved/latest listings). The "My listings" section appears only after they add one — never show an empty seller dashboard.
 - **Every destructive action** (delete a listing, delete an account, deactivate, logout from all…) goes through a confirmation dialog. Never fire it on the first click.
-- Google sign-in is planned next to email sign-up (backend not ready yet).
+- Google sign-in sits next to email sign-in and sign-up (`POST /google`, section 6.3; Google's own button, section 8.6).
 
 ### Tokens
 
@@ -190,6 +190,7 @@ export default defineConfig({
 # .env.example  (commit this)
 VITE_API_BASE_URL=          # empty in dev → same origin via the proxy; full URL in production
 VITE_HERE_API_KEY=          # HERE platform API key
+VITE_GOOGLE_CLIENT_ID=      # Google OAuth Web client ID (public); empty → the Google button is hidden
 ```
 
 Real values go in `.env.local` (git-ignored). Read them only in `src/config/env.js` and import from there.
@@ -338,6 +339,19 @@ All bodies are JSON. None of these require an `Authorization` header.
 - `403` **either** email not confirmed **or** account locked (5 failed attempts → locked for 5 minutes). Both are `403` with an Arabic `title` and no error code (backend request #3). On `403` show the server message plus a "resend confirmation email" link.
 - `400` validation.
 - **Single session per user:** logging in issues a new refresh token and deletes every older one. Logging in on another device ends the session here on its next refresh (section 8.4).
+
+#### `POST /google` — sign in with Google
+
+```json
+{ "idToken": "string (the credential from Google's button)", "phoneNumber": "string? (same regex as register)", "city": "string? (≤100)" }
+```
+
+- `200` → the same `TokenResponse` as `/login`: start the session exactly like a normal login (same `sessionStarted`, same persistence, same redirect).
+- `400` with the error key `Identity.GoogleRegistrationIncomplete` → a first-time Google user. Show a small step with phone and city (the register rules and messages), then send the **same** `idToken` again with `phoneNumber` and `city`. The token is valid for about an hour: keep it in component state only, never in storage.
+- `400` for an invalid phone or city → on the form fields as usual.
+- `401` → «تعذّر التحقق من حساب Google» · `403` → the server `title` (unverified Google email or locked account) · `429` → the usual rate-limit message.
+- An existing account with the same email is linked automatically.
+- Never decode the `idToken` to read the email; send it as received.
 
 #### `POST /confirm-email`
 
@@ -692,7 +706,6 @@ Only `Pending` listings that pass the readiness checklist (6.8) appear here.
 Nothing below exists — don't call it. Build nothing that depends on it without a `BACKEND_REQUESTS.md` entry.
 
 - Current user profile (`me`), edit profile, change password while logged in, delete account
-- Google sign-in
 - Notifications (next on the backend — the seller will be notified on approve/reject)
 - Conversations / messages (SignalR), reviews, reports
 - AI price estimation
@@ -719,7 +732,7 @@ src/
   features/
     auth/
       authSlice.js             # session state (section 8)
-      authApi.js               # injectEndpoints: login, register, confirmEmail, resend, sendResetCode, changePassword, logout
+      authApi.js               # injectEndpoints: login, googleSignIn, register, confirmEmail, resend, sendResetCode, changePassword, logout
       schemas.js               # zod schemas mirroring backend rules
       pages/                   # LoginPage, RegisterPage, CheckEmailPage, ConfirmEmailPage, ForgotPasswordPage, ResetPasswordPage
       components/
@@ -859,7 +872,14 @@ Must-haves:
 
 Call `POST /logout` with the refresh token, then **always** end the session locally (even if the call fails) and navigate to `/`.
 
-### 8.6 Route guards
+### 8.6 Google sign-in
+
+- `src/lib/googleIdentity.js` loads `https://accounts.google.com/gsi/client` once (the first time a Google button mounts), runs `google.accounts.id.initialize({ client_id, callback })` once, and forwards each credential to the button on screen.
+- `GoogleSignInButton` (login and register) draws Google's official button with `google.accounts.id.renderButton` — `locale: 'ar'`, `text: 'continue_with'`, `size: 'large'`, as wide as the form up to Google's 400px limit, `filled_black` in dark mode. Without `VITE_GOOGLE_CLIENT_ID` it renders nothing; if the script can't load it shows a short note and the email form still works.
+- `{ credential }` is the `idToken` → `googleSignIn({ idToken })`. `Identity.GoogleRegistrationIncomplete` → the page shows `GoogleProfileStep` (phone + city, `googleProfileSchema`) with the same token held in `useState`.
+- The Web client's authorized JavaScript origins in the Google Cloud console must include each frontend origin (`http://localhost:5173` in development).
+
+### 8.7 Route guards
 
 - `RequireAuth` → redirect to `/login?redirect=<current path>`; after login, return there.
 - `RequireGuest` → logged-in users skip `/login` and `/register`.
@@ -917,8 +937,8 @@ API paths below are relative to the base paths in section 6.1.
 | `/` | public | Home: hero with search box, type categories, the four latest listings | `GET /User/Properties?pageSize=4` |
 | `/properties` | public | Search with filters sidebar (drawer on mobile), sort, pagination; sold/rented ribbon on cards | `GET /User/Properties` |
 | `/properties/:id` | public | Details: gallery, key facts, description, map, seller card (phone rule, 6.5), heart | `GET /User/Properties/{id}` |
-| `/login` | guest | Login | `POST /login` |
-| `/register` | guest | Sign-up | `POST /register` |
+| `/login` | guest | Login + Google | `POST /login`, `POST /google` |
+| `/register` | guest | Sign-up + Google | `POST /register`, `POST /google` |
 | `/register/check-email` | guest | "Check your email" + resend | `POST /resend-confirmation` |
 | `/confirm-email` | public | Confirms from the email link | `POST /confirm-email` |
 | `/forgot-password` | guest | Ask for a reset code | `POST /send-reset-password-code` |

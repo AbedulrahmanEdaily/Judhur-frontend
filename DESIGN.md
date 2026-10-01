@@ -228,17 +228,17 @@ Status key:
 
 ### Parts of screens used as components
 
-| Figma node                                             | React                                                         | Status                                                            |
-| ------------------------------------------------------ | ------------------------------------------------------------- | ----------------------------------------------------------------- |
-| Footer «التذييل» (51:801)                              | `components/layout/Footer.jsx`                                | matches 2026-09-26                                                |
-| Mobile top bar «الشريط العلوي» (83:477)                | `components/layout/MobileTopBar.jsx`                          | matches 2026-09-26                                                |
-| Mobile tab bar «شريط التبويب» (83:577)                 | `components/layout/MobileTabBar.jsx`                          | matches 2026-09-26                                                |
-| Checkbox «مربع» (69:1254)                              | `components/ui/Checkbox.jsx`                                  | matches 2026-09-26 (checked state)                                |
-| Auth field «حقل» (69:1240, mobile 84:780)              | `features/auth/components/AuthInput.jsx`, `PasswordField.jsx` | matches 2026-09-26                                                |
-| Password rule chips (69:1364…)                         | `features/auth/components/PasswordRules.jsx`                  | matches 2026-09-26, with one chip changed (see "Could not match") |
-| Google button + «أو» divider                           | `features/auth/components/GoogleSignInButton.jsx`             | matches 2026-09-26                                                |
-| Auth card «بطاقة» (70:1253, 70:1314)                   | `features/auth/components/AuthCard.jsx`                       | matches 2026-09-26                                                |
-| Identity panel + form panel (69:1159, 69:1262, 84:716) | `features/auth/components/AuthSplitLayout.jsx`                | matches 2026-09-26                                                |
+| Figma node                                             | React                                                         | Status                                                                                                  |
+| ------------------------------------------------------ | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Footer «التذييل» (51:801)                              | `components/layout/Footer.jsx`                                | matches 2026-09-26                                                                                      |
+| Mobile top bar «الشريط العلوي» (83:477)                | `components/layout/MobileTopBar.jsx`                          | matches 2026-09-26                                                                                      |
+| Mobile tab bar «شريط التبويب» (83:577)                 | `components/layout/MobileTabBar.jsx`                          | matches 2026-09-26                                                                                      |
+| Checkbox «مربع» (69:1254)                              | `components/ui/Checkbox.jsx`                                  | matches 2026-09-26 (checked state)                                                                      |
+| Auth field «حقل» (69:1240, mobile 84:780)              | `features/auth/components/AuthInput.jsx`, `PasswordField.jsx` | matches 2026-09-26                                                                                      |
+| Password rule chips (69:1364…)                         | `features/auth/components/PasswordRules.jsx`                  | matches 2026-09-26, with one chip changed (see "Could not match")                                       |
+| Google button + «أو» divider                           | `features/auth/components/GoogleSignInButton.jsx`             | matches 2026-10-01 — Google's official button in place of the Figma placeholder (see "Could not match") |
+| Auth card «بطاقة» (70:1253, 70:1314)                   | `features/auth/components/AuthCard.jsx`                       | matches 2026-09-26                                                                                      |
+| Identity panel + form panel (69:1159, 69:1262, 84:716) | `features/auth/components/AuthSplitLayout.jsx`                | matches 2026-09-26                                                                                      |
 
 ---
 
@@ -432,9 +432,7 @@ Required for every UI change.
   - The design has no user-name field; the API requires `userName`.
   - The email is sent as the user name (BACKEND_REQUESTS #13).
 - **Forgot-password copy.** Figma says a link is emailed; the API emails a 6-digit code. The copy is kept word for word (BACKEND_REQUESTS #14).
-- **Google button.**
-  - The Figma logo layer is a placeholder («شعار Google (ضع الأصل هنا)»), so the placeholder icon is shown.
-  - Google sign-in isn't in the API, so a click shows «قريباً».
+- **Google button.** The Figma button (70:1856) has a placeholder logo layer («شعار Google (ضع الأصل هنا)»). Google requires its own button for sign-in, so the page draws Google's official button (`renderButton`, Arabic, «المتابعة باستخدام Google», outline in light mode, `filled_black` in dark mode) in its place; Google caps it at 400px, so on the 660px desktop form it is centered. The «أو بالبريد الإلكتروني» divider is unchanged. Without a client ID the button and the divider are hidden. The first-time Google step (phone + city) is not in Figma: it reuses the register fields and the auth layout.
 - **Check-email copy** says the link is valid for 24 hours. That comes from Figma; the backend's real lifetime is not in the contract.
 - **Browse and details fields the API doesn't return** (decided on 2026-09-30: the UI follows the backend). Left out:
   - category and city counts, and the filter counts;

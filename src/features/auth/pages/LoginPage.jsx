@@ -9,6 +9,7 @@ import { applyServerErrors } from '../../../components/form/applyServerErrors.js
 import { AuthInput } from '../components/AuthInput.jsx';
 import { AuthSplitLayout } from '../components/AuthSplitLayout.jsx';
 import { AuthSubmitButton } from '../components/AuthSubmitButton.jsx';
+import { GoogleProfileStep } from '../components/GoogleProfileStep.jsx';
 import { GoogleSignInButton } from '../components/GoogleSignInButton.jsx';
 import { PasswordField } from '../components/PasswordField.jsx';
 import { useLoginMutation } from '../authApi.js';
@@ -20,6 +21,8 @@ export default function LoginPage() {
   const text = ar.auth.login;
   const [login] = useLoginMutation();
   const [failure, setFailure] = useState(null);
+  // A first-time Google user's idToken while they add phone and city (state only, never stored).
+  const [googleIdToken, setGoogleIdToken] = useState(null);
 
   const {
     register,
@@ -45,6 +48,17 @@ export default function LoginPage() {
     }
   }
 
+  if (googleIdToken) {
+    return (
+      <AuthSplitLayout
+        mobileTitle={ar.auth.googleStep.title}
+        mobileSubtitle={ar.auth.googleStep.subtitle}
+      >
+        <GoogleProfileStep idToken={googleIdToken} onBack={() => setGoogleIdToken(null)} />
+      </AuthSplitLayout>
+    );
+  }
+
   return (
     <AuthSplitLayout mobileTitle={text.mobileTitle} mobileSubtitle={text.subtitle}>
       <Link
@@ -61,7 +75,7 @@ export default function LoginPage() {
         {text.subtitle}
       </p>
 
-      <GoogleSignInButton />
+      <GoogleSignInButton onNeedsProfile={setGoogleIdToken} />
 
       <form
         onSubmit={handleSubmit(onSubmit)}

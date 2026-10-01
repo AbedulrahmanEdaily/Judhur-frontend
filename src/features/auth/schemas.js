@@ -55,15 +55,20 @@ export const loginSchema = z.object({
   remember: z.boolean(),
 });
 
+const city = z.string().trim().min(1, messages.required).max(100, messages.maxLength(100));
+
 // The design has no user-name field; the page sends the email as userName.
 export const registerSchema = z.object({
   fullName: z.string().trim().min(1, messages.required).max(150, messages.maxLength(150)),
   email,
   phoneNumber,
-  city: z.string().trim().min(1, messages.required).max(100, messages.maxLength(100)),
+  city,
   password: newPassword,
   acceptTerms: z.boolean().refine((value) => value === true, messages.terms),
 });
+
+/** The first-time Google step: the same phone and city rules as register. */
+export const googleProfileSchema = z.object({ phoneNumber, city });
 
 export const emailSchema = z.object({ email });
 
