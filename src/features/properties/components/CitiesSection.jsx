@@ -2,12 +2,17 @@ import { useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { IconBackChevron } from '../../../components/icons/index.js';
 import { ar } from '../../../locales/ar.js';
+import bethlehemPhoto from '../../../assets/photos/cities/bethlehem.jpg';
 import hebronPhoto from '../../../assets/photos/cities/hebron.jpg';
+import jeninPhoto from '../../../assets/photos/cities/jenin.jpg';
 import jerichoPhoto from '../../../assets/photos/cities/jericho.jpg';
 import jerusalemPhoto from '../../../assets/photos/cities/jerusalem.jpg';
 import nablusPhoto from '../../../assets/photos/cities/nablus.jpg';
 import qalqilyaPhoto from '../../../assets/photos/cities/qalqilya.jpg';
+import ramallahPhoto from '../../../assets/photos/cities/ramallah.jpg';
+import salfitPhoto from '../../../assets/photos/cities/salfit.jpg';
 import tubasPhoto from '../../../assets/photos/cities/tubas.jpg';
+import tulkarmPhoto from '../../../assets/photos/cities/tulkarm.jpg';
 import { CITIES } from '../constants.js';
 import { searchPath } from '../searchFilters.js';
 import { PropertyPhoto } from './PropertyPhoto.jsx';
@@ -15,14 +20,19 @@ import { PropertyPhoto } from './PropertyPhoto.jsx';
 // A real photo of the city where we have one (supplied by the owner, not in Figma).
 const cityPhotos = {
   نابلس: nablusPhoto,
+  'رام الله': ramallahPhoto,
+  طولكرم: tulkarmPhoto,
+  جنين: jeninPhoto,
   الخليل: hebronPhoto,
   القدس: jerusalemPhoto,
+  'بيت لحم': bethlehemPhoto,
   قلقيلية: qalqilyaPhoto,
+  سلفيت: salfitPhoto,
   طوباس: tubasPhoto,
   أريحا: jerichoPhoto,
 };
 
-// The Figma illustration order (51:760), repeated for the cities without a photo yet.
+// The Figma illustration (51:760) for a city added to CITIES without a photo yet.
 const placeholders = ['morning', 'noon', 'sunset', 'noon', 'morning'];
 const cities = CITIES.map((name, index) => ({
   name,
