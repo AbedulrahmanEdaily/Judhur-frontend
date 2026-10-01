@@ -39,7 +39,7 @@ export function GoogleProfileStep({ idToken, onBack }) {
   async function onSubmit(values) {
     setFailure(null);
     try {
-      // On success the session starts and <RequireGuest> sends the user on.
+      // On success the session starts and the callback page sends the user on.
       await googleSignIn({ idToken, phoneNumber: values.phoneNumber, city: values.city }).unwrap();
     } catch (error) {
       const { problem, formMessage } = applyServerErrors(error, setError, FIELD_NAMES);
