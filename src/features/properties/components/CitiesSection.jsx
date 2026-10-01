@@ -3,6 +3,7 @@ import { Link } from 'react-router';
 import { IconBackChevron } from '../../../components/icons/index.js';
 import { ar } from '../../../locales/ar.js';
 import hebronPhoto from '../../../assets/photos/cities/hebron.jpg';
+import jerusalemPhoto from '../../../assets/photos/cities/jerusalem.jpg';
 import nablusPhoto from '../../../assets/photos/cities/nablus.jpg';
 import qalqilyaPhoto from '../../../assets/photos/cities/qalqilya.jpg';
 import tubasPhoto from '../../../assets/photos/cities/tubas.jpg';
@@ -14,6 +15,7 @@ import { PropertyPhoto } from './PropertyPhoto.jsx';
 const cityPhotos = {
   نابلس: nablusPhoto,
   الخليل: hebronPhoto,
+  القدس: jerusalemPhoto,
   قلقيلية: qalqilyaPhoto,
   طوباس: tubasPhoto,
 };
