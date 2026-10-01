@@ -8,6 +8,7 @@ import { applyServerErrors } from '../../../components/form/applyServerErrors.js
 import { AuthInput } from '../components/AuthInput.jsx';
 import { AuthSplitLayout } from '../components/AuthSplitLayout.jsx';
 import { AuthSubmitButton } from '../components/AuthSubmitButton.jsx';
+import { GoogleProfileStep } from '../components/GoogleProfileStep.jsx';
 import { GoogleSignInButton } from '../components/GoogleSignInButton.jsx';
 import { PasswordField } from '../components/PasswordField.jsx';
 import { PasswordRules } from '../components/PasswordRules.jsx';
@@ -37,6 +38,8 @@ export default function RegisterPage() {
   const navigate = useNavigate();
   const [registerAccount] = useRegisterMutation();
   const [failure, setFailure] = useState(null);
+  // A first-time Google user's idToken while they add phone and city (state only, never stored).
+  const [googleIdToken, setGoogleIdToken] = useState(null);
 
   const {
     register,
@@ -88,6 +91,17 @@ export default function RegisterPage() {
     }
   }
 
+  if (googleIdToken) {
+    return (
+      <AuthSplitLayout
+        mobileTitle={ar.auth.googleStep.title}
+        mobileSubtitle={ar.auth.googleStep.subtitle}
+      >
+        <GoogleProfileStep idToken={googleIdToken} onBack={() => setGoogleIdToken(null)} />
+      </AuthSplitLayout>
+    );
+  }
+
   return (
     <AuthSplitLayout mobileTitle={text.title} mobileSubtitle={text.subtitle}>
       <h1 className="hidden text-[30px] leading-[1.75] font-bold text-text xl:block">
@@ -97,7 +111,7 @@ export default function RegisterPage() {
         {text.subtitle}
       </p>
 
-      <GoogleSignInButton />
+      <GoogleSignInButton onNeedsProfile={setGoogleIdToken} />
 
       <form
         onSubmit={handleSubmit(onSubmit)}
