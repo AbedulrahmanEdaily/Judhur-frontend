@@ -249,7 +249,7 @@ The Arabic labels are in section 3.
 
 ### 6.2 Error format (ProblemDetails)
 
-Every error is `application/problem+json`. **All messages are Arabic**, account endpoints included.
+Every error is `application/problem+json`. **All messages are Arabic**, account endpoints included. **Every** ProblemDetails — `400` and framework-generated ones too — carries an Arabic `title`, `instance` (`"<METHOD> <path>"`) and `requestId`.
 
 **Validation / business-rule error — `400`:**
 
@@ -257,6 +257,8 @@ Every error is `application/problem+json`. **All messages are Arabic**, account 
 {
   "title": "البيانات المدخلة غير صالحة.",
   "status": 400,
+  "instance": "POST /api/v1/User/Properties",
+  "requestId": "0HN...",
   "errors": {
     "Price": ["السعر يجب أن يكون أكبر من صفر."],
     "PropertyErrors.MinImagesRequired": ["يجب رفع 3 صور على الأقل"]
@@ -291,7 +293,7 @@ Keys under `errors` are one of two kinds:
   }
   ```
   Show `title` and `detail`, then refetch.
-- Unhandled server errors: `500` with a generic `title` and a `detail`. Show a generic Arabic "حدث خطأ غير متوقع" plus the `requestId` when present (small, selectable text) so it can be reported. (Whether `requestId` is still on every body is backend request #15.)
+- Unhandled server errors: `500` with a generic `title` and a `detail`. Show a generic Arabic "حدث خطأ غير متوقع" plus the `requestId` (small, selectable text) so it can be reported. Every body carries it (backend request #15 is done); still treat it as optional, because a `429` or a middleware `401`/`403` may have no body at all.
 - `429 Too Many Requests` from rate-limited endpoints may have an empty body — always handle it by status.
 - `401`/`403` produced by the auth middleware itself (missing/expired token, wrong role) may have an empty body or a bare ProblemDetails without a meaningful `title`.
 
@@ -431,20 +433,21 @@ Query parameters (all optional; **omit** empty ones instead of sending `=`):
 | `page` | int | `1` | must be ≥ 1 |
 | `pageSize` | int | `10` | 1–100 |
 | `searchTerm` | string | — | matches the **title only**, case-insensitive, "contains" |
-| `city` | string | — | **exact** match |
+| `city` | string, repeatable | — | **exact** match; several values allowed, **at most 20** (more → `400` `PropertyErrors.TooManyCitiesInFilter`) |
 | `minPrice` | number | — | inclusive |
 | `maxPrice` | number | — | inclusive |
-| `propertyType` | enum | — | `Apartment` `House` `Land` `Office` `Storage` `Building` — the UI repeats it per value (BACKEND_REQUESTS #16) |
-| `propertyStatus` | enum | — | **only** `ForSale` or `ForRent` here |
-| `paymentType` | enum | — | `Cash` `Installments` `DownPaymentAndInstallments` `Negotiable` |
-| `landClassification` | enum | — | `A` `B` `C` — repeated per value (#16) |
-| `legalStatus` | enum | — | `Tabo` `Maliye` `Taswiye` — repeated per value (#16) |
+| `propertyType` | enum, repeatable | — | `Apartment` `House` `Land` `Office` `Storage` `Building` |
+| `propertyStatus` | enum, repeatable | — | **only** `ForSale` or `ForRent` here; the UI sends one value (a single choice) |
+| `paymentType` | enum, repeatable | — | `Cash` `Installments` `DownPaymentAndInstallments` `Negotiable` |
+| `landClassification` | enum, repeatable | — | `A` `B` `C` |
+| `legalStatus` | enum, repeatable | — | `Tabo` `Maliye` `Taswiye` |
 | `sortColumn` | string | `createdAt` | `createdAt` · `price` · `city` · `landClassification` (anything else → `createdAt`) |
 | `sortDirection` | string | `desc` | `asc` · `desc` |
 
 - `200` → `PaginatedList<PropertySummary>`.
 - Returns approved **and** active listings only. Without a `propertyStatus` filter this **includes `Sold` and `Rented`** — show a "تم البيع" / "تم التأجير" ribbon on those cards.
-- `400` invalid `page`/`pageSize`.
+- **Several values:** a repeatable param is sent once per value (`?city=نابلس&city=جنين&paymentType=Cash`), never comma-joined. Values of one filter are **OR**, different filters are **AND**. A single value still works.
+- `400` invalid `page`/`pageSize`, an invalid enum value, or more than 20 cities (`PropertyErrors.TooManyCitiesInFilter` — show its message).
 - ⚠️ Still no `createdAtUtc` or coordinates on summaries, so no "map of results" view yet (backend request #7).
 
 #### `GET /{propertyId}` — details
@@ -928,7 +931,7 @@ API paths below are relative to the base paths in section 6.1.
 
 ### Search state lives in the URL
 
-Filters, sort, and page are stored in the query string (`useSearchParams`), not in Redux, so results are shareable and survive refresh. `searchFilters.js` parses the URL into the API params (dropping empty and invalid values) and builds the URL back. Changing any filter resets `page` to 1. The text search runs on submit (header and home search boxes), not while typing. `propertyType`, `landClassification` and `legalStatus` take several values, sent as a repeated name (`?propertyType=Land&propertyType=House`); `toApiQuery` returns a query string because RTK Query would join a list with commas. Until the backend accepts it (BACKEND_REQUESTS #16) only the first value filters.
+Filters, sort, and page are stored in the query string (`useSearchParams`), not in Redux, so results are shareable and survive refresh. `searchFilters.js` parses the URL into the API params (dropping empty and invalid values) and builds the URL back. Changing any filter resets `page` to 1. The text search runs on submit (header and home search boxes), not while typing. `city`, `propertyType`, `paymentType`, `landClassification` and `legalStatus` take several values (checkboxes), sent as a repeated name (`?city=نابلس&city=جنين`); `toApiQuery` returns a query string because RTK Query would join a list with commas. Only city names from `CITIES` are kept (at most 20). `propertyStatus` stays a single choice. The home city cards, the hero search and `searchPath` start a search with one city.
 
 ### Every data-driven screen has four states
 
@@ -975,7 +978,7 @@ The contract gap list between this repo and the backend, at the repo root. Forma
 
 When Abdulrahman confirms something is done: mark it `done`, update section 6 of this file, then remove the workaround.
 
-### Status on 2026-09-30
+### Status on 2026-10-01
 
 | # | Title | Status |
 |---|---|---|
@@ -993,8 +996,8 @@ When Abdulrahman confirms something is done: mark it `done`, update section 6 of
 | 12 | Section 6.11 features | partly done — see 6.11 for the rest |
 | 13 | Register without a user name | open |
 | 14 | Password reset by link or code | open |
-| 15 | `requestId` on every ProblemDetails | open |
-| 16 | Several values per search filter | open — the UI already sends repeated values |
+| 15 | `requestId` on every ProblemDetails | done — with `instance`, on every error |
+| 16 | Several values per search filter | done — city, type, status, payment, land class, document; ≤ 20 cities |
 
 ---
 

@@ -75,7 +75,7 @@ export function CitiesSection() {
         {cities.map((city) => (
           <li key={city.name} className="w-[calc((100%-64px)/5)] shrink-0 snap-start">
             <Link
-              to={searchPath({ city: city.name })}
+              to={searchPath({ city: [city.name] })}
               className="relative flex h-[136px] flex-col justify-end overflow-hidden rounded-lg px-[18px] pb-[18px] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand"
             >
               <PropertyPhoto placeholder={city.photo} className="absolute inset-0" />

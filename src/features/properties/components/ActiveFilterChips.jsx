@@ -3,6 +3,7 @@ import { ar } from '../../../locales/ar.js';
 import {
   LAND_CLASSIFICATION_LABELS,
   LEGAL_STATUS_LABELS,
+  PAYMENT_TYPE_LABELS,
   PROPERTY_TYPE_LABELS,
 } from '../constants.js';
 import { formatPriceRange } from '../searchFilters.js';
@@ -11,7 +12,7 @@ const text = ar.search;
 
 /**
  * The chips for the filters that are set, in the Figma order (RTL). The purpose has no chip —
- * Figma shows it only in the panel's switch.
+ * Figma shows it only in the panel's switch. The city and payment chips are not in Figma.
  */
 function activeChips(filters) {
   const chips = [];
@@ -21,9 +22,14 @@ function activeChips(filters) {
   for (const type of filters.propertyType) {
     chips.push({ key: 'propertyType', value: type, label: PROPERTY_TYPE_LABELS[type] });
   }
-  if (filters.city) chips.push({ key: 'city', label: filters.city });
+  for (const city of filters.city) {
+    chips.push({ key: 'city', value: city, label: city });
+  }
   if (filters.minPrice || filters.maxPrice) {
     chips.push({ key: 'price', label: formatPriceRange(filters.minPrice, filters.maxPrice) });
+  }
+  for (const paymentType of filters.paymentType) {
+    chips.push({ key: 'paymentType', value: paymentType, label: PAYMENT_TYPE_LABELS[paymentType] });
   }
   for (const landClass of filters.landClassification) {
     chips.push({

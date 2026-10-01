@@ -104,14 +104,14 @@ Statuses last updated from the backend contract of 2026-09-30.
 
 ## 15. `requestId` on every ProblemDetails
 
-- Status: open
+- Status: done — every ProblemDetails, `400` and framework-generated ones included, carries `instance` (`"<METHOD> <path>"`), `requestId` and an Arabic `title`
 - Why the frontend needs it: a `500` screen shows the `requestId` so a failure can be reported. The contract of 2026-09-25 put `requestId` (and `instance`) on every error body; the examples in the contract of 2026-09-30 leave them out.
 - Endpoint / change wanted: confirm that every ProblemDetails, the `400` validation body included, still carries `requestId`.
-- Current workaround in the UI: the `requestId` is shown when present and left out when missing.
+- Current workaround in the UI: none — the `500` error screens show the `requestId`.
 
 ## 16. Several values per search filter
 
-- Status: open
+- Status: done — `city`, `propertyType`, `propertyStatus`, `paymentType`, `landClassification` and `legalStatus` take repeated values (OR inside one filter, AND between filters); at most 20 cities, else `400` `PropertyErrors.TooManyCitiesInFilter`; an invalid enum value is a `400`
 - Why the frontend needs it: the search filters in Figma (52:865) are checkboxes, so a buyer can pick several property types, land classes, or document types at once (for example «أرض» and «شقة», or «منطقة أ» and «منطقة ب»).
 - Endpoint / change wanted: `GET /api/v1/User/Properties` accepting repeated values for `propertyType`, `landClassification`, and `legalStatus` (e.g. `?propertyType=Land&propertyType=Apartment&landClassification=A&landClassification=B`), matching any value inside one filter and all filters together (type IN (…) AND class IN (…) AND document IN (…)). No comma-separated form — each value is its own parameter.
-- Current workaround in the UI: none — the checkboxes already allow several values and the request repeats the name once per value, exactly as above. Until the backend binds a list, ASP.NET keeps only the first value, so the results match the first ticked value only.
+- Current workaround in the UI: none — the city, type, payment, land-class and document checkboxes send one repeated parameter per ticked value; the purpose stays one choice.

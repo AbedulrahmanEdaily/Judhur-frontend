@@ -4,8 +4,7 @@ import { IconFilterCheck } from '../../../components/icons/index.js';
 /**
  * A checkbox row of the filters panel (Figma 52:889): the 19px box «مربع» (radius 6, 1.4px
  * border/strong, brand when ticked, 13px check), the label (semibold text/primary when ticked,
- * text/secondary otherwise), and an optional colored dot for the land classes. The API takes one
- * value per filter, so the parent unticks the others (BACKEND_REQUESTS #16).
+ * text/secondary otherwise), and an optional colored dot for the land classes.
  *
  * @param {{
  *   label: string,

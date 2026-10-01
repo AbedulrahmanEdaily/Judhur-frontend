@@ -1,10 +1,13 @@
 import { formatNumber, formatPrice } from '../../lib/format.js';
 import { ar } from '../../locales/ar.js';
 import {
+  CITIES,
   DEFAULT_SORT,
   LAND_CLASSIFICATIONS,
   LEGAL_STATUSES,
   LISTING_STATUSES,
+  MAX_SEARCH_CITIES,
+  PAYMENT_TYPES,
   PROPERTY_TYPES,
   SEARCH_PAGE_SIZE,
   SORT_OPTIONS,
@@ -15,11 +18,12 @@ import {
 /**
  * @typedef {Object} SearchFilters
  * @property {string} searchTerm
- * @property {string} city
+ * @property {string[]} city any of these
  * @property {number | null} minPrice
  * @property {number | null} maxPrice
- * @property {string[]} propertyType any of these (BACKEND_REQUESTS #16)
- * @property {string} propertyStatus
+ * @property {string[]} propertyType any of these
+ * @property {string} propertyStatus one choice
+ * @property {string[]} paymentType any of these
  * @property {string[]} landClassification any of these
  * @property {string[]} legalStatus any of these
  * @property {string} sort "<sortColumn>-<sortDirection>"
@@ -29,11 +33,12 @@ import {
 /** @type {SearchFilters} */
 export const EMPTY_FILTERS = {
   searchTerm: '',
-  city: '',
+  city: [],
   minPrice: null,
   maxPrice: null,
   propertyType: [],
   propertyStatus: '',
+  paymentType: [],
   landClassification: [],
   legalStatus: [],
   sort: DEFAULT_SORT,
@@ -76,11 +81,12 @@ export function readSearchFilters(searchParams) {
 
   return {
     searchTerm: (searchParams.get('searchTerm') ?? '').trim(),
-    city: (searchParams.get('city') ?? '').trim(),
+    city: pickAllowedList(searchParams.getAll('city'), CITIES).slice(0, MAX_SEARCH_CITIES),
     minPrice: readPositiveNumber(searchParams.get('minPrice')),
     maxPrice: readPositiveNumber(searchParams.get('maxPrice')),
     propertyType: pickAllowedList(searchParams.getAll('propertyType'), PROPERTY_TYPES),
     propertyStatus: pickAllowed(searchParams.get('propertyStatus'), LISTING_STATUSES),
+    paymentType: pickAllowedList(searchParams.getAll('paymentType'), PAYMENT_TYPES),
     landClassification: pickAllowedList(
       searchParams.getAll('landClassification'),
       LAND_CLASSIFICATIONS,
@@ -93,17 +99,18 @@ export function readSearchFilters(searchParams) {
 
 /**
  * Filters → the URL query (and the API query, minus paging). Empty values and the defaults
- * are left out. A list filter repeats its name once per value: `propertyType=Land&propertyType=House`.
+ * are left out. A list filter repeats its name once per value: `city=نابلس&city=جنين`.
  * @param {SearchFilters} filters
  */
 export function toSearchParams(filters) {
   const params = new URLSearchParams();
   if (filters.searchTerm) params.set('searchTerm', filters.searchTerm);
-  if (filters.city) params.set('city', filters.city);
+  for (const city of filters.city) params.append('city', city);
   if (filters.minPrice) params.set('minPrice', String(filters.minPrice));
   if (filters.maxPrice) params.set('maxPrice', String(filters.maxPrice));
   for (const type of filters.propertyType) params.append('propertyType', type);
   if (filters.propertyStatus) params.set('propertyStatus', filters.propertyStatus);
+  for (const paymentType of filters.paymentType) params.append('paymentType', paymentType);
   for (const landClass of filters.landClassification) {
     params.append('landClassification', landClass);
   }
@@ -146,10 +153,11 @@ export function searchPath(filters) {
  */
 export function countActiveFilters(filters) {
   let count = 0;
-  if (filters.city) count += 1;
   if (filters.minPrice || filters.maxPrice) count += 1;
   if (filters.propertyStatus) count += 1;
+  count += filters.city.length;
   count += filters.propertyType.length;
+  count += filters.paymentType.length;
   count += filters.landClassification.length;
   count += filters.legalStatus.length;
   return count;
