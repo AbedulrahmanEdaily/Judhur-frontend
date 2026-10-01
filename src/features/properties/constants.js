@@ -102,7 +102,6 @@ export const CITIES = [
   'سلفيت',
   'طوباس',
   'أريحا',
-  'غزة',
 ];
 
 // The API takes at most 20 cities in one search (PropertyErrors.TooManyCitiesInFilter).

@@ -2,15 +2,30 @@ import { useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { IconBackChevron } from '../../../components/icons/index.js';
 import { ar } from '../../../locales/ar.js';
+import hebronPhoto from '../../../assets/photos/cities/hebron.jpg';
+import jerusalemPhoto from '../../../assets/photos/cities/jerusalem.jpg';
+import nablusPhoto from '../../../assets/photos/cities/nablus.jpg';
+import qalqilyaPhoto from '../../../assets/photos/cities/qalqilya.jpg';
+import tubasPhoto from '../../../assets/photos/cities/tubas.jpg';
 import { CITIES } from '../constants.js';
 import { searchPath } from '../searchFilters.js';
 import { PropertyPhoto } from './PropertyPhoto.jsx';
 
-// The Figma photo order (51:760), repeated for every city in CITIES.
-const cityPhotos = ['morning', 'noon', 'sunset', 'noon', 'morning'];
+// A real photo of the city where we have one (supplied by the owner, not in Figma).
+const cityPhotos = {
+  نابلس: nablusPhoto,
+  الخليل: hebronPhoto,
+  القدس: jerusalemPhoto,
+  قلقيلية: qalqilyaPhoto,
+  طوباس: tubasPhoto,
+};
+
+// The Figma illustration order (51:760), repeated for the cities without a photo yet.
+const placeholders = ['morning', 'noon', 'sunset', 'noon', 'morning'];
 const cities = CITIES.map((name, index) => ({
   name,
-  photo: cityPhotos[index % cityPhotos.length],
+  photo: cityPhotos[name],
+  placeholder: placeholders[index % placeholders.length],
 }));
 
 const arrowClasses =
@@ -19,7 +34,9 @@ const arrowClasses =
 /**
  * Figma "المدن" (51:756). Five cards fit the width as in Figma; the rest of CITIES scroll
  * sideways with the arrow buttons (not in Figma) or a swipe. Each card opens the search for
- * that city. The listing counts are not in the API. Desktop only, as in Figma.
+ * that city. The listing counts are not in the API. Desktop only, as in Figma. A city with a
+ * real photo gets it under a lighter, bottom-heavy overlay so the place shows; the others keep
+ * the Figma illustration and overlay.
  */
 export function CitiesSection() {
   const listRef = useRef(null);
@@ -78,8 +95,23 @@ export function CitiesSection() {
               to={searchPath({ city: [city.name] })}
               className="relative flex h-[136px] flex-col justify-end overflow-hidden rounded-lg px-[18px] pb-[18px] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand"
             >
-              <PropertyPhoto placeholder={city.photo} className="absolute inset-0" />
-              <span className="absolute inset-0 bg-city-overlay" />
+              {city.photo && (
+                <>
+                  <img
+                    src={city.photo}
+                    alt=""
+                    loading="lazy"
+                    className="absolute inset-0 size-full object-cover"
+                  />
+                  <span className="absolute inset-0 bg-city-photo-overlay" />
+                </>
+              )}
+              {!city.photo && (
+                <>
+                  <PropertyPhoto placeholder={city.placeholder} className="absolute inset-0" />
+                  <span className="absolute inset-0 bg-city-overlay" />
+                </>
+              )}
               <span className="relative text-[18px] leading-[1.75] font-bold text-white">
                 {city.name}
               </span>

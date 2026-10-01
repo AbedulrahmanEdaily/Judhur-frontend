@@ -213,6 +213,11 @@
   background-image: linear-gradient(to bottom, rgb(9 28 23 / 0.52), rgb(9 28 23 / 0.7));
 }
 
+/* City cards with a real photo: clear at the top, dark under the name (not in Figma) */
+@utility bg-city-photo-overlay {
+  background-image: linear-gradient(to bottom, rgb(9 28 23 / 0.05) 30%, rgb(9 28 23 / 0.75));
+}
+
 @layer base {
   body {
     @apply bg-bg text-text font-sans text-body antialiased;
