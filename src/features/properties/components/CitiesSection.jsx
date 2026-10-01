@@ -3,6 +3,7 @@ import { Link } from 'react-router';
 import { IconBackChevron } from '../../../components/icons/index.js';
 import { ar } from '../../../locales/ar.js';
 import hebronPhoto from '../../../assets/photos/cities/hebron.jpg';
+import jerichoPhoto from '../../../assets/photos/cities/jericho.jpg';
 import jerusalemPhoto from '../../../assets/photos/cities/jerusalem.jpg';
 import nablusPhoto from '../../../assets/photos/cities/nablus.jpg';
 import qalqilyaPhoto from '../../../assets/photos/cities/qalqilya.jpg';
@@ -18,6 +19,7 @@ const cityPhotos = {
   القدس: jerusalemPhoto,
   قلقيلية: qalqilyaPhoto,
   طوباس: tubasPhoto,
+  أريحا: jerichoPhoto,
 };
 
 // The Figma illustration order (51:760), repeated for the cities without a photo yet.
