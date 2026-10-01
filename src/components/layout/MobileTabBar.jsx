@@ -36,7 +36,8 @@ export function MobileTabBar() {
   const [isAccountOpen, setIsAccountOpen] = useState(false);
   const isHome = pathname === '/';
   const isSearch = pathname === '/properties';
-  const isAccount = pathname === '/dashboard' || pathname.startsWith('/my-properties');
+  const isAccount =
+    pathname === '/dashboard' || pathname === '/favorites' || pathname.startsWith('/my-properties');
 
   return (
     <nav

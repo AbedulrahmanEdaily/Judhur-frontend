@@ -8,6 +8,7 @@ import {
   IconNavNotifications,
   IconNavProfile,
 } from '../icons/index.js';
+import { useFavoriteIds } from '../../features/favorites/useFavoriteIds.js';
 import { formatNumber } from '../../lib/format.js';
 import { ar } from '../../locales/ar.js';
 
@@ -15,7 +16,6 @@ const text = ar.accountNav;
 
 // Pages without an API yet stay in the list, not clickable, marked «قريباً».
 const upcomingItems = [
-  { label: text.favorites, Icon: IconNavFavorites },
   { label: text.chats, Icon: IconNavChats },
   { label: text.notifications, Icon: IconNavNotifications },
   { label: text.profile, Icon: IconNavProfile },
@@ -23,6 +23,14 @@ const upcomingItems = [
 
 const itemClasses =
   'flex items-center gap-2.5 rounded-md px-3.5 py-[11px] text-[14.5px] leading-[1.72] focus-visible:outline-2 focus-visible:outline-brand';
+
+/** The count pill: brand on the open page, bg/inset elsewhere. */
+function countClasses(isActive) {
+  return clsx(
+    'rounded-full px-2 py-0.5 text-[11px] leading-[1.72] font-semibold',
+    isActive ? 'bg-brand text-inverse' : 'bg-inset text-muted',
+  );
+}
 
 function navItemClasses({ isActive }) {
   return clsx(
@@ -36,12 +44,15 @@ function navItemClasses({ isActive }) {
  * The account pages' frame — Figma "المحتوى" of «لوحتي» / «عقاراتي» (74:594, 75:667): the page
  * on bg/surface with 70px sides, and from 1280px up the 264px sidebar (75:669) at the start:
  * items 14×11, radius md, 18px icon, 14.5 label; the active one on brand/subtle with a brand
- * count pill, the others text/secondary with a bg/inset pill.
+ * count pill, the others text/secondary with a bg/inset pill. The favorites count comes from
+ * the cached ids list (useFavoriteIds).
  *
  * @param {{ listingsCount?: number, children: import('react').ReactNode }} props
  */
 export function AccountShell({ listingsCount, children }) {
   const isListingsActive = useMatch({ path: '/my-properties', end: false }) !== null;
+  const isFavoritesActive = useMatch('/favorites') !== null;
+  const favorites = useFavoriteIds();
 
   return (
     <div className="min-h-full bg-surface">
@@ -59,13 +70,16 @@ export function AccountShell({ listingsCount, children }) {
             {text.myProperties}
             <span className="flex-1" />
             {listingsCount !== undefined && (
-              <span
-                className={clsx(
-                  'rounded-full px-2 py-0.5 text-[11px] leading-[1.72] font-semibold',
-                  isListingsActive ? 'bg-brand text-inverse' : 'bg-inset text-muted',
-                )}
-              >
-                {formatNumber(listingsCount)}
+              <span className={countClasses(isListingsActive)}>{formatNumber(listingsCount)}</span>
+            )}
+          </NavLink>
+          <NavLink to="/favorites" className={navItemClasses}>
+            <IconNavFavorites className="shrink-0" />
+            {text.favorites}
+            <span className="flex-1" />
+            {favorites.isLoaded && (
+              <span className={countClasses(isFavoritesActive)}>
+                {formatNumber(favorites.count)}
               </span>
             )}
           </NavLink>

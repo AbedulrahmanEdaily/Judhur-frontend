@@ -94,3 +94,4 @@ export { IconNavReports } from './IconNavReports.jsx';
 export { IconNavAi } from './IconNavAi.jsx';
 export { IconDocumentOpen } from './IconDocumentOpen.jsx';
 export { IconReject17 } from './IconReject17.jsx';
+export { IconFavoriteHeart } from './IconFavoriteHeart.jsx';

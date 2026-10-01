@@ -20,7 +20,7 @@ import { ErrorState } from '../../../components/ui/ErrorState.jsx';
 import { Skeleton } from '../../../components/ui/Skeleton.jsx';
 import { selectCurrentUser } from '../../auth/authSlice.js';
 import { useLogout } from '../../auth/hooks/useLogout.js';
-import { useGetFavoriteIdsQuery } from '../../favorites/favoritesApi.js';
+import { useFavoriteIds } from '../../favorites/useFavoriteIds.js';
 import { PropertyPhoto } from '../../properties/components/PropertyPhoto.jsx';
 import {
   OWNER_STATE_LABELS,
@@ -53,7 +53,7 @@ export default function DashboardPage() {
   const user = useSelector(selectCurrentUser);
   const { logout, isLoggingOut } = useLogout();
   const mine = useGetMyPropertiesQuery();
-  const favoriteIds = useGetFavoriteIdsQuery();
+  const favorites = useFavoriteIds();
   const latest = useGetPropertiesQuery(LATEST_QUERY);
 
   const myProperties = mine.data ?? [];
@@ -65,7 +65,7 @@ export default function DashboardPage() {
     if (state === 'published') publishedCount += 1;
     if (state === 'pending' && !firstPending) firstPending = property;
   }
-  const favoritesCount = favoriteIds.data?.length ?? 0;
+  const favoritesCount = favorites.count;
 
   let subtitle = text.buyerSubtitle;
   if (hasListings) subtitle = text.subtitle;
@@ -244,8 +244,23 @@ export default function DashboardPage() {
               <IconFieldChevron className="shrink-0 rotate-90 text-muted" />
             </Link>
           </li>
+          <li>
+            <Link
+              to="/favorites"
+              className="flex items-center gap-3 px-4 py-[15px] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand"
+            >
+              <IconRowFavorites className="shrink-0 text-muted" />
+              <span className="text-[14.5px] leading-[1.72] text-text">{nav.favorites}</span>
+              <span className="flex-1" />
+              {favorites.isLoaded && (
+                <span className="rounded-full bg-inset px-2 py-0.5 text-[11px] leading-[1.72] font-semibold text-muted">
+                  {formatNumber(favoritesCount)}
+                </span>
+              )}
+              <IconFieldChevron className="shrink-0 rotate-90 text-muted" />
+            </Link>
+          </li>
           {[
-            { label: nav.favorites, Icon: IconRowFavorites },
             { label: nav.chats, Icon: IconRowChats },
             { label: nav.profile, Icon: IconRowProfile },
           ].map(({ label, Icon }) => (
