@@ -669,6 +669,7 @@ Only `Pending` listings that pass the readiness checklist (6.8) appear here.
 
 - Works for **any** moderation state. `404` if missing.
 - Open the document in a new tab (`target="_blank" rel="noopener noreferrer"`). It can be a PDF or an image. After `ownershipDocumentExpiresAtUtc`, refetch the page to get a new link — **never** store or cache the link beyond that.
+- The review page also previews it in the document card (`ReviewDocumentCard`): an `<img>` for `.jpg/.jpeg/.png/.webp`, an `<object type="application/pdf">` for `.pdf` when `navigator.pdfViewerEnabled` is not `false`; any other type, a failed image, or no PDF viewer shows a short note. The preview follows the refreshed link, and «افتح بحجم كامل» stays.
 
 #### `POST /{propertyId}/approve`
 

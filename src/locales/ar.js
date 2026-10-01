@@ -617,9 +617,11 @@ export const ar = {
     openReview: 'افتح المراجعة',
     reviewSubtitle: (seller, time) => `أرسله ${seller} ${time}`,
     reviewSubtitleNoSeller: (time) => `أُرسل ${time}`,
-    documentHint: 'الرابط صالح لعشر دقائق ويتجدّد لحاله.',
     noDocument: 'ما في وثيقة مرفوعة لهاد العقار.',
     documentRefreshing: 'جاري تجديد رابط الوثيقة…',
+    // not in Figma: the preview inside the document card
+    documentPreview: (legalStatus) => `معاينة وثيقة الملكية — ${legalStatus}`,
+    documentPreviewFailed: 'ما قدرنا نعرض الوثيقة هون — افتحها بحجم كامل.',
     moreFacts: {
       type: 'النوع',
       purpose: 'الغرض',
