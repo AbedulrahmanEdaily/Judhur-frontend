@@ -3,7 +3,7 @@
 > Project context for Claude Code working in the **frontend repository**. Read this whole file before writing code.
 > The backend lives in a **separate repository** that you cannot see. Section 6 (API contract) is your only source of truth for the backend — never guess an endpoint, a field name, or a status code.
 >
-> Contract snapshot taken from the backend source on 2026-09-30 (backend `main` + the `feature/Favorite` branch); notifications added 2026-10-01.
+> Contract snapshot taken from the backend source on 2026-09-30 (backend `main` + the `feature/Favorite` branch); notifications, my profile and the public seller page added 2026-10-01.
 >
 > **Read DESIGN.md before any UI work; for anything visual it overrides this file.**
 
@@ -215,6 +215,7 @@ The backend seeds an admin and a normal user on startup. Get the credentials fro
 | Public + seller properties | `/api/v1/User/Properties/...` | yes (always `v1` for now) |
 | Favorites | `/api/v1/User/Favorites/...` | yes |
 | Notifications | `/api/v1/User/Notifications/...` | yes |
+| Public seller page | `/api/v1/User/Sellers/...` | yes |
 | Admin moderation | `/api/v1/Admin/Properties/...` | yes |
 
 - The path constants live in `src/api/baseQuery.js`. Paths are case-insensitive on the server; use exactly the casing shown here.
@@ -231,6 +232,8 @@ The backend seeds an admin and a normal user on startup. Get the credentials fro
 | Every other `/User/Properties/*` (seller actions) | `401` | ✅ | `403` |
 | `/User/Favorites/*` | `401` | ✅ | `403` |
 | `/User/Notifications/*` | `401` | ✅ | ✅ |
+| `GET /User/Sellers/{id}` | ✅ | ✅ | ✅ |
+| `/Identity/Account/me*` (6.12) | `401` | ✅ | ✅ |
 | `/Admin/Properties/*` | `401` | `403` | ✅ |
 
 Admins never create, own, or favorite listings. Hide those actions for admins in the UI.
@@ -306,28 +309,25 @@ One helper, `src/lib/http/problemDetails.js`, turns any RTK Query error into `{ 
 
 ### 6.3 Account endpoints — `/api/Identity/Account`
 
-All bodies are JSON. None of these require an `Authorization` header.
+All bodies are JSON. None of these require an `Authorization` header (the `/me` endpoints are in 6.12).
 
 #### `POST /register`
 
 ```json
 {
-  "userName": "string (required, ≤256)",
   "fullName": "string (required, ≤150)",
   "email": "string (required, valid email, ≤256)",
   "phoneNumber": "string (required, see regex)",
   "city": "string (required, ≤100)",
   "bio": "string | null (≤1000)",
-  "profileImageUrl": "string | null (≤500)",
   "password": "string (required, ≥8, one uppercase, one lowercase, one digit)"
 }
 ```
 
 - `201 Created`, **empty body**. The backend emails a confirmation link. Navigate to a "check your email" screen that offers "resend".
-- `400` validation · `409` duplicate email or user name (message in `title`).
+- `400` validation · `409` duplicate email: `errors["Identity.DuplicateEmail"]` (one error only) → on the email field.
 - Phone regex (Palestinian/Israeli mobile formats): `^(?:\+?(?:970|972)\d{9}|05\d{8})$`
-- ⚠️ `bio` and `profileImageUrl` are accepted but **not saved** by the backend yet (backend request #6). Don't build UI that depends on them persisting.
-- ⚠️ `userName` is still required, but the design has no user-name field — the email is sent as `userName` (backend request #13).
+- There is **no user name**: the email is the login. Don't send `userName` or `profileImageUrl` (the photo is uploaded later on `/profile`, 6.12).
 
 #### `POST /login`
 
@@ -426,6 +426,17 @@ All bodies are JSON. None of these require an `Authorization` header.
 // UserInfo (the seller)
 { id: string, fullName: string, phoneNumber?: string, profileImageUrl?: string }
 
+// MyProfile — GET /me (6.12)
+{
+  id: string, fullName: string, email: string, phoneNumber?: string, city: string,
+  bio?: string, profileImageUrl?: string,
+  roles: string[], hasPassword: boolean,   // hasPassword false = a Google-only account
+  createdAtUtc: string
+}
+
+// SellerProfile — GET /User/Sellers/{id} (6.13); never the email or the phone
+{ id: string, fullName: string, profileImageUrl?: string, city: string, bio?: string, memberSinceUtc: string, activeListingsCount: number }
+
 // PropertySummary — search results AND favorites list (same card)
 {
   id: string, title: string, price: number,
@@ -461,6 +472,7 @@ Query parameters (all optional; **omit** empty ones instead of sending `=`):
 | `legalStatus` | enum, repeatable | — | `Tabo` `Maliye` `Taswiye` |
 | `sortColumn` | string | `createdAt` | `createdAt` · `price` · `city` · `landClassification` (anything else → `createdAt`) |
 | `sortDirection` | string | `desc` | `asc` · `desc` |
+| `sellerId` | guid | — | only that seller's listings — the public seller page (6.13) |
 
 - `200` → `PaginatedList<PropertySummary>`.
 - Returns approved **and** active listings only. Without a `propertyStatus` filter this **includes `Sold` and `Rented`** — show a "تم البيع" / "تم التأجير" ribbon on those cards.
@@ -733,11 +745,54 @@ Only `Pending` listings that pass the readiness checklist (6.8) appear here.
 - Unknown types get the generic bell icon — never hide or break on a new type.
 - Marking read is optimistic: the cached pages and the unread count change at once, are undone on failure, and are refetched after.
 
-### 6.12 Not built yet on the backend
+### 6.12 My profile — `/api/Identity/Account/me` (token required, any role)
+
+#### `GET /me`
+
+- `200` → `MyProfile` (6.4). RTK Query `getMe`, tag `MyProfile`, read through `useMyProfile()` (skipped for guests).
+- Loaded on app start when a session exists, and right after `/login` and `/google` (`startSession` in `authApi.js`). The session reset on logout drops it.
+- The header shows `fullName` and `profileImageUrl` (fallback: the first letter in the brand/subtle circle); the dashboard welcome uses the first name.
+
+#### `PUT /me`
+
+```json
+{ "fullName": "string (required, ≤150)", "phoneNumber": "string (required, register regex)", "city": "string (required, ≤100)", "bio": "string | null (≤1000)" }
+```
+
+- **Always send all four.** An empty bio is sent as `null` and clears it. The email is shown read-only.
+- `200` → the updated `MyProfile`: written into the `getMe` cache with `updateQueryData`, no refetch. Also invalidates `Property` and `SellerProfile` (the seller box and the seller page show the name).
+- `400` validation (field keys as usual) · `409` `errors["Identity.ConcurrencyFailure"]` → show the message; sending again retries.
+
+#### `PUT /me/photo` and `DELETE /me/photo`
+
+- `PUT`: `multipart/form-data` with the field `file` — JPG, PNG or WEBP, max 5 MB; check both on the client first and never set `Content-Type` yourself. `200` → `{ profileImageUrl }` → patch the `getMe` cache.
+- `DELETE`: `204` → set `profileImageUrl` to `null` in the cache. Behind a confirm dialog.
+- Both invalidate `Property` (the seller box on listing pages shows the photo) and `SellerProfile`.
+
+#### `PUT /me/password`
+
+```json
+{ "currentPassword": "string? (required when hasPassword)", "newPassword": "string (register rules, different from the current one)" }
+```
+
+- `204`; the session stays valid. Success toast.
+- `hasPassword: true` → «تغيير كلمة المرور»: current, new, confirm. `400` `Identity.CurrentPasswordRequired` / `Identity.PasswordMismatch` → under the current password field.
+- `hasPassword: false` (a Google account) → «تعيين كلمة مرور»: new and confirm only; after success set `hasPassword` to `true` in the cache.
+- `429` after 5 tries in 15 minutes → the rate-limit message.
+
+### 6.13 Public seller page — `/api/v1/User/Sellers` (public)
+
+#### `GET /{sellerId}`
+
+- `200` → `SellerProfile` (6.4), tag `SellerProfile` (`id`). `404` `Seller.NotFound` → «البائع غير موجود».
+- The page `/sellers/:id` shows the photo, name, city, bio, «عضو منذ» (month and year of `memberSinceUtc`) and `activeListingsCount`, then the seller's listings from `GET /User/Properties?sellerId={id}&page=&pageSize=` with `PropertyCard` and `Pagination`.
+- **Never** shows an email or a phone. The seller box on the listing details page (`user.id`) links here.
+
+### 6.14 Not built yet on the backend
 
 Nothing below exists — don't call it. Build nothing that depends on it without a `BACKEND_REQUESTS.md` entry.
 
-- Current user profile (`me`), edit profile, change password while logged in, delete account
+- Delete account, account preferences (email notifications, phone visibility)
 - Conversations / messages (SignalR), reviews, reports
 - AI price estimation
 - Currency on prices (still `DEFAULT_CURRENCY`)
@@ -781,6 +836,15 @@ src/
       useFavoriteIds.js        # the ids as a Set (createSelector + selectFromResult), skipped for guests/admins
       components/FavoriteButton.jsx  # the heart: card, mobile photo, details «حفظ»
       pages/FavoritesPage.jsx
+    profile/
+      profileApi.js            # getMe, update, photo upload/delete, password (6.12) — answers patch the getMe cache
+      useMyProfile.js          # the signed-in profile (GET /me), skipped for guests
+      components/              # ProfileDetailsForm, ProfilePhotoRow, PasswordForm, ProfilePasswordInput, ProfileSubmitButton
+      pages/ProfilePage.jsx
+    sellers/
+      sellersApi.js            # public seller profile (6.13)
+      components/SellerHeader.jsx
+      pages/SellerPage.jsx
     notifications/
       notificationsApi.js      # list, unread count, mark one / all read (6.11) — optimistic count
       useUnreadCount.js        # the polled unread count (60 s + on focus), skipped for guests
@@ -873,7 +937,7 @@ Decode with `jwt-decode` (decoding only — never trust it for security; the ser
 - `email`
 - role: the key may be `role` **or** `http://schemas.microsoft.com/ws/2008/06/identity/claims/role`, and the value may be a **string or an array**. Normalize to `roles: string[]` in one function.
 
-There is **no name, phone, or avatar** in the token, and no "me" endpoint yet (backend request #4). The header shows the email until then.
+There is **no name, phone, or avatar** in the token: they come from `GET /me` (6.12). Until it loads, the header shows the email.
 
 ### 8.3 Persistence
 
@@ -989,6 +1053,8 @@ API paths below are relative to the base paths in section 6.1.
 | `/my-properties/:id/edit` | user | Edit details + description | `PUT …/details`, `PUT …/description` |
 | `/favorites` | user | Favorites grid (12 per page, `?page=`), cards leave at once when unsaved; sidebar and dashboard link here with the ids count | `GET /User/Favorites`, `GET /User/Favorites/ids` |
 | `/notifications` | signed in (user or admin) | All notifications (20 per page, `?page=`), grouped by day, unread on brand/subtle, mark all read; the account sidebar and the mobile dashboard link here with the unread count | `GET /User/Notifications`, `GET …/unread-count`, `POST …/{id}/read`, `POST …/read-all` |
+| `/profile` | signed in (user or admin) | Personal data + photo, password (change, or set for Google accounts); account sidebar for users, admin sidebar for admins; «حسابي» in the account menu | `GET/PUT /me`, `PUT/DELETE /me/photo`, `PUT /me/password` |
+| `/sellers/:id` | public | Seller header (photo, name, city, bio, member since, listings count) + their listings, 12 per page | `GET /User/Sellers/{id}`, `GET /User/Properties?sellerId=` |
 | `/admin` | admin | Redirects to the queue | — |
 | `/admin/properties` | admin | Pending queue | `GET /Admin/Properties/pending` |
 | `/admin/properties/:id` | admin | Review page, document link, approve, reject | `GET /Admin/Properties/{id}` + actions |
@@ -1022,6 +1088,8 @@ Loading (skeletons, not spinners, for lists and cards) · empty (friendly Arabic
   | `ReviewProperty` (`id`) | admin review | approve, reject |
   | `Notifications` | notifications list | mark read, mark all read — patched optimistically |
   | `UnreadCount` | `/unread-count` | mark read, mark all read — patched optimistically |
+  | `MyProfile` | `GET /me` | none — `PUT /me`, the photo and the password patch the cache with the answer |
+  | `SellerProfile` (`id`) | seller page | profile update, photo upload / delete |
 
 - The whole API cache is reset when a session starts and when it ends (section 8.4), because public responses differ for guests and signed-in users.
 - Keep query args plain and serializable (an object of primitives) so caching works.
@@ -1052,16 +1120,16 @@ When Abdulrahman confirms something is done: mark it `done`, update section 6 of
 | 1 | Allow guests to browse | done |
 | 2 | Confirmation email to the frontend | done |
 | 3 | Error code on non-validation ProblemDetails | open — codes exist only as keys inside `400` `errors` |
-| 4 | Current user endpoint | open |
+| 4 | Current user endpoint | done — `GET /me` (6.12) |
 | 5 | Arabic messages for account endpoints | done |
-| 6 | Register ignores `bio` and `profileImageUrl` | open |
+| 6 | Register ignores `bio` and `profileImageUrl` | done — `PUT /me` and the photo endpoints (6.12) |
 | 7 | Richer search results | partly done — `mainImageUrl` added; `createdAtUtc` and coordinates missing |
 | 8 | Owner details endpoint | done — `GET /User/Properties/mine/{id}` |
 | 9 | Currency | open |
 | 10 | CORS for deployment | partly done — only `http://localhost:5173` is allowed |
 | 11 | Image and document upload | done — section 6.7 |
-| 12 | Section 6.12 features | partly done — notifications done; see 6.12 for the rest |
-| 13 | Register without a user name | open |
+| 12 | Section 6.14 features | partly done — notifications, profile and seller page done; see 6.14 for the rest |
+| 13 | Register without a user name | done — the email is the login |
 | 14 | Password reset by link or code | open |
 | 15 | `requestId` on every ProblemDetails | done — with `instance`, on every error |
 | 16 | Several values per search filter | done — city, type, status, payment, land class, document; ≤ 20 cities |
@@ -1088,7 +1156,8 @@ Each step ends in a working app, and each is its own branch + PR.
 5. **Favorites** (done) — `/ids` + heart everywhere, `/favorites` page.
 6. **Admin moderation** (done) — queue, review page, document link, approve, reject dialog.
 7. **Notifications** (done) — bell with the polled unread badge and dropdown, `/notifications` page, sidebar link.
-8. **The rest** — as backend endpoints land (section 6.12 and `BACKEND_REQUESTS.md`).
+8. **Profile and seller page** (done) — register without a user name, `GET /me` in the header, `/profile` (data, photo, password), `/sellers/:id`, seller box link.
+9. **The rest** — as backend endpoints land (section 6.14 and `BACKEND_REQUESTS.md`).
 
 Every data screen keeps the four states (loading skeleton · empty · error with retry · success).
 

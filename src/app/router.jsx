@@ -44,6 +44,12 @@ export const router = createBrowserRouter([
         }),
       },
       {
+        path: 'sellers/:sellerId',
+        lazy: async () => ({
+          Component: (await import('../features/sellers/pages/SellerPage.jsx')).default,
+        }),
+      },
+      {
         // Seller and account pages: role User only (guests go to login, admins go home — admins
         // never post, own, or favorite listings).
         element: <RequireRole role="User" />,
@@ -97,9 +103,16 @@ export const router = createBrowserRouter([
         ],
       },
       {
-        // Any signed-in role: users and admins both get notifications.
+        // Any signed-in role: users and admins both have a profile and notifications.
         element: <RequireAuth />,
         children: [
+          {
+            path: 'profile',
+            handle: { hideMobileTopBar: true },
+            lazy: async () => ({
+              Component: (await import('../features/profile/pages/ProfilePage.jsx')).default,
+            }),
+          },
           {
             path: 'notifications',
             handle: { hideMobileTopBar: true },

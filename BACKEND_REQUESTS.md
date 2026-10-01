@@ -27,10 +27,10 @@ Statuses last updated from the backend contract of 2026-09-30.
 
 ## 4. Current user endpoint
 
-- Status: open
+- Status: done
 - Why the frontend needs it: the header, dashboard, and profile page need the user's name, avatar, phone, etc. The JWT has only `sub`, `email`, and roles.
-- Endpoint / change wanted: `GET /api/Identity/Account/me` (authenticated) → `{ id, fullName, email, phoneNumber, city, bio, profileImageUrl, roles }`.
-- Current workaround in the UI: the header shows the email from the token.
+- Endpoint / change wanted: done — `GET /api/Identity/Account/me` → `MyProfile` (with `hasPassword` and `createdAtUtc`), plus `PUT /me`, the photo and the password endpoints (`CLAUDE.md` 6.12).
+- Current workaround in the UI: none — the header shows the name and photo (the email only until the profile loads).
 
 ## 5. Arabic messages for account endpoints
 
@@ -41,10 +41,10 @@ Statuses last updated from the backend contract of 2026-09-30.
 
 ## 6. Register ignores `bio` and `profileImageUrl`
 
-- Status: open
+- Status: done
 - Why the frontend needs it: the register request accepts both fields but never saves them.
-- Endpoint / change wanted: persist `bio` and `profileImageUrl` from `POST /register`.
-- Current workaround in the UI: no UI depends on them persisting.
+- Endpoint / change wanted: done another way — register no longer takes `profileImageUrl`; the bio is edited with `PUT /me` and the photo uploaded with `PUT /me/photo` (`CLAUDE.md` 6.12).
+- Current workaround in the UI: none.
 
 ## 7. Richer search results
 
@@ -81,19 +81,19 @@ Statuses last updated from the backend contract of 2026-09-30.
 - Endpoint / change wanted: done — image upload/delete/set-main and a private ownership-document upload (`CLAUDE.md` 6.7). `ownershipDocumentUrl` is no longer part of create.
 - Current workaround in the UI: none (the temporary document URL field and the images "قريباً" state are dropped from the plan).
 
-## 12. Everything in CLAUDE.md section 6.12
+## 12. Everything in CLAUDE.md section 6.14
 
 - Status: partly done
 - Why the frontend needs it: profile, Google sign-in, notifications, messaging, reviews, reports, AI price estimate, admin statistics and user management.
-- Endpoint / change wanted: done — listing edit/deactivate/delete/sold/rented, admin moderation, favorites, notifications (`CLAUDE.md` 6.11). The rest is requested one feature at a time, as its own entry, when the UI reaches it.
+- Endpoint / change wanted: done — listing edit/deactivate/delete/sold/rented, admin moderation, favorites, notifications (`CLAUDE.md` 6.11), my profile (6.12), the public seller page (6.13). The rest is requested one feature at a time, as its own entry, when the UI reaches it.
 - Current workaround in the UI: those screens are not built.
 
 ## 13. Register without a user name
 
-- Status: open
+- Status: done
 - Why the frontend needs it: the sign-up design (Figma 69:1262) has no user-name field — only full name, email, phone, city, and password.
-- Endpoint / change wanted: make `userName` optional on `POST /api/Identity/Account/register` and derive it on the server (for example from the email).
-- Current workaround in the UI: the email is sent as `userName`; a user-name error is shown on the email field.
+- Endpoint / change wanted: done — `userName` is gone from `POST /register`; the email is the login, and a duplicate is `409` `Identity.DuplicateEmail`.
+- Current workaround in the UI: none.
 
 ## 14. Password reset by link or by code
 

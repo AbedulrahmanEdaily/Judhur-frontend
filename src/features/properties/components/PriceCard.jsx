@@ -1,3 +1,5 @@
+import { Link } from 'react-router';
+import { IconFieldChevron } from '../../../components/icons/index.js';
 import { Avatar } from '../../../components/ui/Avatar.jsx';
 import { formatPrice } from '../../../lib/format.js';
 import { ar } from '../../../locales/ar.js';
@@ -8,8 +10,9 @@ const text = ar.property;
 
 /**
  * Figma price + seller card (67:1195): asking price 34 bold brand/text with the price per m² and
- * payment type, then the seller (Avatar 40 + name 15 bold) and the phone button. The API has no
- * seller rating or join date, and no messaging, so those parts of the frame are left out.
+ * payment type, then the seller (Avatar 40 + name 15 bold) and the phone button. The seller row
+ * links to the public seller page; its «عرض صفحة البائع» line and arrow are not in Figma. The
+ * rating and the messaging have no API, so those parts of the frame are left out.
  *
  * @param {{ property: import('../../../api/types.js').PropertyDetails }} props
  */
@@ -31,12 +34,22 @@ export function PriceCard({ property }) {
       {property.user && (
         <>
           <div className="h-px bg-border" />
-          <div className="flex items-center gap-3">
+          <Link
+            to={`/sellers/${property.user.id}`}
+            aria-label={text.sellerPage(property.user.fullName)}
+            className="group flex items-center gap-3 rounded-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+          >
             <Avatar name={property.user.fullName} imageUrl={property.user.profileImageUrl} />
-            <p className="text-[15px] leading-[1.78] font-bold text-text">
-              {property.user.fullName}
-            </p>
-          </div>
+            <span className="flex min-w-0 flex-1 flex-col">
+              <span className="text-[15px] leading-[1.78] font-bold text-text group-hover:text-brand-text">
+                {property.user.fullName}
+              </span>
+              <span className="text-[12.5px] leading-[1.72] text-brand-text">
+                {text.viewSeller}
+              </span>
+            </span>
+            <IconFieldChevron className="shrink-0 rotate-90 text-muted" />
+          </Link>
           <PhoneButton phoneNumber={property.user.phoneNumber} />
         </>
       )}

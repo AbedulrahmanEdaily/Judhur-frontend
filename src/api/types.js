@@ -24,15 +24,37 @@
  */
 
 /**
- * @typedef {Object} RegisterRequest
- * @property {string} userName
+ * @typedef {Object} RegisterRequest The email is the login; there is no user name.
  * @property {string} fullName
  * @property {string} email
  * @property {string} phoneNumber
  * @property {string} city
- * @property {string | null} bio accepted but not saved yet
- * @property {string | null} profileImageUrl accepted but not saved yet
+ * @property {string | null} bio
  * @property {string} password
+ */
+
+/**
+ * @typedef {Object} MyProfile `GET /me` (token required, any role).
+ * @property {string} id
+ * @property {string} fullName
+ * @property {string} email
+ * @property {string} [phoneNumber]
+ * @property {string} city
+ * @property {string} [bio]
+ * @property {string} [profileImageUrl]
+ * @property {string[]} roles
+ * @property {boolean} hasPassword false for an account made with Google only
+ * @property {string} createdAtUtc ISO-8601 with offset
+ *
+ * @typedef {Object} UpdateMyProfileRequest Body of `PUT /me` — always all four.
+ * @property {string} fullName ≤150
+ * @property {string} phoneNumber register phone regex
+ * @property {string} city ≤100
+ * @property {string | null} bio ≤1000; null clears it
+ *
+ * @typedef {Object} ChangeMyPasswordRequest Body of `PUT /me/password`.
+ * @property {string} [currentPassword] required when the account has a password
+ * @property {string} newPassword register password rules, different from the current one
  */
 
 /**
@@ -135,6 +157,7 @@
  * @property {LegalStatus[]} [legalStatus]
  * @property {'createdAt'|'price'|'city'|'landClassification'} [sortColumn]
  * @property {'asc'|'desc'} [sortDirection]
+ * @property {string} [sellerId] only that seller's listings (the public seller page)
  */
 
 /**
@@ -295,6 +318,21 @@
 /**
  * @typedef {Object} RejectPropertyRequest Body of `POST /{propertyId}/reject`.
  * @property {string} rejectionReason required, ≤500
+ */
+
+// ---------------------------------------------------------------------------
+// Sellers — /api/v1/User/Sellers (public)
+// ---------------------------------------------------------------------------
+
+/**
+ * @typedef {Object} SellerProfile `GET /{sellerId}`. Never has the email or the phone.
+ * @property {string} id
+ * @property {string} fullName
+ * @property {string} [profileImageUrl]
+ * @property {string} city
+ * @property {string} [bio]
+ * @property {string} memberSinceUtc ISO-8601 with offset
+ * @property {number} activeListingsCount
  */
 
 // ---------------------------------------------------------------------------

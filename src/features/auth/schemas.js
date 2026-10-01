@@ -55,11 +55,11 @@ export const loginSchema = z.object({
   remember: z.boolean(),
 });
 
+const fullName = z.string().trim().min(1, messages.required).max(150, messages.maxLength(150));
 const city = z.string().trim().min(1, messages.required).max(100, messages.maxLength(100));
 
-// The design has no user-name field; the page sends the email as userName.
 export const registerSchema = z.object({
-  fullName: z.string().trim().min(1, messages.required).max(150, messages.maxLength(150)),
+  fullName,
   email,
   phoneNumber,
   city,
@@ -77,3 +77,42 @@ export const resetPasswordSchema = z.object({
   code: resetCode,
   password: newPassword,
 });
+
+/** `PUT /me`: the register rules; an empty bio is sent as null and clears it. */
+export const profileSchema = z.object({
+  fullName,
+  phoneNumber,
+  city,
+  bio: z
+    .string()
+    .trim()
+    .max(1000, messages.maxLength(1000))
+    .transform((value) => (value === '' ? null : value)),
+});
+
+/** `PUT /me/password` for an account that has a password: the current one is required. */
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, messages.required),
+    newPassword,
+    confirmPassword: z.string().min(1, messages.required),
+  })
+  .refine((values) => values.newPassword !== values.currentPassword, {
+    path: ['newPassword'],
+    message: messages.samePassword,
+  })
+  .refine((values) => values.confirmPassword === values.newPassword, {
+    path: ['confirmPassword'],
+    message: messages.passwordsDiffer,
+  });
+
+/** `PUT /me/password` for a Google account without a password: the first one is set. */
+export const setPasswordSchema = z
+  .object({
+    newPassword,
+    confirmPassword: z.string().min(1, messages.required),
+  })
+  .refine((values) => values.confirmPassword === values.newPassword, {
+    path: ['confirmPassword'],
+    message: messages.passwordsDiffer,
+  });

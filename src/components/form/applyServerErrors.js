@@ -10,7 +10,7 @@ import { toProblem } from '../../lib/http/problemDetails.js';
  * @param {string[]} fieldNames the form's field names
  * @param {Record<string, string>} [serverKeyFields] server keys that belong to a form field —
  *   error codes, or request fields the form names differently,
- *   e.g. { 'Identity.InvalidResetCode': 'code', userName: 'email' }
+ *   e.g. { 'Identity.InvalidResetCode': 'code', 'Identity.DuplicateEmail': 'email' }
  * @returns {{ problem: import('../../lib/http/problemDetails.js').Problem, formMessage: string | null }}
  */
 export function applyServerErrors(error, setError, fieldNames, serverKeyFields = {}) {

@@ -44,6 +44,13 @@ export function formatDate(value) {
   return dateFormatter.format(typeof value === 'string' ? new Date(value) : value);
 }
 
+const monthYearFormatter = new Intl.DateTimeFormat(LOCALE, { month: 'long', year: 'numeric' });
+
+/** @param {string | Date} value ISO-8601 string or Date → "مارس 2024" */
+export function formatMonthYear(value) {
+  return monthYearFormatter.format(typeof value === 'string' ? new Date(value) : value);
+}
+
 const relativeFormatter = new Intl.RelativeTimeFormat(LOCALE, { numeric: 'auto' });
 
 const RELATIVE_STEPS = [

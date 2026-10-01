@@ -22,6 +22,7 @@ import { Skeleton } from '../../../components/ui/Skeleton.jsx';
 import { selectCurrentUser } from '../../auth/authSlice.js';
 import { useLogout } from '../../auth/hooks/useLogout.js';
 import { useFavoriteIds } from '../../favorites/useFavoriteIds.js';
+import { useMyProfile } from '../../profile/useMyProfile.js';
 import { useUnreadCount } from '../../notifications/useUnreadCount.js';
 import { PropertyPhoto } from '../../properties/components/PropertyPhoto.jsx';
 import {
@@ -49,7 +50,7 @@ const cardClasses = 'rounded-lg border border-border bg-raised';
  * the saved count and the latest listings; the listing stats, the review alert and «آخر
  * عقاراتك» appear only once the user has a listing (never an empty seller dashboard).
  * Views, contact requests and messages are not in the API: those Figma parts are replaced by
- * «منشور للعامة» and «أحدث العقارات». There is no name in the token, so the welcome has none.
+ * «منشور للعامة» and «أحدث العقارات». The welcome and the mobile avatar come from `GET /me`.
  */
 export default function DashboardPage() {
   const user = useSelector(selectCurrentUser);
@@ -57,9 +58,16 @@ export default function DashboardPage() {
   const mine = useGetMyPropertiesQuery();
   const favorites = useFavoriteIds();
   const unread = useUnreadCount();
+  const { profile } = useMyProfile();
   const latest = useGetPropertiesQuery(LATEST_QUERY);
 
   const myProperties = mine.data ?? [];
+
+  // «مرحباً محمد» with the first name once the profile is loaded.
+  let welcome = text.welcome;
+  if (profile) welcome = text.welcomeName(profile.fullName.trim().split(/\s+/)[0]);
+  let avatarName = user?.email ?? '';
+  if (profile) avatarName = profile.fullName;
   const hasListings = myProperties.length > 0;
   let publishedCount = 0;
   let firstPending = null;
@@ -165,7 +173,7 @@ export default function DashboardPage() {
         {/* Welcome — desktop (74:635) and the mobile card (84:586). */}
         <div className="hidden items-center gap-3 xl:flex">
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-            <h1 className="text-[26px] leading-[1.72] font-bold text-text">{text.welcome}</h1>
+            <h1 className="text-[26px] leading-[1.72] font-bold text-text">{welcome}</h1>
             <p className="text-[14px] leading-[1.72] text-text-secondary">{subtitle}</p>
           </div>
           <Link to="/properties/new" className={addButtonClasses}>
@@ -174,9 +182,9 @@ export default function DashboardPage() {
           </Link>
         </div>
         <div className={`${cardClasses} flex items-center gap-3 p-[15px] xl:hidden`}>
-          <Avatar name={user?.email ?? ''} />
+          <Avatar name={avatarName} imageUrl={profile?.profileImageUrl} />
           <div className="flex min-w-0 flex-1 flex-col gap-px">
-            <p className="text-[17px] leading-[1.72] font-bold text-text">{text.welcome}</p>
+            <p className="text-[17px] leading-[1.72] font-bold text-text">{welcome}</p>
             <p className="text-[12.5px] leading-[1.72] text-muted">{subtitle}</p>
           </div>
         </div>
@@ -288,13 +296,16 @@ export default function DashboardPage() {
               <IconFieldChevron className="shrink-0 rotate-90 text-muted" />
             </Link>
           </li>
-          <li aria-disabled="true" className="flex items-center gap-3 px-4 py-[15px]">
-            <IconRowProfile className="shrink-0 text-muted" />
-            <span className="text-[14.5px] leading-[1.72] text-text-secondary">{nav.profile}</span>
-            <span className="flex-1" />
-            <span className="rounded-full bg-inset px-2 py-0.5 text-[11px] leading-[1.72] font-semibold text-muted">
-              {nav.soon}
-            </span>
+          <li>
+            <Link
+              to="/profile"
+              className="flex items-center gap-3 px-4 py-[15px] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand"
+            >
+              <IconRowProfile className="shrink-0 text-muted" />
+              <span className="text-[14.5px] leading-[1.72] text-text">{nav.profile}</span>
+              <span className="flex-1" />
+              <IconFieldChevron className="shrink-0 rotate-90 text-muted" />
+            </Link>
           </li>
           <li>
             <button

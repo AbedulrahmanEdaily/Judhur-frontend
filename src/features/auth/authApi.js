@@ -1,7 +1,14 @@
 import { baseApi } from '../../api/baseApi.js';
 import { ACCOUNT_PATH } from '../../api/baseQuery.js';
+import { profileApi } from '../profile/profileApi.js';
 import { sessionStarted } from './authSlice.js';
 import { setRememberSession } from './authStorage.js';
+
+/** Starts the session and loads the new user's profile (name and photo for the header) at once. */
+function startSession(dispatch, tokens) {
+  dispatch(sessionStarted(tokens));
+  dispatch(profileApi.endpoints.getMe.initiate(undefined, { subscribe: false }));
+}
 
 export const authApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
@@ -19,7 +26,7 @@ export const authApi = baseApi.injectEndpoints({
         try {
           const { data } = await queryFulfilled;
           setRememberSession(remember !== false);
-          dispatch(sessionStarted(data));
+          startSession(dispatch, data);
         } catch {
           // The page shows the error.
         }
@@ -43,14 +50,14 @@ export const authApi = baseApi.injectEndpoints({
         try {
           const { data } = await queryFulfilled;
           setRememberSession(true);
-          dispatch(sessionStarted(data));
+          startSession(dispatch, data);
         } catch {
           // The page shows the error.
         }
       },
     }),
 
-    /** 201, empty body — a confirmation email is sent. 409 duplicate email/user name. */
+    /** 201, empty body — a confirmation email is sent. 409 `Identity.DuplicateEmail`. */
     register: builder.mutation({
       query: (body) => ({ url: `${ACCOUNT_PATH}/register`, method: 'POST', body }),
     }),

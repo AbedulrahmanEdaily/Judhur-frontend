@@ -19,9 +19,7 @@ const FIELD_NAMES = ['fullName', 'email', 'phoneNumber', 'city', 'password'];
 
 // Server error keys that belong to a form field.
 const SERVER_KEY_FIELDS = {
-  userName: 'email', // userName is sent as the email
-  'Identity.DuplicateEmail': 'email',
-  'Identity.DuplicateUserName': 'email',
+  'Identity.DuplicateEmail': 'email', // 409
   'Identity.PasswordTooShort': 'password',
   'Identity.PasswordRequiresDigit': 'password',
   'Identity.PasswordRequiresLower': 'password',
@@ -60,14 +58,13 @@ export default function RegisterPage() {
 
   async function onSubmit(values) {
     setFailure(null);
+    // The email is the login: there is no user name. The bio is added later on /profile.
     const body = {
-      userName: values.email, // the design has no user-name field (BACKEND_REQUESTS #13)
       fullName: values.fullName,
       email: values.email,
       phoneNumber: values.phoneNumber,
       city: values.city,
-      bio: null, // accepted but not saved by the API yet
-      profileImageUrl: null,
+      bio: null,
       password: values.password,
     };
     try {
