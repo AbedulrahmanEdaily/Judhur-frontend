@@ -95,3 +95,6 @@ export { IconDocumentOpen } from './IconDocumentOpen.jsx';
 export { IconReject17 } from './IconReject17.jsx';
 export { IconFavoriteHeart } from './IconFavoriteHeart.jsx';
 export { IconGoogle } from './IconGoogle.jsx';
+export { IconNotificationApproved } from './IconNotificationApproved.jsx';
+export { IconNotificationRejected } from './IconNotificationRejected.jsx';
+export { IconNotificationBell } from './IconNotificationBell.jsx';

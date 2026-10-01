@@ -9,17 +9,15 @@ import {
   IconNavProfile,
 } from '../icons/index.js';
 import { useFavoriteIds } from '../../features/favorites/useFavoriteIds.js';
+import { useUnreadCount } from '../../features/notifications/useUnreadCount.js';
 import { formatNumber } from '../../lib/format.js';
 import { ar } from '../../locales/ar.js';
 
 const text = ar.accountNav;
 
 // Pages without an API yet stay in the list, not clickable, marked «قريباً».
-const upcomingItems = [
-  { label: text.chats, Icon: IconNavChats },
-  { label: text.notifications, Icon: IconNavNotifications },
-  { label: text.profile, Icon: IconNavProfile },
-];
+const chatsItem = { label: text.chats, Icon: IconNavChats };
+const profileItem = { label: text.profile, Icon: IconNavProfile };
 
 const itemClasses =
   'flex items-center gap-2.5 rounded-md px-3.5 py-[11px] text-[14.5px] leading-[1.72] focus-visible:outline-2 focus-visible:outline-brand';
@@ -29,6 +27,19 @@ function countClasses(isActive) {
   return clsx(
     'rounded-full px-2 py-0.5 text-[11px] leading-[1.72] font-semibold',
     isActive ? 'bg-brand text-inverse' : 'bg-inset text-muted',
+  );
+}
+
+function renderUpcomingItem({ label, Icon }) {
+  return (
+    <span aria-disabled="true" className={clsx(itemClasses, 'cursor-default text-text-secondary')}>
+      <Icon className="shrink-0 text-muted" />
+      {label}
+      <span className="flex-1" />
+      <span className="rounded-full bg-inset px-2 py-0.5 text-[11px] leading-[1.72] font-semibold text-muted">
+        {text.soon}
+      </span>
+    </span>
   );
 }
 
@@ -45,14 +56,17 @@ function navItemClasses({ isActive }) {
  * on bg/surface with 70px sides, and from 1280px up the 264px sidebar (75:669) at the start:
  * items 14×11, radius md, 18px icon, 14.5 label; the active one on brand/subtle with a brand
  * count pill, the others text/secondary with a bg/inset pill. The favorites count comes from
- * the cached ids list (useFavoriteIds).
+ * the cached ids list (useFavoriteIds), the notifications count is the unread one (shown when
+ * there are some).
  *
  * @param {{ listingsCount?: number, children: import('react').ReactNode }} props
  */
 export function AccountShell({ listingsCount, children }) {
   const isListingsActive = useMatch({ path: '/my-properties', end: false }) !== null;
   const isFavoritesActive = useMatch('/favorites') !== null;
+  const isNotificationsActive = useMatch('/notifications') !== null;
   const favorites = useFavoriteIds();
+  const unread = useUnreadCount();
 
   return (
     <div className="min-h-full bg-surface">
@@ -83,20 +97,18 @@ export function AccountShell({ listingsCount, children }) {
               </span>
             )}
           </NavLink>
-          {upcomingItems.map(({ label, Icon }) => (
-            <span
-              key={label}
-              aria-disabled="true"
-              className={clsx(itemClasses, 'cursor-default text-text-secondary')}
-            >
-              <Icon className="shrink-0 text-muted" />
-              {label}
-              <span className="flex-1" />
-              <span className="rounded-full bg-inset px-2 py-0.5 text-[11px] leading-[1.72] font-semibold text-muted">
-                {text.soon}
+          {renderUpcomingItem(chatsItem)}
+          <NavLink to="/notifications" className={navItemClasses}>
+            <IconNavNotifications className="shrink-0" />
+            {text.notifications}
+            <span className="flex-1" />
+            {unread.count > 0 && (
+              <span className={countClasses(isNotificationsActive)}>
+                {formatNumber(unread.count)}
               </span>
-            </span>
-          ))}
+            )}
+          </NavLink>
+          {renderUpcomingItem(profileItem)}
         </nav>
         <div className="flex min-w-0 flex-1 flex-col gap-4 xl:gap-5">{children}</div>
       </div>

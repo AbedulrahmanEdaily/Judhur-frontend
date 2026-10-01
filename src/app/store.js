@@ -1,4 +1,5 @@
 import { configureStore, createListenerMiddleware } from '@reduxjs/toolkit';
+import { setupListeners } from '@reduxjs/toolkit/query';
 import { baseApi } from '../api/baseApi.js';
 import { authReducer, sessionFromTokens } from '../features/auth/authSlice.js';
 import { registerAuthListeners, syncSessionAcrossTabs } from '../features/auth/authListeners.js';
@@ -26,3 +27,6 @@ export const store = configureStore({
 });
 
 syncSessionAcrossTabs(store);
+
+// Lets queries refetch when the window gets focus again (`refetchOnFocus`, the unread count).
+setupListeners(store.dispatch);

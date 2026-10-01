@@ -81,11 +81,11 @@ Statuses last updated from the backend contract of 2026-09-30.
 - Endpoint / change wanted: done — image upload/delete/set-main and a private ownership-document upload (`CLAUDE.md` 6.7). `ownershipDocumentUrl` is no longer part of create.
 - Current workaround in the UI: none (the temporary document URL field and the images "قريباً" state are dropped from the plan).
 
-## 12. Everything in CLAUDE.md section 6.11
+## 12. Everything in CLAUDE.md section 6.12
 
 - Status: partly done
 - Why the frontend needs it: profile, Google sign-in, notifications, messaging, reviews, reports, AI price estimate, admin statistics and user management.
-- Endpoint / change wanted: done — listing edit/deactivate/delete/sold/rented, admin moderation, favorites. The rest is requested one feature at a time, as its own entry, when the UI reaches it.
+- Endpoint / change wanted: done — listing edit/deactivate/delete/sold/rented, admin moderation, favorites, notifications (`CLAUDE.md` 6.11). The rest is requested one feature at a time, as its own entry, when the UI reaches it.
 - Current workaround in the UI: those screens are not built.
 
 ## 13. Register without a user name

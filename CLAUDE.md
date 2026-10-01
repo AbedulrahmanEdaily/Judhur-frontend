@@ -3,7 +3,7 @@
 > Project context for Claude Code working in the **frontend repository**. Read this whole file before writing code.
 > The backend lives in a **separate repository** that you cannot see. Section 6 (API contract) is your only source of truth for the backend — never guess an endpoint, a field name, or a status code.
 >
-> Contract snapshot taken from the backend source on 2026-09-30 (backend `main` + the `feature/Favorite` branch).
+> Contract snapshot taken from the backend source on 2026-09-30 (backend `main` + the `feature/Favorite` branch); notifications added 2026-10-01.
 >
 > **Read DESIGN.md before any UI work; for anything visual it overrides this file.**
 
@@ -214,6 +214,7 @@ The backend seeds an admin and a normal user on startup. Get the credentials fro
 | Account / auth | `/api/Identity/Account/...` | no |
 | Public + seller properties | `/api/v1/User/Properties/...` | yes (always `v1` for now) |
 | Favorites | `/api/v1/User/Favorites/...` | yes |
+| Notifications | `/api/v1/User/Notifications/...` | yes |
 | Admin moderation | `/api/v1/Admin/Properties/...` | yes |
 
 - The path constants live in `src/api/baseQuery.js`. Paths are case-insensitive on the server; use exactly the casing shown here.
@@ -229,6 +230,7 @@ The backend seeds an admin and a normal user on startup. Get the credentials fro
 | `GET /User/Properties` and `GET /User/Properties/{id}` | ✅ | ✅ | ✅ |
 | Every other `/User/Properties/*` (seller actions) | `401` | ✅ | `403` |
 | `/User/Favorites/*` | `401` | ✅ | `403` |
+| `/User/Notifications/*` | `401` | ✅ | ✅ |
 | `/Admin/Properties/*` | `401` | `403` | ✅ |
 
 Admins never create, own, or favorite listings. Hide those actions for admins in the UI.
@@ -703,12 +705,39 @@ Only `Pending` listings that pass the readiness checklist (6.8) appear here.
 - `400` missing/too long · `409` the listing is approved (cannot be rejected) or already rejected · `404`.
 - Use a dialog with a textarea, a live character counter (500), and quick-pick reasons that fill the textarea (e.g. "الصور غير واضحة", "وثيقة الملكية غير واضحة", "المعلومات غير مكتملة").
 
-### 6.11 Not built yet on the backend
+### 6.11 Notifications — `/api/v1/User/Notifications` (any signed-in role)
+
+`User` and `Admin` both have notifications. Today the backend sends them to the seller when an admin approves or rejects a listing.
+
+```ts
+// Notification
+{
+  id: string,
+  type: 'PropertyApproved' | 'PropertyRejected',   // more types will come later
+  title: string, body: string,                     // Arabic, written by the server — show them as they are
+  referenceId?: string,                            // the listing id for the two property types
+  isRead: boolean,
+  createdAtUtc: string
+}
+```
+
+| Method | Route | Success | Errors |
+|---|---|---|---|
+| `GET` | `/?page=&pageSize=` | `200` `PaginatedList<Notification>`, newest first | `400` |
+| `GET` | `/unread-count` | `200` `{ count: number }` | — |
+| `POST` | `/{notificationId}/read` | `204` (also when it was already read) | `404` missing or not yours |
+| `POST` | `/read-all` | `204` | — |
+
+- **Bell** in the navbar for every signed-in user (`NotificationsBell`): the unread badge (hidden at `0`) from `GET /unread-count`, polled every 60 s and refetched on window focus, skipped for guests (`useUnreadCount`). A click opens the latest 5 (`pageSize=5`, refetched on each open), «تعليم الكل كمقروء» and «عرض الكل» → `/notifications`.
+- **Opening a notification** calls `POST /{id}/read` without checking `isRead`. `PropertyApproved` and `PropertyRejected` then go to `/my-properties/{referenceId}`; any other type is only marked as read.
+- Unknown types get the generic bell icon — never hide or break on a new type.
+- Marking read is optimistic: the cached pages and the unread count change at once, are undone on failure, and are refetched after.
+
+### 6.12 Not built yet on the backend
 
 Nothing below exists — don't call it. Build nothing that depends on it without a `BACKEND_REQUESTS.md` entry.
 
 - Current user profile (`me`), edit profile, change password while logged in, delete account
-- Notifications (next on the backend — the seller will be notified on approve/reject)
 - Conversations / messages (SignalR), reviews, reports
 - AI price estimation
 - Currency on prices (still `DEFAULT_CURRENCY`)
@@ -752,6 +781,11 @@ src/
       useFavoriteIds.js        # the ids as a Set (createSelector + selectFromResult), skipped for guests/admins
       components/FavoriteButton.jsx  # the heart: card, mobile photo, details «حفظ»
       pages/FavoritesPage.jsx
+    notifications/
+      notificationsApi.js      # list, unread count, mark one / all read (6.11) — optimistic count
+      useUnreadCount.js        # the polled unread count (60 s + on focus), skipped for guests
+      components/              # NotificationsBell, NotificationsMenu (the dropdown), NotificationItem, UnreadBadge
+      pages/NotificationsPage.jsx
     dashboard/pages/DashboardPage.jsx
     admin/
       adminApi.js              # pending queue, review, approve, reject (6.10)
@@ -954,6 +988,7 @@ API paths below are relative to the base paths in section 6.1.
 | `/my-properties/:id` | user | Owner page: state badge, rejection alert, readiness checklist, actions (6.8), media manager | `GET /User/Properties/mine/{id}` + actions |
 | `/my-properties/:id/edit` | user | Edit details + description | `PUT …/details`, `PUT …/description` |
 | `/favorites` | user | Favorites grid (12 per page, `?page=`), cards leave at once when unsaved; sidebar and dashboard link here with the ids count | `GET /User/Favorites`, `GET /User/Favorites/ids` |
+| `/notifications` | signed in (user or admin) | All notifications (20 per page, `?page=`), grouped by day, unread on brand/subtle, mark all read; the account sidebar and the mobile dashboard link here with the unread count | `GET /User/Notifications`, `GET …/unread-count`, `POST …/{id}/read`, `POST …/read-all` |
 | `/admin` | admin | Redirects to the queue | — |
 | `/admin/properties` | admin | Pending queue | `GET /Admin/Properties/pending` |
 | `/admin/properties/:id` | admin | Review page, document link, approve, reject | `GET /Admin/Properties/{id}` + actions |
@@ -985,6 +1020,8 @@ Loading (skeletons, not spinners, for lists and cards) · empty (friendly Arabic
   | `FavoriteIds` | `/ids` | add, remove — patched optimistically; invalidated only after the `409` / `404` "already" answers |
   | `PendingProperties` | admin queue | approve, reject |
   | `ReviewProperty` (`id`) | admin review | approve, reject |
+  | `Notifications` | notifications list | mark read, mark all read — patched optimistically |
+  | `UnreadCount` | `/unread-count` | mark read, mark all read — patched optimistically |
 
 - The whole API cache is reset when a session starts and when it ends (section 8.4), because public responses differ for guests and signed-in users.
 - Keep query args plain and serializable (an object of primitives) so caching works.
@@ -1023,7 +1060,7 @@ When Abdulrahman confirms something is done: mark it `done`, update section 6 of
 | 9 | Currency | open |
 | 10 | CORS for deployment | partly done — only `http://localhost:5173` is allowed |
 | 11 | Image and document upload | done — section 6.7 |
-| 12 | Section 6.11 features | partly done — see 6.11 for the rest |
+| 12 | Section 6.12 features | partly done — notifications done; see 6.12 for the rest |
 | 13 | Register without a user name | open |
 | 14 | Password reset by link or code | open |
 | 15 | `requestId` on every ProblemDetails | done — with `instance`, on every error |
@@ -1050,7 +1087,8 @@ Each step ends in a working app, and each is its own branch + PR.
 4. **Owner area** (done) — `/my-properties` with thumbnails, `/my-properties/:id` with state badge, rejection alert, checklist and every action from 6.8 (with confirm dialogs), media manager, `/my-properties/:id/edit`; the buyer-first dashboard.
 5. **Favorites** (done) — `/ids` + heart everywhere, `/favorites` page.
 6. **Admin moderation** (done) — queue, review page, document link, approve, reject dialog.
-7. **The rest** — as backend endpoints land (section 6.11 and `BACKEND_REQUESTS.md`).
+7. **Notifications** (done) — bell with the polled unread badge and dropdown, `/notifications` page, sidebar link.
+8. **The rest** — as backend endpoints land (section 6.12 and `BACKEND_REQUESTS.md`).
 
 Every data screen keeps the four states (loading skeleton · empty · error with retry · success).
 

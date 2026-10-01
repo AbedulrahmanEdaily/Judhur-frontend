@@ -8,6 +8,7 @@ export const ACCOUNT_PATH = '/api/Identity/Account';
 export const USER_PROPERTIES_PATH = '/api/v1/User/Properties';
 export const FAVORITES_PATH = '/api/v1/User/Favorites';
 export const ADMIN_PROPERTIES_PATH = '/api/v1/Admin/Properties';
+export const NOTIFICATIONS_PATH = '/api/v1/User/Notifications';
 
 const REFRESH_URL = `${ACCOUNT_PATH}/refresh-token`;
 

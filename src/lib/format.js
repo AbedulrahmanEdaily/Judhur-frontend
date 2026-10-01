@@ -52,6 +52,16 @@ const RELATIVE_STEPS = [
   { unit: 'day', seconds: 24 * 60 * 60 },
 ];
 
+/** Whole local days between the date and today, so «أمس» means the calendar day before. */
+function calendarDaysAgo(date) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const day = new Date(date);
+  day.setHours(0, 0, 0, 0);
+  // Rounded: a daylight-saving change makes one day 23 or 25 hours long.
+  return Math.round((today.getTime() - day.getTime()) / (24 * 60 * 60 * 1000));
+}
+
 /**
  * "قبل ساعتين", "أمس", "قبل 5 أيام" — for times in the last month; older ones get the date.
  * @param {string | Date} value ISO-8601 string or Date
@@ -66,5 +76,6 @@ export function formatRelativeTime(value) {
   for (const candidate of RELATIVE_STEPS) {
     if (secondsAgo >= candidate.seconds) step = candidate;
   }
+  if (step.unit === 'day') return relativeFormatter.format(-calendarDaysAgo(date), 'day');
   return relativeFormatter.format(-Math.floor(secondsAgo / step.seconds), step.unit);
 }

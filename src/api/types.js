@@ -298,6 +298,26 @@
  */
 
 // ---------------------------------------------------------------------------
+// Notifications — /api/v1/User/Notifications (any signed-in role)
+// ---------------------------------------------------------------------------
+
+/**
+ * @typedef {'PropertyApproved'|'PropertyRejected'} NotificationType more types may come later
+ *
+ * @typedef {Object} Notification Item of `GET /` (newest first).
+ * @property {string} id
+ * @property {NotificationType | string} type
+ * @property {string} title Arabic, shown as sent
+ * @property {string} body Arabic, shown as sent
+ * @property {string} [referenceId] the listing id for the property types
+ * @property {boolean} isRead
+ * @property {string} createdAtUtc ISO-8601 with offset
+ *
+ * @typedef {Object} UnreadCount `GET /unread-count`.
+ * @property {number} count
+ */
+
+// ---------------------------------------------------------------------------
 // Errors
 // ---------------------------------------------------------------------------
 
