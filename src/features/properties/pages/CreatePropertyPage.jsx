@@ -206,7 +206,7 @@ export default function CreatePropertyPage() {
         <h2 className="text-[16px] leading-[1.72] font-bold text-text xl:text-[18px]">
           {text.dataTitle}
         </h2>
-        <ListingDataFields register={register} errors={errors} />
+        <ListingDataFields register={register} control={control} errors={errors} />
       </section>
     );
   } else if (step === 2) {
@@ -220,6 +220,7 @@ export default function CreatePropertyPage() {
         </div>
         <ListingLocationFields
           register={register}
+          control={control}
           errors={errors}
           setValue={setValue}
           getValues={getValues}

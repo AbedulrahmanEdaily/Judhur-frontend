@@ -743,7 +743,7 @@ src/
       components/              # AdminShell (sidebar), ReviewDocumentCard, RejectPropertyDialog
     ui/uiSlice.js              # theme (+ future UI-only state)
   components/
-    ui/                        # Button, Input, Select, Textarea, Checkbox, Modal, ConfirmDialog, Badge, VerifiedBadge,
+    ui/                        # Button, Input, Select + SelectMenu (the one dropdown list), Textarea, Checkbox, Modal, ConfirmDialog, Badge, VerifiedBadge,
                                # Spinner, Skeleton, EmptyState, ErrorState, Pagination, Toast
     layout/                    # AppLayout, Header, Footer, MobileTopBar, MobileTabBar, AccountShell (sidebar), PageTopBar
     form/                      # FormField wrappers binding RHF + label + error text
@@ -872,7 +872,7 @@ Call `POST /logout` with the refresh token, then **always** end the session loca
 - Schemas **mirror the backend rules in section 6 exactly** (lengths, regexes, required fields), with Arabic messages. The client check is for UX; the server stays the authority.
 - On submit error, run the error through `problemDetails.js`: `fieldErrors` → `setError(field, { message })`; anything else → a form-level alert above the submit button.
 - Disable the submit button and show a spinner while submitting. Never allow double submit.
-- Enum fields are `<select>` elements fed from `constants.js`: Arabic label shown, API value submitted.
+- Enum fields are dropdowns fed from `constants.js` (`ListingSelect` / `Select`, both on the shared `SelectMenu` listbox, bound with `useController`): Arabic label shown, API value submitted. No native `<select>` — its browser-drawn list is unreadable in dark mode.
 - Numbers (`price`, `area`) with `valueAsNumber` or a zod `coerce`; send numbers, not strings.
 - Optional text fields: send `null` (not `""`) when empty.
 - Password fields: show/hide toggle and a live checklist of the four rules.
