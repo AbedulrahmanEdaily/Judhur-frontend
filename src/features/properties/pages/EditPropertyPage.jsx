@@ -129,7 +129,12 @@ export default function EditPropertyPage() {
             <h2 className="text-[16px] leading-[1.72] font-bold text-text xl:text-[18px]">
               {text.dataTitle}
             </h2>
-            <ListingDataFields register={register} errors={errors} showPurpose={false} />
+            <ListingDataFields
+              register={register}
+              control={control}
+              errors={errors}
+              showPurpose={false}
+            />
             <p className="text-caption text-muted">{text.purposeLocked}</p>
           </section>
           <section className={cardClasses}>
@@ -138,6 +143,7 @@ export default function EditPropertyPage() {
             </h2>
             <ListingLocationFields
               register={register}
+              control={control}
               errors={errors}
               setValue={setValue}
               getValues={getValues}

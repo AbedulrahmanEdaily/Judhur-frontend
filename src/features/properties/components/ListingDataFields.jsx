@@ -34,11 +34,12 @@ const paymentOptions = PAYMENT_TYPES.map((type) => ({
  *
  * @param {{
  *   register: import('react-hook-form').UseFormRegister<any>,
+ *   control: import('react-hook-form').Control<any>,
  *   errors: import('react-hook-form').FieldErrors<any>,
  *   showPurpose?: boolean,
  * }} props
  */
-export function ListingDataFields({ register, errors, showPurpose = true }) {
+export function ListingDataFields({ register, control, errors, showPurpose = true }) {
   const paymentField = (
     <ListingSelect
       className="flex-1"
@@ -46,7 +47,8 @@ export function ListingDataFields({ register, errors, showPurpose = true }) {
       placeholder={text.choose}
       options={paymentOptions}
       error={errors.paymentType?.message}
-      {...register('paymentType')}
+      control={control}
+      name="paymentType"
     />
   );
 
@@ -66,7 +68,8 @@ export function ListingDataFields({ register, errors, showPurpose = true }) {
           placeholder={text.choose}
           options={typeOptions}
           error={errors.propertyType?.message}
-          {...register('propertyType')}
+          control={control}
+          name="propertyType"
         />
         {showPurpose && (
           <ListingSelect
@@ -74,7 +77,8 @@ export function ListingDataFields({ register, errors, showPurpose = true }) {
             label={text.purpose}
             options={purposeOptions}
             error={errors.propertyStatus?.message}
-            {...register('propertyStatus')}
+            control={control}
+            name="propertyStatus"
           />
         )}
         {!showPurpose && paymentField}

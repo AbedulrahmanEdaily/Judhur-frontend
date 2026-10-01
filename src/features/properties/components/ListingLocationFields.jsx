@@ -36,6 +36,7 @@ function readCoordinate(value) {
  *
  * @param {{
  *   register: import('react-hook-form').UseFormRegister<any>,
+ *   control: import('react-hook-form').Control<any>,
  *   errors: import('react-hook-form').FieldErrors<any>,
  *   setValue: import('react-hook-form').UseFormSetValue<any>,
  *   getValues: import('react-hook-form').UseFormGetValues<any>,
@@ -45,6 +46,7 @@ function readCoordinate(value) {
  */
 export function ListingLocationFields({
   register,
+  control,
   errors,
   setValue,
   getValues,
@@ -77,7 +79,8 @@ export function ListingLocationFields({
           placeholder={text.choose}
           options={cityOptions}
           error={errors.city?.message}
-          {...register('city')}
+          control={control}
+          name="city"
         />
         <ListingInput
           className="flex-1"
@@ -95,7 +98,8 @@ export function ListingLocationFields({
           placeholder={text.choose}
           options={landOptions}
           error={errors.landClassification?.message}
-          {...register('landClassification')}
+          control={control}
+          name="landClassification"
         />
         <ListingSelect
           className="flex-1"
@@ -103,7 +107,8 @@ export function ListingLocationFields({
           placeholder={text.choose}
           options={legalOptions}
           error={errors.legalStatus?.message}
-          {...register('legalStatus')}
+          control={control}
+          name="legalStatus"
         />
       </div>
       <p className="flex gap-2.5 rounded-md bg-inset px-4 py-3.5 text-[12.5px] leading-[1.72] text-text-secondary">
