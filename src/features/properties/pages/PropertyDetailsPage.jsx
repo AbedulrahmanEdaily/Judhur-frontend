@@ -16,6 +16,7 @@ import { PropertyDetailsSkeleton } from '../components/PropertyDetailsSkeleton.j
 import { PropertyGallery } from '../components/PropertyGallery.jsx';
 import { SafetyTips } from '../components/SafetyTips.jsx';
 import { ShareButton } from '../components/ShareButton.jsx';
+import { FavoriteButton } from '../../favorites/components/FavoriteButton.jsx';
 import { PROPERTY_TYPE_PLURALS } from '../constants.js';
 import { useGetPropertyByIdQuery } from '../propertiesApi.js';
 import { searchPath } from '../searchFilters.js';
@@ -114,13 +115,27 @@ export default function PropertyDetailsPage() {
               className="order-first gap-1.5 xl:order-none xl:gap-2"
             />
           </div>
-          <div className="hidden xl:block">
+          {/* Figma «إجراءات» (65:1168): «حفظ» then «مشاركة»; «إبلاغ» has no API. */}
+          <div className="hidden gap-2 xl:flex">
+            <FavoriteButton propertyId={property.id} title={property.title} variant="details" />
             <ShareButton title={property.title} />
           </div>
         </div>
       </section>
 
-      <PropertyGallery images={property.images} title={property.title} onBack={goBack} />
+      <PropertyGallery
+        images={property.images}
+        title={property.title}
+        onBack={goBack}
+        favoriteButton={
+          <FavoriteButton
+            propertyId={property.id}
+            title={property.title}
+            variant="gallery"
+            className="absolute end-4 top-3.5"
+          />
+        }
+      />
 
       <div className="flex flex-col gap-3.5 px-4 pt-3.5 pb-4 xl:flex-row xl:items-start xl:gap-[26px] xl:px-20 xl:pt-2 xl:pb-[60px]">
         <aside className="order-last flex flex-col gap-3.5 xl:order-none xl:w-[360px] xl:shrink-0 xl:gap-[18px]">

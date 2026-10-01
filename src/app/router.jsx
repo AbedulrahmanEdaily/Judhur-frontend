@@ -79,6 +79,13 @@ export const router = createBrowserRouter([
             }),
           },
           {
+            path: 'favorites',
+            handle: { hideMobileTopBar: true },
+            lazy: async () => ({
+              Component: (await import('../features/favorites/pages/FavoritesPage.jsx')).default,
+            }),
+          },
+          {
             path: 'my-properties/:propertyId/edit',
             handle: { hideMobileTopBar: true },
             lazy: async () => ({

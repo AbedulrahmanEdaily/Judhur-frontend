@@ -555,6 +555,22 @@ export const ar = {
     sellText: 'أضفه على جذور، وبعد مراجعة الإدارة بيظهر للمشترين.',
     latestEmpty: 'ما في عقارات منشورة لسا.',
   },
+  favorites: {
+    // Figma "المفضلة — مستخدم" (75:815). Figma's subtitle adds «— بنعلمك لو تغيّر سعر أي واحد
+    // فيهم.»; there are no notifications yet, so that promise is left out.
+    title: 'المفضلة',
+    subtitle: (count) => `${count} عقارات محفوظة`,
+    save: 'حفظ', // details «حفظ» (65:1177)
+    // not in Figma
+    saved: 'محفوظ',
+    add: (title) => `احفظ «${title}» بالمفضلة`,
+    remove: (title) => `شيل «${title}» من المفضلة`,
+    loginToSave: 'سجّل الدخول لحفظ العقار بالمفضلة',
+    emptyTitle: 'ما حفظت ولا عقار لسا',
+    emptyText: 'اضغط على القلب بأي عقار بيعجبك، وبتلاقيه هون.',
+    browse: 'تصفّح العقارات',
+    previousPage: 'رجوع للصفحة السابقة',
+  },
   admin: {
     // Figma "طابور الموافقات — أدمن" (80:753) and "مراجعة عقار — أدمن" (81:751)
     nav: {

@@ -639,6 +639,8 @@ Rule of thumb: if the owner only fixed images after a rejection, the "إعادة
 3. Toggle with optimistic updates on the `/ids` cache. Treat `409` on add and `404` on remove as success (the server already has the state you wanted), then refetch.
 4. Guests see the heart as a login prompt. Admins see no heart.
 
+In code: `useFavoriteIds()` (the Set, the count, `canFavorite`) and `FavoriteButton` (variants `card`, `gallery`, `details`). `addFavorite` / `removeFavorite` use a `queryFn` that turns `409` / `404` into success with `alreadyDone`, patch `getFavoriteIds` with `updateQueryData` (undone on failure), invalidate `Favorites`, and also `FavoriteIds` when `alreadyDone`. The card heart is a sibling of the card link, not inside it.
+
 ### 6.10 Admin moderation — `/api/v1/Admin/Properties` (role `Admin`)
 
 #### `GET /pending?page=&pageSize=`
@@ -730,7 +732,9 @@ src/
                                # MyPropertyPage, EditPropertyPage
       components/              # PropertyCard, PropertyFilters, PropertyGallery, SellerCard, ModerationBadge, ...
     favorites/
-      favoritesApi.js          # favorites list, ids, add, remove (6.9)
+      favoritesApi.js          # favorites list, ids, add, remove (6.9) — optimistic on the ids cache
+      useFavoriteIds.js        # the ids as a Set (createSelector + selectFromResult), skipped for guests/admins
+      components/FavoriteButton.jsx  # the heart: card, mobile photo, details «حفظ»
       pages/FavoritesPage.jsx
     dashboard/pages/DashboardPage.jsx
     admin/
@@ -923,7 +927,7 @@ API paths below are relative to the base paths in section 6.1.
 | `/my-properties` | user | Own listings with thumbnails, moderation badges, and rejection reasons | `GET /User/Properties/mine` |
 | `/my-properties/:id` | user | Owner page: state badge, rejection alert, readiness checklist, actions (6.8), media manager | `GET /User/Properties/mine/{id}` + actions |
 | `/my-properties/:id/edit` | user | Edit details + description | `PUT …/details`, `PUT …/description` |
-| `/favorites` | user | Favorites grid | `GET /User/Favorites` |
+| `/favorites` | user | Favorites grid (12 per page, `?page=`), cards leave at once when unsaved; sidebar and dashboard link here with the ids count | `GET /User/Favorites`, `GET /User/Favorites/ids` |
 | `/admin` | admin | Redirects to the queue | — |
 | `/admin/properties` | admin | Pending queue | `GET /Admin/Properties/pending` |
 | `/admin/properties/:id` | admin | Review page, document link, approve, reject | `GET /Admin/Properties/{id}` + actions |
@@ -952,7 +956,7 @@ Loading (skeletons, not spinners, for lists and cards) · empty (friendly Arabic
   | `MyProperties` | `/mine` | create, every seller mutation, delete |
   | `MyProperty` (`id`) | `/mine/{id}` | every seller mutation on that id |
   | `Favorites` | favorites list | add, remove |
-  | `FavoriteIds` | `/ids` | add, remove (optimistic) |
+  | `FavoriteIds` | `/ids` | add, remove — patched optimistically; invalidated only after the `409` / `404` "already" answers |
   | `PendingProperties` | admin queue | approve, reject |
   | `ReviewProperty` (`id`) | admin review | approve, reject |
 
@@ -1018,7 +1022,7 @@ Each step ends in a working app, and each is its own branch + PR.
 2. **Browse and details** — home, search with URL-synced filters, pagination, `PropertyCard` with `mainImageUrl` and the sold/rented ribbon; details page with gallery, key facts, seller card with the phone rule, HERE map with a single marker; skeleton/empty/error states.
 3. **Create listing + media** (done) — multi-step form, `LocationPicker` + reverse geocoding, then the media step after create: sequential image upload, document upload, readiness checklist.
 4. **Owner area** (done) — `/my-properties` with thumbnails, `/my-properties/:id` with state badge, rejection alert, checklist and every action from 6.8 (with confirm dialogs), media manager, `/my-properties/:id/edit`; the buyer-first dashboard.
-5. **Favorites** — `/ids` + heart everywhere, `/favorites` page.
+5. **Favorites** (done) — `/ids` + heart everywhere, `/favorites` page.
 6. **Admin moderation** (done) — queue, review page, document link, approve, reject dialog.
 7. **The rest** — as backend endpoints land (section 6.11 and `BACKEND_REQUESTS.md`).
 

@@ -14,16 +14,18 @@ function orderImages(images) {
 /**
  * Desktop: Figma "المعرض" (65:1203) — the selected photo (radius 18, 522 high) and a 230px
  * column of up to three thumbnails (132 high, radius 14) plus the «+N صور أخرى» tile.
- * Mobile: the 250px photo strip of 83:676 (swipe between photos) with the back button.
+ * Mobile: the 250px photo strip of 83:676 (swipe between photos) with the back button and, at
+ * the end, `favoriteButton` (the heart 83:677, passed in by the page).
  * A listing without photos shows the Figma Property Photo.
  *
  * @param {{
  *   images: import('../../../api/types.js').PropertyImage[],
  *   title: string,
  *   onBack: () => void,
+ *   favoriteButton?: import('react').ReactNode,
  * }} props
  */
-export function PropertyGallery({ images, title, onBack }) {
+export function PropertyGallery({ images, title, onBack, favoriteButton }) {
   const photos = orderImages(images);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const others = photos
@@ -84,6 +86,7 @@ export function PropertyGallery({ images, title, onBack }) {
         >
           <IconBackButton />
         </button>
+        {favoriteButton}
       </section>
     </>
   );
