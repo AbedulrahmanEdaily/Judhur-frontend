@@ -98,3 +98,4 @@ export { IconGoogle } from './IconGoogle.jsx';
 export { IconNotificationApproved } from './IconNotificationApproved.jsx';
 export { IconNotificationRejected } from './IconNotificationRejected.jsx';
 export { IconNotificationBell } from './IconNotificationBell.jsx';
+export { IconMinus17 } from './IconMinus17.jsx';

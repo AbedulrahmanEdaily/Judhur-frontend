@@ -34,8 +34,12 @@ export function Footer() {
             <Link to="/properties" className={itemClasses}>
               {ar.nav.properties}
             </Link>
-            <span className={itemClasses}>{ar.nav.map}</span>
-            <span className={itemClasses}>{ar.nav.addProperty}</span>
+            <Link to="/map" className={itemClasses}>
+              {ar.nav.map}
+            </Link>
+            <Link to="/properties/new" className={itemClasses}>
+              {ar.nav.addProperty}
+            </Link>
           </div>
 
           <div className="flex flex-col items-end gap-2.5 whitespace-nowrap">

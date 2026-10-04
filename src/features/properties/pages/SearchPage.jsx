@@ -116,6 +116,7 @@ export default function SearchPage() {
   return (
     <div className="min-h-full bg-surface">
       <SearchHeader
+        mapPath={`/map?${toSearchParams(filters)}`}
         filters={filters}
         totalCount={data?.totalCount}
         onOpenFilters={() => setIsDrawerOpen(true)}
@@ -129,6 +130,7 @@ export default function SearchPage() {
         <div className="flex min-w-0 flex-1 flex-col gap-3.5 xl:gap-5">
           <div className="hidden flex-col gap-5 xl:flex">
             <SearchToolbar
+              mapPath={`/map?${toSearchParams(filters)}`}
               totalCount={data?.totalCount}
               sort={filters.sort}
               onSortChange={(sort) => applyFilters({ ...filters, sort, page: 1 })}

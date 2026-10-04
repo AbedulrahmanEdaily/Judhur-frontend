@@ -49,9 +49,12 @@ Statuses last updated from the backend contract of 2026-09-30.
 ## 7. Richer search results
 
 - Status: partly done
-- Why the frontend needs it: cards need an image and a date; a "map of results" view needs coordinates.
-- Endpoint / change wanted: done — `mainImageUrl` on every `PropertySummary`. Still missing — `createdAtUtc`, and `latitude`/`longitude` if a results map is wanted, on the `GET /api/v1/User/Properties` item shape.
-- Current workaround in the UI: no date on cards; no results map (the Figma «الخريطة» screen stays unbuilt).
+- Why the frontend needs it: cards need an image and a date; the map page (`/map`, Figma 71:1300) needs every result's coordinates to place its pin.
+- Endpoint / change wanted: done — `mainImageUrl` on every `PropertySummary`. Still missing on the `GET /api/v1/User/Properties` item shape (and the favorites list, same shape):
+  - `latitude: number`, `longitude: number` — the values already stored for each listing.
+  - `createdAtUtc: string` for the card date.
+  - Optional, for later: `landClassification` (the map list shows its badge), and a bounding-box filter (`minLatitude`, `maxLatitude`, `minLongitude`, `maxLongitude`) so the map can show "the listings in this area" while the user pans.
+- Current workaround in the UI: no date on cards. The map page reads each result's location (and land class) from `GET /User/Properties/{id}` — 12 extra requests per page, server-cached. Once the summaries carry the coordinates, that query is dropped.
 
 ## 8. Owner details endpoint
 

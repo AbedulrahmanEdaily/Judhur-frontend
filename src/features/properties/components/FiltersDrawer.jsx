@@ -3,9 +3,9 @@ import { IconClose18 } from '../../../components/icons/index.js';
 import { ar } from '../../../locales/ar.js';
 
 /**
- * The mobile filters sheet — not in Figma (the mobile frame shows only the «فلاتر» button).
- * A full-screen native `<dialog>` holding the same panel as the desktop sidebar: focus stays
- * inside, and Escape closes it.
+ * The filters sheet — not in Figma (the mobile frame shows only the «فلاتر» button). A native
+ * `<dialog>` holding the same panel as the desktop sidebar: focus stays inside, and Escape
+ * closes it. Full screen on phones; from 1280px up (the map page) a 420px sheet at the start.
  *
  * @param {{ open: boolean, onClose: () => void, children: import('react').ReactNode }} props
  */
@@ -27,7 +27,7 @@ export function FiltersDrawer({ open, onClose, children }) {
         event.preventDefault();
         onClose();
       }}
-      className="m-0 h-dvh max-h-none w-full max-w-none bg-surface p-4 text-text backdrop:bg-black/50 xl:hidden"
+      className="m-0 h-dvh max-h-none w-full max-w-none bg-surface p-4 text-text backdrop:bg-black/50 xl:me-auto xl:w-[420px] xl:max-w-[420px]"
     >
       <div className="flex justify-end pb-3">
         <button

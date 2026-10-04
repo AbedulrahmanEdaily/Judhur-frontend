@@ -266,7 +266,25 @@ export const ar = {
     pageGoneTitle: 'هاي الصفحة صارت فاضية',
     pageGoneText: 'النتائج صارت أقل من قبل. روح لآخر صفحة فيها عقارات.',
     lastPage: 'روح لآخر صفحة',
+    showMap: 'الخريطة',
     reset: 'إعادة الضبط', // not in Figma: filters, text search and sort back to the defaults
+  },
+  map: {
+    // Figma "الخريطة — زائر" (71:1300)
+    title: 'الخريطة',
+    count: (count) => `${count} عقار`,
+    price: 'السعر',
+    // not in Figma
+    mapLabel: 'خريطة العقارات',
+    zoomIn: 'تكبير الخريطة',
+    zoomOut: 'تصغير الخريطة',
+    showList: 'عرض كقائمة',
+    unavailable: 'الخريطة مش متاحة هلأ — العقارات بالقائمة.',
+    locating: 'جاري تحديد مواقع العقارات…',
+    filterCount: (label, count) => `${label} (${count})`,
+    openFilters: (label) => `فتح الفلاتر: ${label}`,
+    emptyTitle: 'ما في عقارات بتطابق بحثك',
+    emptyText: 'جرّب تغيّر الفلاتر.',
   },
   property: {
     // Figma "بطاقة عقار" (33:2) and "تفاصيل العقار — زائر" (65:1087)
@@ -299,6 +317,7 @@ export const ar = {
       `وثيقة الملكية (${document}) راجعتها إدارة جذور قبل النشر. الوثيقة نفسها ما بتنعرض للعامة حفاظاً على خصوصية المالك — بتنشاف بس لفريق المراجعة.`,
     description: 'وصف العقار',
     mapTitle: 'الموقع على الخريطة',
+    showMap: 'عرض على الخريطة', // not in Figma: the map opens on demand on phones
     askingPrice: 'السعر المطلوب',
     perSquareMeter: (price) => `${price} / م²`,
     price: 'السعر',
@@ -346,7 +365,7 @@ export const ar = {
     legalStatus: 'نوع الوثيقة',
     classCNote:
       'لو اخترت منطقة (ج)، رح يظهر تحذير قانوني تلقائي على صفحة العقار يوضّح قيود البناء. هاد مطلوب للشفافية وما بمنع نشر العرض.',
-    mapHint: 'اضغط على الخريطة لتحديد موقع الأرض بدقة',
+    mapHint: 'اضغط على الخريطة أو اسحب الدبوس لتحديد موقع الأرض بدقة',
     imagesTitle: 'صور العقار',
     imagesDrop: 'اسحب صور العقار هنا أو اضغط للاختيار',
     cover: 'صورة الغلاف',

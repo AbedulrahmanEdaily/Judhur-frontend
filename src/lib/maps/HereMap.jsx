@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { DEFAULT_ZOOM, getPlatform, loadHere } from './platform.js';
+import { createHereMap, DEFAULT_ZOOM, loadHere } from './platform.js';
 
 /**
  * A HERE map with at most one marker. Created once and disposed on unmount; `center`, `zoom`
  * and `marker` changes are applied to the live map. While the library loads the box stays empty;
  * if it cannot load (no key, blocked, offline) `fallback` is rendered instead.
+ * With `onPick`, a tap reports the point, and the marker can be dragged to a new one.
  *
  * @param {{
  *   center: { lat: number, lng: number },
@@ -31,7 +32,7 @@ export function HereMap({
   const onPickRef = useRef(onPick);
   const [status, setStatus] = useState('loading');
 
-  // Always call the newest onPick without re-adding the map listener.
+  // Always call the newest onPick without re-adding the map listeners.
   useEffect(() => {
     onPickRef.current = onPick;
   });
@@ -43,39 +44,47 @@ export function HereMap({
     loadHere()
       .then((H) => {
         if (isUnmounted) return;
-        const layers = getPlatform(H).createDefaultLayers();
-        const map = new H.Map(containerRef.current, layers.vector.normal.map, {
+        const { map, behavior, dispose } = createHereMap(H, containerRef.current, {
           center: firstView.current.center,
           zoom: firstView.current.zoom,
-          pixelRatio: window.devicePixelRatio || 1,
+          defaultUi: true,
         });
-        const mapEvents = new H.mapevents.MapEvents(map);
-        const behavior = new H.mapevents.Behavior(mapEvents);
-        const ui = H.ui.UI.createDefault(map, layers);
 
-        function handleTap(event) {
-          if (!onPickRef.current) return;
-          const point = map.screenToGeo(
-            event.currentPointer.viewportX,
-            event.currentPointer.viewportY,
-          );
-          onPickRef.current({ latitude: point.lat, longitude: point.lng });
+        function pick(point) {
+          if (onPickRef.current) onPickRef.current({ latitude: point.lat, longitude: point.lng });
         }
-        function handleResize() {
-          map.getViewPort().resize();
+        function pointerToGeo(event) {
+          return map.screenToGeo(event.currentPointer.viewportX, event.currentPointer.viewportY);
+        }
+        function handleTap(event) {
+          // A tap on the marker itself is not a new point.
+          if (event.target instanceof H.map.Marker) return;
+          pick(pointerToGeo(event));
+        }
+        // Dragging the marker: the map must not pan meanwhile (HERE's drag-marker pattern).
+        function handleDragStart(event) {
+          if (event.target instanceof H.map.Marker) behavior.disable();
+        }
+        function handleDrag(event) {
+          if (event.target instanceof H.map.Marker) event.target.setGeometry(pointerToGeo(event));
+        }
+        function handleDragEnd(event) {
+          if (!(event.target instanceof H.map.Marker)) return;
+          behavior.enable();
+          pick(event.target.getGeometry());
         }
         map.addEventListener('tap', handleTap);
-        window.addEventListener('resize', handleResize);
+        map.addEventListener('dragstart', handleDragStart);
+        map.addEventListener('drag', handleDrag);
+        map.addEventListener('dragend', handleDragEnd);
 
         mapRef.current = { H, map, marker: null };
-        // Everything the map created goes with it: listeners, UI, drag/zoom behaviour, events.
         cleanup = () => {
-          window.removeEventListener('resize', handleResize);
           map.removeEventListener('tap', handleTap);
-          ui.dispose();
-          behavior.dispose();
-          mapEvents.dispose();
-          map.dispose();
+          map.removeEventListener('dragstart', handleDragStart);
+          map.removeEventListener('drag', handleDrag);
+          map.removeEventListener('dragend', handleDragEnd);
+          dispose();
         };
         setStatus('ready');
       })
@@ -100,6 +109,7 @@ export function HereMap({
 
   const markerLat = marker?.lat;
   const markerLng = marker?.lng;
+  const canPick = Boolean(onPick);
   useEffect(() => {
     if (status !== 'ready') return;
     const state = mapRef.current;
@@ -108,10 +118,15 @@ export function HereMap({
       state.marker = null;
     }
     if (markerLat !== undefined && markerLng !== undefined) {
-      state.marker = new state.H.map.Marker({ lat: markerLat, lng: markerLng });
+      // A draggable marker must be volatile so HERE redraws it while it moves.
+      state.marker = new state.H.map.Marker(
+        { lat: markerLat, lng: markerLng },
+        { volatility: canPick },
+      );
+      state.marker.draggable = canPick;
       state.map.addObject(state.marker);
     }
-  }, [status, markerLat, markerLng]);
+  }, [status, markerLat, markerLng, canPick]);
 
   if (status === 'failed') return fallback;
   return <div ref={containerRef} role="application" aria-label={label} className={className} />;
