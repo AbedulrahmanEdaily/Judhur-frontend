@@ -49,8 +49,9 @@ export function HereMap({
           zoom: firstView.current.zoom,
           pixelRatio: window.devicePixelRatio || 1,
         });
-        new H.mapevents.Behavior(new H.mapevents.MapEvents(map));
-        H.ui.UI.createDefault(map, layers);
+        const mapEvents = new H.mapevents.MapEvents(map);
+        const behavior = new H.mapevents.Behavior(mapEvents);
+        const ui = H.ui.UI.createDefault(map, layers);
 
         function handleTap(event) {
           if (!onPickRef.current) return;
@@ -67,8 +68,13 @@ export function HereMap({
         window.addEventListener('resize', handleResize);
 
         mapRef.current = { H, map, marker: null };
+        // Everything the map created goes with it: listeners, UI, drag/zoom behaviour, events.
         cleanup = () => {
           window.removeEventListener('resize', handleResize);
+          map.removeEventListener('tap', handleTap);
+          ui.dispose();
+          behavior.dispose();
+          mapEvents.dispose();
           map.dispose();
         };
         setStatus('ready');

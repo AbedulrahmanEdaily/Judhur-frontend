@@ -27,6 +27,7 @@ import {
   editListingSchema,
   EMPTY_LISTING_FORM,
   listingFormValues,
+  LISTING_SERVER_KEY_FIELDS,
 } from '../schemas.js';
 
 const text = ar.listing;
@@ -45,7 +46,11 @@ export default function EditPropertyPage() {
   const { propertyId } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
-  const { data: property, isLoading, error, refetch } = useGetMyPropertyQuery(propertyId);
+  // `currentData` is only ever this id's listing: after the URL changes to another listing, the
+  // old one is never shown, saved or reset into the form.
+  const { currentData, isFetching, error, refetch } = useGetMyPropertyQuery(propertyId);
+  let property = null;
+  if (currentData && currentData.id === propertyId) property = currentData;
   const { data: myProperties } = useGetMyPropertiesQuery();
   const [updateDetails] = useUpdatePropertyDetailsMutation();
   const [updateDescription] = useUpdatePropertyDescriptionMutation();
@@ -67,6 +72,10 @@ export default function EditPropertyPage() {
   const [latitude, longitude] = useWatch({ control, name: ['latitude', 'longitude'] });
   const [formMessage, setFormMessage] = useState(null);
   const [valuesToConfirm, setValuesToConfirm] = useState(null);
+  // A double click on the confirm dialog must not send PUT twice: a click is a discrete event,
+  // so React renders before the next one and the second click sees isSaving (and the disabled
+  // button).
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (property) reset(listingFormValues(property));
@@ -76,7 +85,8 @@ export default function EditPropertyPage() {
   if (property) state = ownerStateOf(property);
 
   async function save(values) {
-    setValuesToConfirm(null);
+    if (isSaving) return;
+    setIsSaving(true);
     setFormMessage(null);
     const detailsChanged = DETAIL_FIELDS.some((field) => dirtyFields[field]);
     try {
@@ -89,10 +99,19 @@ export default function EditPropertyPage() {
       let message = text.changesSaved;
       if (detailsChanged) message = text.changesSavedReview;
       toast.show({ tone: 'success', message });
+      setValuesToConfirm(null);
       navigate(`/my-properties/${propertyId}`);
     } catch (saveError) {
-      const { formMessage: message } = applyServerErrors(saveError, setError, FIELD_NAMES);
+      setValuesToConfirm(null);
+      const { formMessage: message } = applyServerErrors(
+        saveError,
+        setError,
+        FIELD_NAMES,
+        LISTING_SERVER_KEY_FIELDS,
+      );
       setFormMessage(message);
+    } finally {
+      setIsSaving(false);
     }
   }
 
@@ -111,10 +130,10 @@ export default function EditPropertyPage() {
   }
 
   let content;
-  if (isLoading) {
-    content = <Skeleton className="h-[520px] rounded-lg" />;
-  } else if (error) {
+  if (error && !isFetching) {
     content = <OwnerLoadError error={error} onRetry={refetch} />;
+  } else if (!property) {
+    content = <Skeleton className="h-[520px] rounded-lg" />;
   } else if (state === 'sold' || state === 'rented') {
     content = <FormAlert tone="info">{ar.ownerProperty.soldNote}</FormAlert>;
   } else {
@@ -153,7 +172,7 @@ export default function EditPropertyPage() {
           </section>
           {formMessage && <FormAlert>{formMessage}</FormAlert>}
           <div className="flex flex-wrap items-center gap-3">
-            <Button type="submit" loading={isSubmitting}>
+            <Button type="submit" loading={isSubmitting || isSaving}>
               {text.saveChanges}
             </Button>
             <Link
@@ -173,7 +192,7 @@ export default function EditPropertyPage() {
           title={text.confirmEditApproved.title}
           description={text.confirmEditApproved.description}
           confirmLabel={text.confirmEditApproved.confirm}
-          loading={isSubmitting}
+          loading={isSaving}
         />
       </>
     );

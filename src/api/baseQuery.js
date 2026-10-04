@@ -13,16 +13,28 @@ export const SELLERS_PATH = '/api/v1/User/Sellers';
 
 const REFRESH_URL = `${ACCOUNT_PATH}/refresh-token`;
 
-/** Requests that never trigger a refresh-and-retry. */
-const NO_REAUTH_URLS = ['/login', '/logout', '/refresh-token'].map((path) =>
-  `${ACCOUNT_PATH}${path}`.toLowerCase(),
-);
+/** Requests that never trigger a refresh-and-retry: they don't use the session. */
+const NO_REAUTH_URLS = [
+  '/login',
+  '/logout',
+  '/refresh-token',
+  '/google',
+  '/register',
+  '/confirm-email',
+  '/resend-confirmation',
+  '/send-reset-password-code',
+  '/change-password',
+].map((path) => `${ACCOUNT_PATH}${path}`.toLowerCase());
+
+// The lock name shared by every tab of this site (Web Locks API).
+const REFRESH_LOCK_NAME = 'judhur.refresh';
 
 /** Refresh ahead of time when the access token has less than this left. */
 const REFRESH_AHEAD_MS = 60_000;
 
-// The server keeps exactly one refresh token per user and deletes it on every refresh,
-// so two parallel refreshes would log the user out. Only one may run at a time.
+// The server keeps exactly one refresh token per user and each one works once, so two parallel
+// refreshes would log the user out. Only one may run at a time: the mutex inside this tab, the
+// Web Lock across tabs.
 const refreshMutex = new Mutex();
 
 // Bumped after every refresh attempt, so requests that queued behind an attempt don't repeat
@@ -98,6 +110,15 @@ async function refreshSession(api, extraOptions) {
 }
 
 /**
+ * Runs `task` while holding the refresh lock of all open tabs, so two tabs never send the same
+ * refresh token. Browsers without the Web Locks API just run it (the tab mutex still holds).
+ */
+function withTabsRefreshLock(task) {
+  if (navigator.locks) return navigator.locks.request(REFRESH_LOCK_NAME, task);
+  return task();
+}
+
+/**
  * Refreshes unless, while this request waited for the lock, another request already replaced
  * `staleToken` or already tried and failed.
  */
@@ -107,7 +128,8 @@ async function refreshUnlessReplaced(api, extraOptions, staleToken) {
   try {
     const tokenUnchanged = selectAuth(api.getState()).accessToken === staleToken;
     if (tokenUnchanged && refreshAttempts === attemptsSeen) {
-      await refreshSession(api, extraOptions);
+      // Inside the lock, refreshSession first adopts tokens another tab may have just stored.
+      await withTabsRefreshLock(() => refreshSession(api, extraOptions));
       refreshAttempts += 1;
     }
   } finally {

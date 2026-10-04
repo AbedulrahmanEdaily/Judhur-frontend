@@ -261,6 +261,11 @@ export const ar = {
     emptyText: 'جرّب تغيّر الفلاتر أو تمسحها وتبحث من جديد.',
     closeFilters: 'إغلاق الفلاتر',
     sortMenu: 'ترتيب النتائج',
+    // not in Figma
+    priceOrder: 'السعر «من» لازم يكون أقل من «إلى» أو مساوي له',
+    pageGoneTitle: 'هاي الصفحة صارت فاضية',
+    pageGoneText: 'النتائج صارت أقل من قبل. روح لآخر صفحة فيها عقارات.',
+    lastPage: 'روح لآخر صفحة',
     reset: 'إعادة الضبط', // not in Figma: filters, text search and sort back to the defaults
   },
   property: {
@@ -417,6 +422,16 @@ export const ar = {
     documentTooBig: 'الملف أكبر من 10 ميجا.',
     needDocument: 'لازم ترفع وثيقة الملكية قبل الإرسال.',
     needDeclarations: 'لازم توافق على الإقرارات الثلاثة قبل الإرسال.',
+    // not in Figma: image changes on a published or rejected listing
+    confirmImagesApproved: {
+      title: 'تعديل صور العقار؟',
+      description:
+        'إضافة صورة أو تغيير صورة الغلاف بيرجّع العقار للمراجعة وبيخفيه من البحث مؤقتاً لحد ما تعتمده الإدارة.',
+      confirmUpload: 'ارفع وأرسل للمراجعة',
+      confirmCover: 'غيّر الغلاف وأرسل للمراجعة',
+    },
+    imagesRejectedNote: 'إضافة صورة أو تغيير صورة الغلاف بيرجّع العقار المرفوض للمراجعة من جديد.',
+    minImagesKeep: (min) => `العقار المنشور لازم يضل فيه ${min} صور على الأقل`,
     confirmReplaceDocument: {
       title: 'استبدال الوثيقة؟',
       description:
@@ -433,6 +448,7 @@ export const ar = {
       maxLength: (max) => `الحد الأقصى ${max} حرفاً`,
       number: 'أدخل رقماً صحيحاً',
       positive: 'لازم يكون أكبر من صفر',
+      tooHigh: (max) => `لازم ما يزيد عن ${max}`,
       location: 'حدّد موقع العقار على الخريطة أو أدخل الإحداثيات',
     },
     // The edit page (not in Figma)
@@ -509,6 +525,8 @@ export const ar = {
     actionsTitle: 'إجراءات',
     editDetails: 'تعديل البيانات',
     resubmit: 'إعادة الإرسال للمراجعة',
+    resubmitNotReady:
+      'كمّل «جاهزية العرض للمراجعة» أول (3 صور، صورة غلاف، ووثيقة الملكية) عشان يوصل للإدارة.',
     deactivate: 'إيقاف العرض',
     reactivate: 'إعادة التفعيل',
     markSold: 'تم البيع',
@@ -554,14 +572,16 @@ export const ar = {
     title: 'لوحتي',
     stats: { listings: 'عقار معروض', favorites: 'محفوظ بالمفضلة' },
     mobileStats: { listings: 'عقار', favorites: 'مفضلة' },
-    pendingAlert: (title) => `عقار «${title}» قيد مراجعة الإدارة — عادة بتاخد أقل من 24 ساعة.`,
-    mobilePendingAlert: (title) => `«${title}» قيد مراجعة الإدارة — عادة أقل من 24 ساعة.`,
+    // Neutral: a pending listing reaches the admins only once its checklist is complete.
+    pendingAlert: (title) =>
+      `عقار «${title}» قيد المراجعة — افتحه وتأكد من «جاهزية العرض للمراجعة».`,
+    mobilePendingAlert: (title) => `«${title}» قيد المراجعة — تأكد من جاهزيته للمراجعة.`,
     viewDetails: 'عرض التفاصيل',
     // not in Figma
     welcome: 'مرحباً بك',
     welcomeName: (firstName) => `مرحباً ${firstName}`, // Figma «مرحباً محمد»
     subtitle: 'تابع عقاراتك، أو دوّر على عقارك الجاي.',
-    subtitlePending: (count) => `عندك ${count} قيد مراجعة الإدارة.`,
+    subtitlePending: (count) => `عندك ${count} قيد المراجعة.`,
     buyerSubtitle: 'دوّر على عقارك الجاي، ولما يكون عندك عقار للبيع أو الإيجار أضفه من هون.',
     stats2: { published: 'منشور للعامة' },
     mobileStats2: { published: 'منشور' },

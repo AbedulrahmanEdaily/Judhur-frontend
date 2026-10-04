@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { Button } from '../../../components/ui/Button.jsx';
 import { ConfirmDialog } from '../../../components/ui/ConfirmDialog.jsx';
@@ -6,6 +6,7 @@ import { useToast } from '../../../components/ui/useToast.js';
 import { IconPause, IconTrash, IconWarning20 } from '../../../components/icons/index.js';
 import { actionErrorMessage } from '../../../lib/http/problemDetails.js';
 import { ar } from '../../../locales/ar.js';
+import { canReactivateListing, readinessOf } from '../listingState.js';
 import { useChangePropertyStateMutation, useDeletePropertyMutation } from '../propertiesApi.js';
 
 const text = ar.ownerProperty;
@@ -16,7 +17,8 @@ const linkClasses =
 /**
  * The owner's buttons for one listing, by state (the project guide 6.8 "What the owner UI shows per
  * state"). Deactivate, mark sold / rented and delete go through ConfirmDialog; reactivate and
- * resubmit run at once. Not in Figma — Button and ConfirmDialog from the design system.
+ * resubmit run at once. Resubmit waits until the readiness checklist is complete; reactivate is
+ * offered for any approved, inactive listing (a sold or rented one too). Not in Figma — Button and ConfirmDialog from the design system.
  *
  * @param {{
  *   property: import('../../../api/types.js').MyPropertyDetails,
@@ -30,12 +32,15 @@ export function OwnerActions({ property, state }) {
   const [deleteProperty, { isLoading: isDeleting }] = useDeletePropertyMutation();
   const [confirmAction, setConfirmAction] = useState(null);
   const [runningAction, setRunningAction] = useState(null);
+  const notReadyId = useId();
 
   const isSoldOrRented = state === 'sold' || state === 'rented';
   const canEdit = !isSoldOrRented;
   const canDeactivate = property.isActive && state !== 'paused';
-  const canReactivate = state === 'paused';
+  const canReactivate = canReactivateListing(property);
   const canResubmit = state === 'rejected';
+  // Resubmitting an incomplete listing would leave it out of the admin queue (6.8).
+  const isReady = readinessOf(property).isReady;
   const canMarkSold = state === 'published' && property.propertyStatus === 'ForSale';
   const canMarkRented = state === 'published' && property.propertyStatus === 'ForRent';
 
@@ -80,7 +85,9 @@ export function OwnerActions({ property, state }) {
           <Button
             size="sm"
             loading={runningAction === 'resubmit'}
-            disabled={isChanging}
+            disabled={isChanging || !isReady}
+            aria-describedby={isReady ? undefined : notReadyId}
+            title={isReady ? undefined : text.resubmitNotReady}
             onClick={() => run('resubmit')}
           >
             {text.resubmit}
@@ -125,6 +132,11 @@ export function OwnerActions({ property, state }) {
           {text.delete}
         </Button>
       </div>
+      {canResubmit && !isReady && (
+        <p id={notReadyId} className="text-caption text-warning">
+          {text.resubmitNotReady}
+        </p>
+      )}
 
       <ConfirmDialog
         open={dialog !== null}

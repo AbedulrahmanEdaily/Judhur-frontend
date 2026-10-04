@@ -1,5 +1,7 @@
+import { useDispatch } from 'react-redux';
 import { Link } from 'react-router';
 import clsx from 'clsx';
+import { baseApi } from '../../../api/baseApi.js';
 import {
   IconNotificationApproved,
   IconNotificationBell,
@@ -47,6 +49,7 @@ const rowClasses =
  */
 export function NotificationItem({ notification, onOpen }) {
   const toast = useToast();
+  const dispatch = useDispatch();
   const [markAsRead] = useMarkNotificationAsReadMutation();
 
   const { Icon, classes } = typeIcons[notification.type] ?? otherTypeIcon;
@@ -55,6 +58,15 @@ export function NotificationItem({ notification, onOpen }) {
 
   async function handleOpen() {
     if (onOpen) onOpen();
+    // Approved / rejected: the listing changed on the server, so its cached owner data is stale.
+    if (path) {
+      dispatch(
+        baseApi.util.invalidateTags([
+          'MyProperties',
+          { type: 'MyProperty', id: notification.referenceId },
+        ]),
+      );
+    }
     try {
       await markAsRead(notification.id).unwrap();
     } catch (error) {

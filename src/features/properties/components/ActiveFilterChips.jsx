@@ -4,6 +4,7 @@ import {
   LAND_CLASSIFICATION_LABELS,
   LEGAL_STATUS_LABELS,
   PAYMENT_TYPE_LABELS,
+  PROPERTY_STATUS_LABELS,
   PROPERTY_TYPE_LABELS,
 } from '../constants.js';
 import { formatPriceRange } from '../searchFilters.js';
@@ -11,11 +12,15 @@ import { formatPriceRange } from '../searchFilters.js';
 const text = ar.search;
 
 /**
- * The chips for the filters that are set, in the Figma order (RTL). The purpose has no chip —
- * Figma shows it only in the panel's switch. The city and payment chips are not in Figma.
+ * The chips for the filters that are set, in the Figma order (RTL). The purpose, city and
+ * payment chips are not in Figma (it shows the purpose only in the panel's switch); the purpose
+ * chip makes the filter visible on mobile, where the panel is in the drawer.
  */
 function activeChips(filters) {
   const chips = [];
+  if (filters.propertyStatus) {
+    chips.push({ key: 'propertyStatus', label: PROPERTY_STATUS_LABELS[filters.propertyStatus] });
+  }
   if (filters.searchTerm) {
     chips.push({ key: 'searchTerm', label: text.searchTermChip(filters.searchTerm) });
   }

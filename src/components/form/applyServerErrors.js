@@ -2,7 +2,8 @@ import { toProblem } from '../../lib/http/problemDetails.js';
 
 /**
  * Puts a failed request's errors on the form. Request-field errors go on the field with the
- * same name through `setError`; `serverKeyFields` sends other server keys to a field too.
+ * same name through `setError`; `serverKeyFields` sends other server keys to a field too — a
+ * 400 error code, or the `code` of another error (its message is the `title`).
  * Everything else becomes one form-level message.
  *
  * @param {unknown} error the RTK Query error
@@ -33,6 +34,9 @@ export function applyServerErrors(error, setError, fieldNames, serverKeyFields =
   for (const [code, message] of Object.entries(problem.errorCodes)) {
     putOnField(serverKeyFields[code], message);
   }
+  // A non-validation error (409 `Identity.DuplicateEmail`, …) carries its code next to the title.
+  const codeField = problem.code ? serverKeyFields[problem.code] : undefined;
+  if (codeField && fieldNames.includes(codeField)) putOnField(codeField, problem.message);
 
   let formMessage = null;
   if (formMessages.length > 0) formMessage = formMessages.join(' ');

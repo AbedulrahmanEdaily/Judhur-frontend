@@ -74,7 +74,12 @@ export function readGoogleCallback() {
   if (readResult) return readResult;
 
   const answer = new URLSearchParams(window.location.hash.slice(1));
-  window.history.replaceState(null, '', window.location.pathname);
+  // Keep the router's history state (only the fragment with the token goes away).
+  window.history.replaceState(
+    window.history.state,
+    '',
+    window.location.pathname + window.location.search,
+  );
   const pending = takePending();
 
   let returnTo = '/';

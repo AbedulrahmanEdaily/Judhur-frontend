@@ -31,6 +31,7 @@ import {
   detailsRequest,
   EMPTY_LISTING_FORM,
   listingFormValues,
+  LISTING_SERVER_KEY_FIELDS,
   listingSchema,
 } from '../schemas.js';
 
@@ -131,9 +132,17 @@ export default function CreatePropertyPage() {
       }
       goToStep(3);
     } catch (error) {
-      const { problem, formMessage: message } = applyServerErrors(error, setError, FIELD_NAMES);
+      const { problem, formMessage: message } = applyServerErrors(
+        error,
+        setError,
+        FIELD_NAMES,
+        LISTING_SERVER_KEY_FIELDS,
+      );
       setFormMessage(message);
       const fieldsWithErrors = Object.keys(problem.fieldErrors);
+      for (const code of Object.keys(problem.errorCodes)) {
+        if (LISTING_SERVER_KEY_FIELDS[code]) fieldsWithErrors.push(LISTING_SERVER_KEY_FIELDS[code]);
+      }
       if (fieldsWithErrors.some((field) => DATA_STEP_FIELDS.includes(field))) goToStep(1);
     }
   }
@@ -206,7 +215,14 @@ export default function CreatePropertyPage() {
         <h2 className="text-[16px] leading-[1.72] font-bold text-text xl:text-[18px]">
           {text.dataTitle}
         </h2>
-        <ListingDataFields register={register} control={control} errors={errors} />
+        {/* Once the listing exists the purpose is fixed: PUT /details has no propertyStatus. */}
+        <ListingDataFields
+          register={register}
+          control={control}
+          errors={errors}
+          showPurpose={!propertyId}
+        />
+        {propertyId && <p className="text-caption text-muted">{text.purposeLocked}</p>}
       </section>
     );
   } else if (step === 2) {

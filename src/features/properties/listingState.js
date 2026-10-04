@@ -40,6 +40,14 @@ export const OWNER_STATE_TONES = {
 };
 
 /**
+ * Reactivate: approved and inactive — also a sold or rented listing that was deactivated.
+ * @param {{ moderationStatus: string, isActive: boolean }} property
+ */
+export function canReactivateListing(property) {
+  return property.moderationStatus === 'Approved' && !property.isActive;
+}
+
+/**
  * The three things a listing needs before an admin can see it.
  * @param {{ images: { isMainImage: boolean }[], hasOwnershipDocument: boolean }} property
  */

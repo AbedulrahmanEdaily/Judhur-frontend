@@ -30,14 +30,18 @@ const text = ar.ownerProperty;
  */
 export default function MyPropertyPage() {
   const { propertyId } = useParams();
-  const { data: property, isLoading, error, refetch } = useGetMyPropertyQuery(propertyId);
+  // `currentData` is only ever this id's listing: after the URL changes to another listing, the
+  // old one (and its delete / actions) is never shown.
+  const { currentData, isFetching, error, refetch } = useGetMyPropertyQuery(propertyId);
+  let property = null;
+  if (currentData && currentData.id === propertyId) property = currentData;
   const { data: myProperties } = useGetMyPropertiesQuery();
 
   let content;
-  if (isLoading) {
-    content = <Skeleton className="h-[480px] rounded-lg" />;
-  } else if (error) {
+  if (error && !isFetching) {
     content = <OwnerLoadError error={error} onRetry={refetch} />;
+  } else if (!property) {
+    content = <Skeleton className="h-[480px] rounded-lg" />;
   } else {
     const state = ownerStateOf(property);
     const readiness = readinessOf(property);
@@ -95,7 +99,13 @@ export default function MyPropertyPage() {
         )}
         <OwnerActions property={property} state={state} />
 
-        {!isSoldOrRented && <ImagesManager propertyId={property.id} images={property.images} />}
+        {!isSoldOrRented && (
+          <ImagesManager
+            propertyId={property.id}
+            images={property.images}
+            moderationStatus={property.moderationStatus}
+          />
+        )}
         {!isSoldOrRented && (
           <DocumentUploader
             propertyId={property.id}

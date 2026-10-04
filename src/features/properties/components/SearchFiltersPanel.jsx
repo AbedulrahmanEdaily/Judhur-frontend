@@ -63,6 +63,7 @@ export function SearchFiltersPanel({ filters, onApply, className }) {
   const appliedKey = toSearchParams(filters).toString();
   const [draft, setDraft] = useState(() => draftFrom(filters));
   const [draftKey, setDraftKey] = useState(appliedKey);
+  const [priceError, setPriceError] = useState(null);
 
   // A chip removed or the URL changed: start again from the applied filters.
   if (draftKey !== appliedKey) {
@@ -84,14 +85,21 @@ export function SearchFiltersPanel({ filters, onApply, className }) {
   }
 
   function handleApply() {
+    const minPrice = parsePrice(draft.minPrice);
+    const maxPrice = parsePrice(draft.maxPrice);
+    if (minPrice && maxPrice && minPrice > maxPrice) {
+      setPriceError(text.priceOrder);
+      return;
+    }
+    setPriceError(null);
     onApply({
       ...filters,
       propertyStatus: draft.propertyStatus,
       city: draft.city,
       propertyType: draft.propertyType,
       paymentType: draft.paymentType,
-      minPrice: parsePrice(draft.minPrice),
-      maxPrice: parsePrice(draft.maxPrice),
+      minPrice,
+      maxPrice,
       landClassification: draft.landClassification,
       legalStatus: draft.legalStatus,
       page: 1,
@@ -101,12 +109,14 @@ export function SearchFiltersPanel({ filters, onApply, className }) {
   // «مسح الكل» clears the filters and keeps the sort. The draft is cleared here too, because
   // the URL may already be empty and then the draftKey check above would not run.
   function handleClearAll() {
+    setPriceError(null);
     setDraft(draftFrom(EMPTY_FILTERS));
     onApply({ ...EMPTY_FILTERS, sort: filters.sort });
   }
 
   // «إعادة الضبط» puts everything back to the defaults: filters, text search and sort.
   function handleReset() {
+    setPriceError(null);
     setDraft(draftFrom(EMPTY_FILTERS));
     onApply(EMPTY_FILTERS);
   }
@@ -192,6 +202,11 @@ export function SearchFiltersPanel({ filters, onApply, className }) {
             onChange={(value) => setDraft({ ...draft, maxPrice: value })}
           />
         </div>
+        {priceError && (
+          <p role="alert" className="text-caption text-danger">
+            {priceError}
+          </p>
+        )}
       </FilterSection>
       <div className="h-px bg-border" />
 

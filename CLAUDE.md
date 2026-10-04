@@ -3,7 +3,7 @@
 > Project context for Claude Code working in the **frontend repository**. Read this whole file before writing code.
 > The backend lives in a **separate repository** that you cannot see. Section 6 (API contract) is your only source of truth for the backend — never guess an endpoint, a field name, or a status code.
 >
-> Contract snapshot taken from the backend source on 2026-09-30 (backend `main` + the `feature/Favorite` branch); notifications, my profile and the public seller page added 2026-10-01.
+> Contract snapshot taken from the backend source on 2026-09-30 (backend `main` + the `feature/Favorite` branch); notifications, my profile and the public seller page added 2026-10-01; security hardening (error `code`, image moderation, limits, rate limits) added 2026-10-04.
 >
 > **Read DESIGN.md before any UI work; for anything visual it overrides this file.**
 
@@ -283,15 +283,17 @@ Keys under `errors` are one of two kinds:
 
 ```json
 {
-  "title": "العقار غير موجود",
-  "status": 404,
-  "instance": "GET /api/v1/User/Properties/…",
+  "title": "لازم تأكد بريدك الإلكتروني قبل تسجيل الدخول",
+  "status": 403,
+  "code": "Identity.EmailNotConfirmed",
+  "instance": "POST /api/Identity/Account/login",
   "requestId": "0HN..."
 }
 ```
 
 - The **human-readable message is in `title`**, not `detail`.
-- There is **no error code** on these responses (backend request #3 stays open). Branch on `status` only.
+- **`code`** — a non-validation error (`401` / `403` / `404` / `409`) carries its stable error code in a top-level `code` (**not** under `errors`): `Identity.EmailNotConfirmed`, `Identity.LockedOut`, `Identity.DuplicateEmail`, `Identity.ConcurrencyFailure`, `Seller.NotFound`, … `toProblem` exposes it as `problem.code` (null when missing). Branch on `code` where the meaning matters (login `403`, register `409`), else on `status`. `applyServerErrors` puts a mapped `code` on its form field with the `title` as the message.
+- A middleware `401`/`403`, a `429` or a `500` may still have no `code` — keep the `status` fallback.
 - **Special `409`** — a database uniqueness conflict (for example two requests at the same moment):
   ```json
   {
@@ -305,7 +307,7 @@ Keys under `errors` are one of two kinds:
 - `429 Too Many Requests` from rate-limited endpoints may have an empty body — always handle it by status.
 - `401`/`403` produced by the auth middleware itself (missing/expired token, wrong role) may have an empty body or a bare ProblemDetails without a meaningful `title`.
 
-One helper, `src/lib/http/problemDetails.js`, turns any RTK Query error into `{ status, message, fieldErrors, errorCodes, requestId }` (field keys camelCased, error-code keys kept as sent). Use it everywhere; forms go through `components/form/applyServerErrors.js`.
+One helper, `src/lib/http/problemDetails.js`, turns any RTK Query error into `{ status, message, fieldErrors, errorCodes, code, requestId }` (field keys camelCased, error-code keys kept as sent). Use it everywhere; forms go through `components/form/applyServerErrors.js`.
 
 ### 6.3 Account endpoints — `/api/Identity/Account`
 
@@ -325,7 +327,8 @@ All bodies are JSON. None of these require an `Authorization` header (the `/me` 
 ```
 
 - `201 Created`, **empty body**. The backend emails a confirmation link. Navigate to a "check your email" screen that offers "resend".
-- `400` validation · `409` duplicate email: `errors["Identity.DuplicateEmail"]` (one error only) → on the email field.
+- `400` validation · `409` duplicate email: `code: "Identity.DuplicateEmail"` → `setError('email', title)`.
+- Rate limit: **5 / 15 min / IP** → `429` (the standard rate-limit message).
 - Phone regex (Palestinian/Israeli mobile formats): `^(?:\+?(?:970|972)\d{9}|05\d{8})$`
 - There is **no user name**: the email is the login. Don't send `userName` or `profileImageUrl` (the photo is uploaded later on `/profile`, 6.12).
 
@@ -340,8 +343,11 @@ All bodies are JSON. None of these require an `Authorization` header (the `/me` 
   { "accessToken": "jwt", "refreshToken": "base64 string", "expiresOnUtc": "2026-09-25T12:30:00+00:00" }
   ```
 - `401` wrong email or password.
-- `403` **either** email not confirmed **or** account locked (5 failed attempts → locked for 5 minutes). Both are `403` with an Arabic `title` and no error code (backend request #3). On `403` show the server message plus a "resend confirmation email" link.
+- `403` with a `code`:
+  - `Identity.EmailNotConfirmed` → the server message plus a "resend confirmation email" link (to `/register/check-email?email=…&from=login`, where resend is available at once).
+  - `Identity.LockedOut` (5 failed attempts → locked for 5 minutes) → the server message only, no resend link.
 - `400` validation.
+- Rate limit: **10 / minute / IP** → `429` (the standard rate-limit message).
 - **Single session per user:** logging in issues a new refresh token and deletes every older one. Logging in on another device ends the session here on its next refresh (section 8.4).
 
 #### `POST /google` — sign in with Google
@@ -392,6 +398,7 @@ All bodies are JSON. None of these require an `Authorization` header (the `/me` 
 ```
 
 - `204` success → go to login · `400` wrong or expired code (`errors["Identity.InvalidResetCode"]`) or password rules.
+- A successful reset **ends every session** of that account (all devices sign in again).
 - Rate limit: **5 / 15 min / IP** → `429`.
 - Flow: `/forgot-password` (email) → `/reset-password?email=…` (code + new password). Show a 5-minute countdown and a "send a new code" button.
 
@@ -404,6 +411,7 @@ All bodies are JSON. None of these require an `Authorization` header (the `/me` 
 - `200` → a **new** `TokenResponse` (new access token **and** new refresh token; the old refresh token is dead).
 - `401` session expired or replaced, or the access token is malformed; `404` if the user no longer exists → in every failure case, clear the session and go to login.
 - ⚠️ The **old access token is required** in the body. That's why both tokens are persisted (section 8.3).
+- Refresh tokens are **single-use**: if two refreshes with the same token race, the second gets `401`. So only one refresh may run at a time, across tabs too (section 8.4).
 - Only ever called by the refresh logic in `baseQueryWithReauth` (section 8.4) — never from components.
 
 #### `POST /logout`
@@ -549,9 +557,9 @@ Used for the owner's listing page and to pre-fill the edit form. Works in every 
 }
 ```
 
-- Rules: `price > 0`, `area > 0`, `propertyStatus` **must be `ForSale` or `ForRent`**, latitude −90…90, longitude −180…180, all enums must be valid names.
+- Rules: `0 < price ≤ 1,000,000,000,000` (`400` `PropertyErrors.PriceTooHigh`), `0 < area ≤ 10,000,000` (`400` `PropertyErrors.AreaTooHigh`), `propertyStatus` **must be `ForSale` or `ForRent`**, latitude −90…90, longitude −180…180, all enums must be valid names. The same limits apply to `PUT /details`; the forms check them too and put the two codes on the price / area fields.
 - There is **no** `ownershipDocumentUrl` — the document and the images are uploaded after creation (6.7).
-- `201` → the details shape with `images: []` and **no** `user`, plus a `Location` header. The listing starts `Pending`.
+- `201` → the details shape with `images: []` and **no** `user`, plus a `Location` header pointing to `GET /User/Properties/mine/{id}`. The listing starts `Pending`.
 - After `201`, continue to the media step (images + document) with the returned `id`. Don't navigate to `/properties/{id}` (it would 404 until approved).
 - `400` validation · `401` not logged in.
 
@@ -584,6 +592,8 @@ Both uploads are `multipart/form-data`. Build a `FormData` and **do not set `Con
 - `200` → the created `PropertyImage`.
 - The **first** image becomes main automatically. `isMainImage=true` on a later upload makes it the new main.
 - Max **10** images → `400` with `PropertyErrors.MaxImagesReached`.
+- ⚠️ On an **approved** listing, adding an image sends it back to `Pending` (hidden from search until approved again) → the same confirm dialog as editing details first. On a **rejected** listing, show a note that it goes back to review.
+- `400` `Storage.InvalidFileContent` when the file's content does not match its type (also on the document and profile-photo uploads) → show it on that upload.
 - ⚠️ **Upload images one at a time** (await each request before the next). Parallel uploads can collide on the image order and return the database `409` from 6.2.
 - Validate type and size on the client before uploading.
 
@@ -597,6 +607,8 @@ Both uploads are `multipart/form-data`. Build a `FormData` and **do not set `Con
 #### `PUT /{propertyId}/images/{imageId}/main`
 
 - `204` · `404`.
+- ⚠️ On an **approved** listing it sends the listing back to `Pending` → confirm first, like adding an image.
+- After either change: invalidate `MyProperty(id)`, `MyProperties`, `Property` and `SellerProfile`.
 
 #### `PUT /{propertyId}/ownership-document`
 
@@ -621,7 +633,8 @@ All are `POST` with **no body** and return `204`.
 | `/{id}/mark-rented` | approved **and** `ForRent` | `409` |
 
 - `mark-sold` / `mark-rented` are **irreversible** → confirm dialog.
-- `resubmit` clears the rejection reason and puts the listing back in the admin queue. It exists because image changes do **not** reset moderation on their own.
+- `resubmit` clears the rejection reason and puts the listing back in the admin queue. Deleting an image does not reset moderation, so after such a fix the owner resubmits. The button stays disabled until the readiness checklist is complete.
+- `reactivate` is offered for any approved, inactive listing — a sold or rented one included.
 
 #### `DELETE /{propertyId}`
 
@@ -761,7 +774,7 @@ Only `Pending` listings that pass the readiness checklist (6.8) appear here.
 
 - **Always send all four.** An empty bio is sent as `null` and clears it. The email is shown read-only.
 - `200` → the updated `MyProfile`: written into the `getMe` cache with `updateQueryData`, no refetch. Also invalidates `Property` and `SellerProfile` (the seller box and the seller page show the name).
-- `400` validation (field keys as usual) · `409` `errors["Identity.ConcurrencyFailure"]` → show the message; sending again retries.
+- `400` validation (field keys as usual) · `409` `code: "Identity.ConcurrencyFailure"` → show the message; sending again retries.
 
 #### `PUT /me/photo` and `DELETE /me/photo`
 
@@ -784,7 +797,7 @@ Only `Pending` listings that pass the readiness checklist (6.8) appear here.
 
 #### `GET /{sellerId}`
 
-- `200` → `SellerProfile` (6.4), tag `SellerProfile` (`id`). `404` `Seller.NotFound` → «البائع غير موجود».
+- `200` → `SellerProfile` (6.4), tag `SellerProfile` (`id`). `404` (`code: "Seller.NotFound"`) → «البائع غير موجود».
 - The page `/sellers/:id` shows the photo, name, city, bio, «عضو منذ» (month and year of `memberSinceUtc`) and `activeListingsCount`, then the seller's listings from `GET /User/Properties?sellerId={id}&page=&pageSize=` with `PropertyCard` and `Pagination`.
 - **Never** shows an email or a phone. The seller box on the listing details page (`user.id`) links here.
 
@@ -962,7 +975,9 @@ request ──► 401? ── no ──► return result
 
 Must-haves:
 
-- **Use a mutex (`async-mutex`).** The backend keeps exactly one refresh token per user and deletes it when it issues a new one. Two parallel refreshes would make the second one fail and log the user out.
+- **Use a mutex (`async-mutex`).** The backend keeps exactly one refresh token per user and each one works once. Two parallel refreshes would make the second one fail and log the user out.
+- **Across tabs too:** the refresh runs inside `navigator.locks.request('judhur.refresh', …)` (where supported), and first adopts tokens another tab already stored. `clearStoredTokens` clears only the storage area this tab uses (a tab without «تذكّرني» never clears the shared localStorage session).
+- Requests that don't use the session never refresh: `/login`, `/logout`, `/refresh-token`, `/google`, `/register`, `/confirm-email`, `/resend-confirmation`, `/send-reset-password-code`, `/change-password`.
 - Retry the original request **once**. Never loop.
 - If the refresh fails (usually `401`), the session was ended elsewhere (for example a login on another device). End the session and show "انتهت جلستك، الرجاء تسجيل الدخول مجدداً".
 - Optional nicety: refresh proactively when `expiresOnUtc` is less than a minute away. The 401 path must still work on its own — the server allows **zero clock skew**.
@@ -970,7 +985,7 @@ Must-haves:
 
 ### 8.5 Logout
 
-Call `POST /logout` with the refresh token, then **always** end the session locally (even if the call fails) and navigate to `/`.
+Call `POST /logout` with the refresh token read at click time (`getState`), then **always** navigate to `/` (`replace`) and end the session locally, even if the call fails.
 
 ### 8.6 Google sign-in (redirect)
 
@@ -1119,7 +1134,7 @@ When Abdulrahman confirms something is done: mark it `done`, update section 6 of
 |---|---|---|
 | 1 | Allow guests to browse | done |
 | 2 | Confirmation email to the frontend | done |
-| 3 | Error code on non-validation ProblemDetails | open — codes exist only as keys inside `400` `errors` |
+| 3 | Error code on non-validation ProblemDetails | done — top-level `code` on 401/403/404/409 (6.2) |
 | 4 | Current user endpoint | done — `GET /me` (6.12) |
 | 5 | Arabic messages for account endpoints | done |
 | 6 | Register ignores `bio` and `profileImageUrl` | done — `PUT /me` and the photo endpoints (6.12) |

@@ -42,7 +42,12 @@ export default function CheckEmailPage() {
   const email = searchParams.get('email') ?? '';
   const toast = useToast();
   const [resend, { isLoading: isResending }] = useResendConfirmationMutation();
-  const [resendAvailableAt, setResendAvailableAt] = useState(nextResendTime);
+  // After sign-up an email was just sent, so resend waits a minute. From the login link
+  // (`?from=login`) nothing was sent yet, so it is available at once.
+  const [resendAvailableAt, setResendAvailableAt] = useState(() => {
+    if (searchParams.get('from') === 'login') return 0;
+    return nextResendTime();
+  });
   const secondsLeft = useCountdown(resendAvailableAt);
 
   async function handleResend() {

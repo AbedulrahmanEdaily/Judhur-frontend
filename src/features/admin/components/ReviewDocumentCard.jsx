@@ -4,20 +4,29 @@ import { ar } from '../../../locales/ar.js';
 
 const text = ar.admin;
 
-const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp'];
+const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp'];
 
-/** 'pdf', 'image' or 'unknown', from the file name in the signed link (the query is ignored). */
+/**
+ * 'pdf', 'image' or 'unknown'. The signed link is a private download that ends in
+ * `/raw/download`, so the type comes from its `public_id` query parameter (the stored file name),
+ * else from `format`, else from the path.
+ */
 function documentKind(url) {
-  let path;
+  let parsed;
   try {
-    path = new URL(url, window.location.href).pathname.toLowerCase();
+    parsed = new URL(url, window.location.href);
   } catch {
     return 'unknown';
   }
-  if (path.endsWith('.pdf')) return 'pdf';
-  for (const extension of IMAGE_EXTENSIONS) {
-    if (path.endsWith(extension)) return 'image';
-  }
+  let fileName = parsed.pathname;
+  const publicId = parsed.searchParams.get('public_id');
+  const format = parsed.searchParams.get('format');
+  if (publicId && publicId.includes('.')) fileName = publicId;
+  else if (format) fileName = `file.${format}`;
+
+  const extension = fileName.split('.').pop().toLowerCase();
+  if (extension === 'pdf') return 'pdf';
+  if (IMAGE_EXTENSIONS.includes(extension)) return 'image';
   return 'unknown';
 }
 
