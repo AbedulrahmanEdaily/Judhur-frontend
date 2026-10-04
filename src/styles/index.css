@@ -177,6 +177,7 @@
   --shadow-dialog: 0 14px 18px rgb(0 0 0 / 0.2); /* Confirm Dialog */
   --shadow-search: 0 14px 40px -8px rgb(0 0 0 / 0.22); /* Home hero search bar (49:594) */
   --shadow-segment: 0 1px 3px rgb(0 0 0 / 0.14); /* not in Figma: the selected purpose switch */
+  --shadow-marker: 0 3px 10px -2px rgb(0 0 0 / 0.18); /* Map price pin (71:1398) */
 }
 
 /*

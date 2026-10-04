@@ -14,7 +14,7 @@ import { ar } from '../../locales/ar.js';
 const visitorLinks = [
   { label: ar.nav.home, to: '/', end: true },
   { label: ar.nav.properties, to: '/properties' },
-  { label: ar.nav.map },
+  { label: ar.nav.map, to: '/map' },
   { label: ar.nav.about },
 ];
 const adminLinks = [

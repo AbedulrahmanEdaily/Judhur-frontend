@@ -486,7 +486,7 @@ Query parameters (all optional; **omit** empty ones instead of sending `=`):
 - Returns approved **and** active listings only. Without a `propertyStatus` filter this **includes `Sold` and `Rented`** — show a "تم البيع" / "تم التأجير" ribbon on those cards.
 - **Several values:** a repeatable param is sent once per value (`?city=نابلس&city=جنين&paymentType=Cash`), never comma-joined. Values of one filter are **OR**, different filters are **AND**. A single value still works.
 - `400` invalid `page`/`pageSize`, an invalid enum value, or more than 20 cities (`PropertyErrors.TooManyCitiesInFilter` — show its message).
-- ⚠️ Still no `createdAtUtc` or coordinates on summaries, so no "map of results" view yet (backend request #7).
+- ⚠️ Still no `createdAtUtc` or coordinates on summaries (backend request #7). The map page reads each result's coordinates from its details meanwhile (section 10.3).
 
 #### `GET /{propertyId}` — details
 
@@ -1023,24 +1023,28 @@ Call `POST /logout` with the refresh token read at click time (`getState`), then
 
 The library is loaded at runtime from HERE's CDN (`https://js.api.here.com/v3/3.1/` — `mapsjs-core`, `-service`, `-mapevents`, `-ui` and `mapsjs-ui.css`), in order, the first time a map mounts (`src/lib/maps/platform.js`). The npm package (`@here/maps-api-for-javascript`, on HERE's own registry in `.npmrc`) could not be installed: that registry is blocked in the build environment. Switching to it later only changes `loadHere()`.
 
-The API key is visible in the browser by nature. Restrict it to the app's domains in the HERE platform settings where possible, and keep it only in `VITE_HERE_API_KEY`.
+The API key is visible in the browser by nature. Restrict it to the app's domains in the HERE platform settings where possible, and keep it only in `VITE_HERE_API_KEY` (`.env.local`). Without a key every map shows its fallback and the pages still work.
+
+**Getting a key:** sign in at `platform.here.com` → *Access Manager* → *Apps* → create an app → *API Keys* → create a key. The free plan covers Maps API for JavaScript (vector tiles) and Geocoding & Search. Under the key's *Restrictions* allow the frontend origins (`http://localhost:5173` in development, and the deployed one later).
 
 ### 10.2 Code layout (`src/lib/maps/`)
 
-- `platform.js` — loads the library once (`loadHere()`), creates **one** `H.service.Platform({ apikey })` lazily and reuses it, `hasMapKey()`, and the default view.
-- `HereMap.jsx` — generic map component: `useRef` container + `useEffect` that creates `H.Map` with `platform.createDefaultLayers().vector.normal.map`, adds `new H.mapevents.Behavior(new H.mapevents.MapEvents(map))` and `H.ui.UI.createDefault(map, layers)`, listens to window resize → `map.getViewPort().resize()`, and **disposes on unmount** (`map.dispose()`). Props: `center`, `zoom`, `marker` (one), `onPick`, `label`, `className`, `fallback` (rendered when the library can't load).
+- `platform.js` — loads the library once (`loadHere()`, no duplicate tags on retry), creates **one** `H.service.Platform({ apikey })` lazily and reuses it, `hasMapKey()`, the default view, and `createHereMap(H, element, { center, zoom, defaultUi })`: `H.Map` on `createDefaultLayers({ lg: 'ar' }).vector.normal.map` (Arabic labels), `Behavior` + `MapEvents`, HERE's default UI when `defaultUi`, the window-resize listener, and one `dispose()` for all of it.
+- `HereMap.jsx` — a map with **one** marker (the picker and the details page), built with `createHereMap` and disposed on unmount. Props: `center`, `zoom`, `marker`, `onPick`, `label`, `className`, `fallback` (rendered when the library can't load). With `onPick`, a tap reports the point and the marker is draggable (`volatility: true`, `draggable = true`; the map's behaviour is paused during the drag, HERE's documented pattern).
+- `MarkersMap.jsx` — the map page: one `H.map.DomMarker` price pin per listing in an `H.map.Group` (Figma 71:1398, the chosen pin in brand), the view fitted to the pins when the listings change (`setLookAtData` with the group's bounds, zoom capped at 15), a pin tap → `onSelect(id)`, and the Figma zoom buttons (71:1410) instead of HERE's UI.
 - `LocationPicker.jsx` — used in the create-listing form: click (or drag the marker) to set a point. Convert the tap with `map.screenToGeo(evt.currentPointer.viewportX, evt.currentPointer.viewportY)`. Reports `{ latitude, longitude }` through `onPick`; the form keeps them in two text fields (`setValue`), which also work without a map.
 - `geocoding.js` — thin wrappers over HERE Geocoding & Search (REST, same API key):
   - reverse geocode after picking a point → suggest `fullAddress` / `city` (the user can edit; never overwrite something they typed)
   - address search box → move the map to the result
   - request Arabic results (`lang=ar`) and restrict to the area around Palestine.
-- Pages without a map never download the library: it is loaded only when `HereMap` mounts.
+- Pages without a map never download the library: it is loaded only when a map mounts.
 
 ### 10.3 Behaviour
 
 - Default view: centered on Palestine, roughly `{ lat: 31.9, lng: 35.2 }`, zoom ≈ 8.
-- Details page: a single marker at the listing's `latitude`/`longitude`, no dragging.
-- Keep the map inside a fixed-height container with rounded corners; on mobile it collapses behind a "عرض على الخريطة" button.
+- Details page: a single marker at the listing's `latitude`/`longitude`, no dragging. From 1280px up the map shows at once; on phones it waits behind «عرض على الخريطة», so the library is downloaded only when asked.
+- Keep the map inside a fixed-height container with rounded corners.
+- **Map page `/map`** (Figma 71:1300): the same search as `/properties` (filters, sort and page in the URL, 12 per page), the list at the start and the map with a price pin per listing; a pin and its row light up together. Search results have **no coordinates yet** (backend request #7), so the page reads each listing's location from `GET /User/Properties/{id}` (`getPropertyLocations`, one query for the page's ids; the details are server-cached). When summaries carry `latitude` / `longitude`, drop that query and read them from the results.
 - If the key is missing or the library fails to load, show a static fallback card with the address text — the page must still work.
 
 ---
@@ -1053,6 +1057,7 @@ API paths below are relative to the base paths in section 6.1.
 |---|---|---|---|
 | `/` | public | Home: hero with search box, type categories, the four latest listings | `GET /User/Properties?pageSize=4` |
 | `/properties` | public | Search with filters sidebar (drawer on mobile), sort, pagination; sold/rented ribbon on cards | `GET /User/Properties` |
+| `/map` | public | Map of the search (Figma 71:1300): filter pills (open the filters sheet), list + price pins, sort, pagination, «عرض كقائمة» | `GET /User/Properties`, `GET /User/Properties/{id}` per result (coordinates, #7) |
 | `/properties/:id` | public | Details: gallery, key facts, description, map, seller card (phone rule, 6.5), heart | `GET /User/Properties/{id}` |
 | `/login` | guest | Login + Google | `POST /login`, `POST /google` |
 | `/register` | guest | Sign-up + Google | `POST /register`, `POST /google` |
@@ -1138,7 +1143,7 @@ When Abdulrahman confirms something is done: mark it `done`, update section 6 of
 | 4 | Current user endpoint | done — `GET /me` (6.12) |
 | 5 | Arabic messages for account endpoints | done |
 | 6 | Register ignores `bio` and `profileImageUrl` | done — `PUT /me` and the photo endpoints (6.12) |
-| 7 | Richer search results | partly done — `mainImageUrl` added; `createdAtUtc` and coordinates missing |
+| 7 | Richer search results | partly done — `mainImageUrl` added; `createdAtUtc` and `latitude`/`longitude` missing (the map page fetches details meanwhile) |
 | 8 | Owner details endpoint | done — `GET /User/Properties/mine/{id}` |
 | 9 | Currency | open |
 | 10 | CORS for deployment | partly done — only `http://localhost:5173` is allowed |

@@ -44,6 +44,12 @@ export const router = createBrowserRouter([
         }),
       },
       {
+        path: 'map',
+        lazy: async () => ({
+          Component: (await import('../features/map/pages/MapPage.jsx')).default,
+        }),
+      },
+      {
         path: 'sellers/:sellerId',
         lazy: async () => ({
           Component: (await import('../features/sellers/pages/SellerPage.jsx')).default,

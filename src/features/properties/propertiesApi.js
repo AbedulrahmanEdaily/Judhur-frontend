@@ -41,6 +41,28 @@ export const propertiesApi = baseApi.injectEndpoints({
       providesTags: (_result, _error, propertyId) => [{ type: 'Property', id: propertyId }],
     }),
 
+    /**
+     * The map page: where each listing is. Search results carry no coordinates yet
+     * (BACKEND_REQUESTS #7), so they come from each listing's public details (server-cached for
+     * 10 minutes). → [{ id, latitude, longitude, landClassification }] for the ids that load.
+     */
+    getPropertyLocations: builder.query({
+      async queryFn(propertyIds, api, extraOptions, baseQuery) {
+        const results = await Promise.all(
+          propertyIds.map((propertyId) => baseQuery(propertyPath(propertyId))),
+        );
+        const locations = [];
+        for (const result of results) {
+          if (!result.data) continue;
+          const { id, latitude, longitude, landClassification } = result.data;
+          locations.push({ id, latitude, longitude, landClassification });
+        }
+        return { data: locations };
+      },
+      providesTags: (_result, _error, propertyIds) =>
+        propertyIds.map((propertyId) => ({ type: 'Property', id: propertyId })),
+    }),
+
     // --- Seller (role User): 401 without a token, 403 for admins, 404 also for another
     // user's listing (the project guide 6.6–6.8).
 
@@ -170,6 +192,7 @@ export const propertiesApi = baseApi.injectEndpoints({
 export const {
   useGetPropertiesQuery,
   useGetPropertyByIdQuery,
+  useGetPropertyLocationsQuery,
   useGetMyPropertiesQuery,
   useGetMyPropertyQuery,
   useCreatePropertyMutation,

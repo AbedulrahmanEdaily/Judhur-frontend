@@ -1,5 +1,5 @@
 import { Link } from 'react-router';
-import { IconBackChevron, IconFilter } from '../../../components/icons/index.js';
+import { IconBackChevron, IconFilter, IconMapPin } from '../../../components/icons/index.js';
 import { formatNumber } from '../../../lib/format.js';
 import { ar } from '../../../locales/ar.js';
 import { PROPERTY_STATUS_LABELS, PROPERTY_TYPE_PLURALS } from '../constants.js';
@@ -29,9 +29,10 @@ function searchTitle(filters, withPurpose) {
  *   filters: import('../searchFilters.js').SearchFilters,
  *   totalCount?: number,
  *   onOpenFilters: () => void,
+ *   mapPath: string,
  * }} props
  */
-export function SearchHeader({ filters, totalCount, onOpenFilters }) {
+export function SearchHeader({ filters, totalCount, onOpenFilters, mapPath }) {
   return (
     <>
       {/* Mobile top bar (83:604): back, then the title. */}
@@ -53,6 +54,14 @@ export function SearchHeader({ filters, totalCount, onOpenFilters }) {
         <p className="flex-1 text-[13.5px] leading-[1.72] font-bold text-text">
           {totalCount !== undefined && text.mobileCount(formatNumber(totalCount))}
         </p>
+        {/* Not in the mobile Figma frame: the same search on the map. */}
+        <Link
+          to={mapPath}
+          className="flex items-center gap-1.5 rounded-full border border-border bg-raised px-3.5 py-2 text-[12.5px] leading-[1.72] font-semibold text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+        >
+          <IconMapPin width={14} height={14} className="text-muted" />
+          {text.showMap}
+        </Link>
         <button
           type="button"
           onClick={onOpenFilters}
