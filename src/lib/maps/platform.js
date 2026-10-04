@@ -13,17 +13,29 @@ export const DEFAULT_ZOOM = 8;
 let loading = null;
 let platform = null;
 
+/** Adds the script once; a retry after a failed load replaces the failed tag instead of adding. */
 function loadScript(src) {
   return new Promise((resolve, reject) => {
+    const old = document.head.querySelector(`script[src="${src}"]`);
+    if (old && old.dataset.loaded === 'true') {
+      resolve();
+      return;
+    }
+    if (old) old.remove();
+
     const script = document.createElement('script');
     script.src = src;
-    script.onload = resolve;
+    script.onload = () => {
+      script.dataset.loaded = 'true';
+      resolve();
+    };
     script.onerror = () => reject(new Error(`Could not load ${src}`));
     document.head.append(script);
   });
 }
 
 function loadStylesheet(href) {
+  if (document.head.querySelector(`link[href="${href}"]`)) return;
   const link = document.createElement('link');
   link.rel = 'stylesheet';
   link.href = href;

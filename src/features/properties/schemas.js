@@ -29,13 +29,24 @@ function optionalText(max) {
     .transform((value) => (value === '' ? null : value));
 }
 
-/** "45,000" or "٤٥٠٠٠" → 45000, and it must be above zero. */
-const positiveNumber = z
-  .string()
-  .trim()
-  .min(1, messages.required)
-  .transform((value) => Number(toLatinDigits(value).replace(/[,\s]/g, '')))
-  .pipe(z.number(messages.number).positive(messages.positive));
+/** The server limits (400 `PropertyErrors.PriceTooHigh` / `PropertyErrors.AreaTooHigh`). */
+export const MAX_PRICE = 1_000_000_000_000;
+export const MAX_AREA = 10_000_000;
+
+/** "45,000" or "٤٥٠٠٠" → 45000; above zero and at most `max`. */
+function positiveNumber(max) {
+  return z
+    .string()
+    .trim()
+    .min(1, messages.required)
+    .transform((value) => Number(toLatinDigits(value).replace(/[,\s]/g, '')))
+    .pipe(
+      z
+        .number(messages.number)
+        .positive(messages.positive)
+        .max(max, messages.tooHigh(formatNumber(max))),
+    );
+}
 
 function coordinate(min, max) {
   return z
@@ -54,8 +65,8 @@ export const listingSchema = z.object({
   title: requiredText(200),
   propertyType: oneOf(PROPERTY_TYPES),
   propertyStatus: oneOf(LISTING_STATUSES),
-  area: positiveNumber,
-  price: positiveNumber,
+  area: positiveNumber(MAX_AREA),
+  price: positiveNumber(MAX_PRICE),
   paymentType: oneOf(PAYMENT_TYPES),
   description: optionalText(2000),
   city: oneOf(CITIES),
@@ -69,6 +80,12 @@ export const listingSchema = z.object({
 
 /** The edit page: the purpose cannot change after create (PUT /details has no propertyStatus). */
 export const editListingSchema = listingSchema.omit({ propertyStatus: true });
+
+/** Server error codes that belong to a field of the listing forms. */
+export const LISTING_SERVER_KEY_FIELDS = {
+  'PropertyErrors.PriceTooHigh': 'price',
+  'PropertyErrors.AreaTooHigh': 'area',
+};
 
 /** The fields of the wizard's first step («البيانات»); the rest belong to «الموقع». */
 export const DATA_STEP_FIELDS = [

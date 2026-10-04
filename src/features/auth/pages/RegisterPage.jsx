@@ -19,7 +19,7 @@ const FIELD_NAMES = ['fullName', 'email', 'phoneNumber', 'city', 'password'];
 
 // Server error keys that belong to a form field.
 const SERVER_KEY_FIELDS = {
-  'Identity.DuplicateEmail': 'email', // 409
+  'Identity.DuplicateEmail': 'email', // 409, the code next to the title
   'Identity.PasswordTooShort': 'password',
   'Identity.PasswordRequiresDigit': 'password',
   'Identity.PasswordRequiresLower': 'password',

@@ -71,8 +71,15 @@ export function storeTokens({ accessToken, refreshToken, expiresOnUtc }) {
   }
 }
 
+/**
+ * Clears only the storage this tab's session lives in: a tab without "تذكّرني" must not end the
+ * remembered session other tabs share in localStorage.
+ */
 export function clearStoredTokens() {
+  if (isSessionOnly()) {
+    writeSessionStorage(AUTH_STORAGE_KEY, null);
+    writeSessionStorage(SESSION_ONLY_FLAG, null);
+    return;
+  }
   removeItem(AUTH_STORAGE_KEY);
-  writeSessionStorage(AUTH_STORAGE_KEY, null);
-  writeSessionStorage(SESSION_ONLY_FLAG, null);
 }

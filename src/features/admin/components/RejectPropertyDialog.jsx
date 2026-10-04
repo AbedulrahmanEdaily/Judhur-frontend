@@ -1,7 +1,7 @@
 import { IconWarning20 } from '../../../components/icons/index.js';
 import { ConfirmDialog } from '../../../components/ui/ConfirmDialog.jsx';
 import { useToast } from '../../../components/ui/useToast.js';
-import { actionErrorMessage } from '../../../lib/http/problemDetails.js';
+import { actionErrorMessage, toProblem } from '../../../lib/http/problemDetails.js';
 import { ar } from '../../../locales/ar.js';
 import { useRejectPropertyMutation } from '../adminApi.js';
 
@@ -32,7 +32,10 @@ export function RejectPropertyDialog({ property, onClose, onRejected }) {
       onRejected();
     } catch (error) {
       toast.show({ tone: 'error', message: actionErrorMessage(error) });
-      onClose();
+      // 404 gone / 409 already decided: nothing left to reject. Anything else (network, 400,
+      // 500) keeps the dialog and the typed reason so the admin can try again.
+      const status = toProblem(error).status;
+      if (status === 404 || status === 409) onClose();
     }
   }
 

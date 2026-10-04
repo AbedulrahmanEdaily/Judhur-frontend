@@ -26,9 +26,14 @@ const text = ar.admin;
 const cardClasses = 'rounded-lg border border-border bg-raised px-5 py-5 xl:px-6 xl:py-[22px]';
 const NO_CHECKS = text.checklist.map(() => false);
 
-/** Milliseconds until the signed document link runs out (0 when it already has). */
-function msUntil(isoDate) {
-  return Math.max(0, Date.parse(isoDate) - Date.now());
+// The signed link lives 10 minutes. It is renewed 9.5 minutes after the response arrived,
+// counted on this browser's clock only (the server's expiry time may be off from it).
+const LINK_RENEW_AFTER_MS = 9.5 * 60 * 1000;
+const MIN_RENEW_DELAY_MS = 30 * 1000;
+
+/** Milliseconds until the document link is renewed: from when the response arrived, ≥ 30 s. */
+function msUntilRenew(fulfilledAt) {
+  return Math.max(MIN_RENEW_DELAY_MS, fulfilledAt + LINK_RENEW_AFTER_MS - Date.now());
 }
 
 /**
@@ -48,18 +53,19 @@ export default function ReviewPropertyPage() {
     isFetching,
     error,
     refetch,
+    fulfilledTimeStamp,
   } = useGetReviewPropertyQuery(propertyId, { refetchOnMountOrArgChange: true });
   const [approveProperty, { isLoading: isApproving }] = useApprovePropertyMutation();
   const [checks, setChecks] = useState(NO_CHECKS);
   const [propertyToReject, setPropertyToReject] = useState(null);
 
-  // The document link must never be used after it expires: fetch a new one right then.
-  const expiresAt = property?.ownershipDocumentExpiresAtUtc;
+  // The document link must never be used after it expires: fetch a new one just before.
+  const hasDocumentLink = Boolean(property?.ownershipDocumentUrl);
   useEffect(() => {
-    if (!expiresAt) return undefined;
-    const timer = setTimeout(refetch, msUntil(expiresAt));
+    if (!hasDocumentLink || !fulfilledTimeStamp) return undefined;
+    const timer = setTimeout(refetch, msUntilRenew(fulfilledTimeStamp));
     return () => clearTimeout(timer);
-  }, [expiresAt, refetch]);
+  }, [hasDocumentLink, fulfilledTimeStamp, refetch]);
 
   async function handleApprove() {
     try {

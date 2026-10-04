@@ -8,6 +8,8 @@ import { ar } from '../../locales/ar.js';
  *   key camelCased (`PhoneNumber` → `phoneNumber`)
  * @property {Record<string, string>} errorCodes 400 only: first message per error code, key kept
  *   as sent (`PropertyErrors.MinImagesRequired`)
+ * @property {string | null} code the error code of a non-validation error (401/403/404/409:
+ *   `Identity.EmailNotConfirmed`, `Identity.LockedOut`, `Identity.DuplicateEmail`, …), else null
  * @property {string | null} requestId from the ProblemDetails body, for reporting 500s
  */
 
@@ -88,6 +90,7 @@ export function toProblem(error) {
       message: ar.errors.network,
       fieldErrors: {},
       errorCodes: {},
+      code: null,
       requestId: null,
     };
   }
@@ -97,6 +100,7 @@ export function toProblem(error) {
       message: ar.errors.timeout,
       fieldErrors: {},
       errorCodes: {},
+      code: null,
       requestId: null,
     };
   }
@@ -125,8 +129,11 @@ export function toProblem(error) {
   let requestId = null;
   if (typeof body.requestId === 'string') requestId = body.requestId;
 
+  let code = null;
+  if (typeof body.code === 'string' && body.code !== '') code = body.code;
+
   const { fieldErrors, errorCodes } = readErrors(body.errors);
-  return { status, message, fieldErrors, errorCodes, requestId };
+  return { status, message, fieldErrors, errorCodes, code, requestId };
 }
 
 /**

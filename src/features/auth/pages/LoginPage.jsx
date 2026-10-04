@@ -16,6 +16,8 @@ import { loginSchema } from '../schemas.js';
 import { safeRedirectPath } from '../../../routes/redirect.js';
 import { ar } from '../../../locales/ar.js';
 
+const EMAIL_NOT_CONFIRMED = 'Identity.EmailNotConfirmed';
+
 /** Figma "تسجيل الدخول — زائر" (69:1159) and "تسجيل الدخول — موبايل" (84:716). */
 export default function LoginPage() {
   const text = ar.auth.login;
@@ -43,7 +45,10 @@ export default function LoginPage() {
       const { problem, formMessage } = applyServerErrors(error, setError, ['email', 'password']);
       let requestId = null;
       if (problem.status >= 500) requestId = problem.requestId;
-      setFailure({ message: formMessage, requestId, status: problem.status, email: values.email });
+      // 403 `Identity.EmailNotConfirmed` offers a new confirmation email; `Identity.LockedOut`
+      // (5 failed tries) and 429 (10 tries a minute) show the message only.
+      const canResend = problem.code === EMAIL_NOT_CONFIRMED;
+      setFailure({ message: formMessage, requestId, canResend, email: values.email });
     }
   }
 
@@ -105,12 +110,11 @@ export default function LoginPage() {
         {failure?.message && (
           <FormAlert requestId={failure.requestId}>
             {failure.message}
-            {/* 403 = email not confirmed or account locked; the API can't tell which yet. */}
-            {failure.status === 403 && (
+            {failure.canResend && (
               <>
                 {' '}
                 <Link
-                  to={`/register/check-email?${new URLSearchParams({ email: failure.email })}`}
+                  to={`/register/check-email?${new URLSearchParams({ email: failure.email, from: 'login' })}`}
                   className="font-semibold underline"
                 >
                   {text.resendConfirmation}

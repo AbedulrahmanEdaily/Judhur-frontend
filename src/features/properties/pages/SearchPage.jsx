@@ -12,6 +12,7 @@ import { PropertyCardSkeleton } from '../components/PropertyCardSkeleton.jsx';
 import { SearchFiltersPanel } from '../components/SearchFiltersPanel.jsx';
 import { SearchHeader } from '../components/SearchHeader.jsx';
 import { SearchToolbar } from '../components/SearchToolbar.jsx';
+import { SortMenu } from '../components/SortMenu.jsx';
 import { useGetPropertiesQuery } from '../propertiesApi.js';
 import { EMPTY_FILTERS, readSearchFilters, toApiQuery, toSearchParams } from '../searchFilters.js';
 
@@ -70,6 +71,20 @@ export default function SearchPage() {
     let requestId;
     if (problem.status >= 500) requestId = problem.requestId;
     results = <ErrorState message={message} requestId={requestId} onRetry={refetch} />;
+  } else if (
+    data &&
+    data.items.length === 0 &&
+    filters.page > data.totalPages &&
+    data.totalPages > 0
+  ) {
+    // An old link or fewer results than before: this page is past the last one.
+    results = (
+      <EmptyState
+        title={text.pageGoneTitle}
+        description={text.pageGoneText}
+        action={{ label: text.lastPage, onClick: () => changePage(data.totalPages) }}
+      />
+    );
   } else if (!data || data.items.length === 0) {
     results = (
       <EmptyState
@@ -125,6 +140,13 @@ export default function SearchPage() {
       </div>
 
       <FiltersDrawer open={isDrawerOpen} onClose={() => setIsDrawerOpen(false)}>
+        {/* The sort of the desktop toolbar (not in the mobile Figma frame). */}
+        <div className="flex justify-end pb-3">
+          <SortMenu
+            value={filters.sort}
+            onChange={(sort) => applyFilters({ ...filters, sort, page: 1 })}
+          />
+        </div>
         <SearchFiltersPanel filters={filters} onApply={applyFilters} />
       </FiltersDrawer>
     </div>

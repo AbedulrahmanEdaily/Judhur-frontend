@@ -20,10 +20,10 @@ Statuses last updated from the backend contract of 2026-09-30.
 
 ## 3. Error code on non-validation ProblemDetails
 
-- Status: open
+- Status: done
 - Why the frontend needs it: "email not confirmed" and "account locked" are both `403` on login and only distinguishable by the `title`; the UI also can't choose its own message per error.
-- Endpoint / change wanted: an extension member on every non-validation ProblemDetails, e.g. `"code": "Identity.EmailNotConfirmed"`, `"Identity.LockedOut"`, `"PropertyErrors.NotFound"`. Codes exist today only as keys inside `400` `errors`.
-- Current workaround in the UI: branch on `status` only; on login `403` show the server `title` plus a "resend confirmation email" link.
+- Endpoint / change wanted: done — every `401` / `403` / `404` / `409` ProblemDetails carries a top-level `code` (`Identity.EmailNotConfirmed`, `Identity.LockedOut`, `Identity.DuplicateEmail`, `Identity.ConcurrencyFailure`, …) (`CLAUDE.md` 6.2).
+- Current workaround in the UI: none — login shows the resend link only for `Identity.EmailNotConfirmed`.
 
 ## 4. Current user endpoint
 

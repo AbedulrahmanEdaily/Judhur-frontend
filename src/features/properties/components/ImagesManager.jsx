@@ -4,6 +4,7 @@ import {
   IconCountCheck,
   IconPhotoRemove,
   IconUploadImage,
+  IconWarning20,
 } from '../../../components/icons/index.js';
 import { ConfirmDialog } from '../../../components/ui/ConfirmDialog.jsx';
 import { Spinner } from '../../../components/ui/Spinner.jsx';
@@ -27,14 +28,18 @@ const text = ar.listing;
  * Files are checked here (type, 5 MB, 10 images) and uploaded one at a time — parallel uploads
  * can collide on the image order. The cover can't be removed (the API refuses); «اجعلها الغلاف»
  * is not in Figma (the API has no reordering, so the cover is picked, not dragged).
+ * On a published (approved) listing, adding an image or changing the cover sends it back to
+ * review, so both ask first; it must also keep 3 images, so delete stops at 3. A rejected
+ * listing gets a note that these changes send it back to review.
  *
  * @param {{
  *   propertyId: string,
  *   images: import('../../../api/types.js').PropertyImage[],
  *   message?: string | null,
+ *   moderationStatus?: import('../../../api/types.js').ModerationStatus,
  * }} props
  */
-export function ImagesManager({ propertyId, images, message }) {
+export function ImagesManager({ propertyId, images, message, moderationStatus }) {
   const toast = useToast();
   const inputId = useId();
   const [uploadImage] = useUploadPropertyImageMutation();
@@ -44,11 +49,17 @@ export function ImagesManager({ propertyId, images, message }) {
   const [problems, setProblems] = useState([]);
   const [imageToDelete, setImageToDelete] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
+  // On an approved listing: { type: 'upload', files, problems } or { type: 'cover', image }.
+  const [reviewChange, setReviewChange] = useState(null);
 
   const isUploading = progress !== null;
   const isFull = images.length >= MAX_IMAGES;
+  const isApproved = moderationStatus === 'Approved';
+  const isRejected = moderationStatus === 'Rejected';
+  const keepsMinimum = isApproved && images.length <= MIN_IMAGES;
 
-  async function uploadFiles(fileList) {
+  /** Checks type, size and room; returns the accepted files and the messages for the others. */
+  function checkFiles(fileList) {
     const found = [];
     const accepted = [];
     let room = MAX_IMAGES - images.length;
@@ -64,22 +75,36 @@ export function ImagesManager({ propertyId, images, message }) {
         room -= 1;
       }
     }
+    return { accepted, found };
+  }
 
+  function chooseFiles(fileList) {
+    const { accepted, found } = checkFiles(fileList);
+    if (isApproved && accepted.length > 0) {
+      setProblems(found);
+      setReviewChange({ type: 'upload', files: accepted, problems: found });
+      return;
+    }
+    uploadFiles(accepted, found);
+  }
+
+  async function uploadFiles(accepted, found) {
+    const messages = [...found];
     // One request at a time, each awaited before the next.
     for (let index = 0; index < accepted.length; index += 1) {
       setProgress({ current: index + 1, total: accepted.length });
       try {
         await uploadImage({ propertyId, file: accepted[index] }).unwrap();
       } catch (error) {
-        found.push(text.imageFailed(accepted[index].name, actionErrorMessage(error)));
+        messages.push(text.imageFailed(accepted[index].name, actionErrorMessage(error)));
       }
     }
     setProgress(null);
-    setProblems(found);
+    setProblems(messages);
   }
 
   function handleInputChange(event) {
-    uploadFiles(event.target.files);
+    chooseFiles(event.target.files);
     // Let the same file be picked again after a failure.
     event.target.value = '';
   }
@@ -93,15 +118,30 @@ export function ImagesManager({ propertyId, images, message }) {
     event.preventDefault();
     setIsDragging(false);
     if (isUploading || isFull) return;
-    uploadFiles(event.dataTransfer.files);
+    chooseFiles(event.dataTransfer.files);
   }
 
-  async function handleMakeCover(image) {
+  function handleMakeCover(image) {
+    if (isApproved) {
+      setReviewChange({ type: 'cover', image });
+      return;
+    }
+    makeCover(image);
+  }
+
+  async function makeCover(image) {
     try {
       await setMainImage({ propertyId, imageId: image.id }).unwrap();
     } catch (error) {
       toast.show({ tone: 'error', message: actionErrorMessage(error) });
     }
+  }
+
+  function handleConfirmReviewChange() {
+    const change = reviewChange;
+    setReviewChange(null);
+    if (change.type === 'upload') uploadFiles(change.files, change.problems);
+    else makeCover(change.image);
   }
 
   async function handleConfirmDelete() {
@@ -116,6 +156,16 @@ export function ImagesManager({ propertyId, images, message }) {
 
   const missing = MIN_IMAGES - images.length;
 
+  /** Why a remove button is off (the cover, or a published listing at 3 images). */
+  function removeTitle(image) {
+    if (image.isMainImage) return text.coverCannotBeRemoved;
+    if (keepsMinimum) return text.minImagesKeep(MIN_IMAGES);
+    return text.removeImage;
+  }
+
+  let reviewConfirmLabel = text.confirmImagesApproved.confirmUpload;
+  if (reviewChange?.type === 'cover') reviewConfirmLabel = text.confirmImagesApproved.confirmCover;
+
   return (
     <section className="flex flex-col gap-[18px] xl:rounded-lg xl:border xl:border-border xl:bg-raised xl:px-[25px] xl:py-[23px]">
       <div className="flex flex-col gap-[3px]">
@@ -126,6 +176,12 @@ export function ImagesManager({ propertyId, images, message }) {
           {text.imagesSubtitle(MIN_IMAGES)}
         </p>
       </div>
+
+      {isRejected && (
+        <p className="rounded-md bg-info-soft px-3.5 py-2.5 text-[13px] leading-[1.72] text-info">
+          {text.imagesRejectedNote}
+        </p>
+      )}
 
       <label
         htmlFor={inputId}
@@ -206,9 +262,9 @@ export function ImagesManager({ propertyId, images, message }) {
               <button
                 type="button"
                 onClick={() => setImageToDelete(image)}
-                disabled={image.isMainImage}
+                disabled={image.isMainImage || keepsMinimum}
                 aria-label={text.removeImage}
-                title={image.isMainImage ? text.coverCannotBeRemoved : text.removeImage}
+                title={removeTitle(image)}
                 className="absolute end-2.5 top-2.5 flex size-[30px] items-center justify-center rounded-full bg-raised text-danger focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:cursor-not-allowed disabled:text-muted disabled:opacity-70"
               >
                 <IconPhotoRemove />
@@ -244,6 +300,16 @@ export function ImagesManager({ propertyId, images, message }) {
         description={text.confirmRemoveImage.description}
         confirmLabel={text.confirmRemoveImage.confirm}
         loading={isDeleting}
+      />
+      <ConfirmDialog
+        open={reviewChange !== null}
+        onClose={() => setReviewChange(null)}
+        onConfirm={handleConfirmReviewChange}
+        title={text.confirmImagesApproved.title}
+        description={text.confirmImagesApproved.description}
+        confirmLabel={reviewConfirmLabel}
+        tone="warning"
+        icon={IconWarning20}
       />
     </section>
   );

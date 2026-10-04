@@ -16,6 +16,8 @@ function sellerChangeTags(propertyId) {
     { type: 'MyProperty', id: propertyId },
     { type: 'Property', id: propertyId },
     { type: 'Property', id: 'LIST' },
+    // The public seller page counts the seller's listings.
+    'SellerProfile',
   ];
 }
 
@@ -46,15 +48,21 @@ export const propertiesApi = baseApi.injectEndpoints({
     getMyProperties: builder.query({
       query: () => `${USER_PROPERTIES_PATH}/mine`,
       providesTags: ['MyProperties'],
+      // Not cached on the server, and moderation changes elsewhere: always fresh on a new visit.
+      refetchOnMountOrArgChange: true,
     }),
 
     /** 200 → MyPropertyDetails. 404 missing or not owned. */
     getMyProperty: builder.query({
       query: (propertyId) => `${USER_PROPERTIES_PATH}/mine/${encodeURIComponent(propertyId)}`,
       providesTags: (_result, _error, propertyId) => [{ type: 'MyProperty', id: propertyId }],
+      refetchOnMountOrArgChange: true,
     }),
 
-    /** Body: CreatePropertyRequest. 201 → the details shape with `id`; the listing is Pending. */
+    /**
+     * Body: CreatePropertyRequest. 201 → the details shape with `id` (`Location` points to
+     * `GET /mine/{id}`); the listing is Pending.
+     */
     createProperty: builder.mutation({
       query: (body) => ({ url: USER_PROPERTIES_PATH, method: 'POST', body }),
       invalidatesTags: ['MyProperties'],
@@ -82,7 +90,9 @@ export const propertiesApi = baseApi.injectEndpoints({
 
     /**
      * multipart: `file` (JPG/PNG/WEBP ≤ 5 MB), `isMainImage`. 200 → PropertyImage.
-     * Call one at a time: parallel uploads can collide on the image order (409).
+     * Call one at a time: parallel uploads can collide on the image order (409). On an approved
+     * listing it sends the listing back to Pending. 400 `Storage.InvalidFileContent` when the
+     * content does not match the type.
      */
     uploadPropertyImage: builder.mutation({
       query: ({ propertyId, file, isMainImage = false }) => {
@@ -103,7 +113,7 @@ export const propertiesApi = baseApi.injectEndpoints({
       invalidatesTags: (_result, _error, { propertyId }) => sellerChangeTags(propertyId),
     }),
 
-    /** 204. */
+    /** 204. On an approved listing it sends the listing back to Pending. */
     setMainPropertyImage: builder.mutation({
       query: ({ propertyId, imageId }) => ({
         url: `${propertyPath(propertyId)}/images/${encodeURIComponent(imageId)}/main`,
@@ -151,6 +161,7 @@ export const propertiesApi = baseApi.injectEndpoints({
         'MyProperties',
         { type: 'Property', id: propertyId },
         { type: 'Property', id: 'LIST' },
+        'SellerProfile',
       ],
     }),
   }),
