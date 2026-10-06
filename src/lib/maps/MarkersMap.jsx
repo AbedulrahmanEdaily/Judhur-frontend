@@ -1,22 +1,21 @@
 import { useEffect, useRef, useState } from 'react';
 import clsx from 'clsx';
 import { IconMinus17, IconPlus17 } from '../../components/icons/index.js';
-import { createMap, DEFAULT_CENTER, DEFAULT_ZOOM, loadGoogleMaps } from './googleMaps.js';
+import { createHereMap, DEFAULT_CENTER, DEFAULT_ZOOM, loadHere } from './platform.js';
 
 // One listing fills the view at street level; a fitted view never zooms in closer than this.
 const MAX_FIT_ZOOM = 15;
 
 // Figma map price pin (71:1398): pill, 14×8, 13 bold, shadow; brand when chosen, raised else.
-// Google puts the bottom of the pin on the point; half its height down centers it there.
 const pinClasses =
-  'cursor-pointer whitespace-nowrap rounded-full border px-[13px] py-[7px] text-[13px] leading-[1.7] font-bold shadow-marker translate-y-1/2';
+  'cursor-pointer whitespace-nowrap rounded-full border px-[13px] py-[7px] text-[13px] leading-[1.7] font-bold shadow-marker -translate-x-1/2 -translate-y-1/2';
 const activePinClasses = 'border-brand bg-brand text-inverse';
 const idlePinClasses = 'border-border-strong bg-raised text-text';
 
 const zoomButtonClasses =
   'flex p-[10px] text-text-secondary transition-colors hover:bg-inset focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand';
 
-/** The HTML of one price pin. */
+/** The HTML of one price pin; HERE copies it onto the map. */
 function pinElement(label, isActive) {
   const element = document.createElement('div');
   element.className = clsx(pinClasses, isActive ? activePinClasses : idlePinClasses);
@@ -25,16 +24,11 @@ function pinElement(label, isActive) {
   return element;
 }
 
-/** Takes the pins off the map. */
-function removePins(pins) {
-  for (const pin of pins) pin.map = null;
-}
-
 /**
- * A Google map of several listings: one price pin each (Figma 71:1397), the chosen one in brand,
- * and the Figma zoom buttons (71:1410) instead of Google's own. The «خريطة | قمر صناعي» switch
- * stays. The view fits the pins whenever the set of listings changes. A tap on a pin calls
- * `onSelect` with its id. If the library cannot load, `fallback` is rendered.
+ * A HERE map of several listings: one price pin each (Figma 71:1397), the chosen one in brand,
+ * and the Figma zoom buttons (71:1410) instead of HERE's own controls. The view fits the pins
+ * whenever the set of listings changes. A tap on a pin calls `onSelect` with its id. If the
+ * library cannot load, `fallback` is rendered.
  *
  * @param {{
  *   markers: { id: string, lat: number, lng: number, label: string }[],
@@ -69,18 +63,18 @@ export function MarkersMap({
 
   useEffect(() => {
     let isUnmounted = false;
-    let created = null;
+    let cleanup = null;
 
-    loadGoogleMaps()
-      .then((maps) => {
+    loadHere()
+      .then((H) => {
         if (isUnmounted) return;
-        const map = createMap(maps, containerRef.current, {
+        const { map, dispose } = createHereMap(H, containerRef.current, {
           center: DEFAULT_CENTER,
           zoom: DEFAULT_ZOOM,
-          ownControls: true,
+          defaultUi: false,
         });
-        created = { maps, map, pins: [] };
-        mapRef.current = created;
+        mapRef.current = { H, map, group: null };
+        cleanup = dispose;
         setStatus('ready');
       })
       .catch(() => {
@@ -89,10 +83,7 @@ export function MarkersMap({
 
     return () => {
       isUnmounted = true;
-      if (created) {
-        removePins(created.pins);
-        created.maps.event.clearInstanceListeners(created.map);
-      }
+      if (cleanup) cleanup();
       mapRef.current = null;
     };
   }, []);
@@ -102,27 +93,26 @@ export function MarkersMap({
   useEffect(() => {
     if (status !== 'ready') return;
     const state = mapRef.current;
-    const { maps, map } = state;
-    removePins(state.pins);
-    state.pins = [];
+    const { H, map } = state;
+    if (state.group) {
+      map.removeObject(state.group);
+      state.group = null;
+    }
     const list = JSON.parse(markersKey);
     if (list.length === 0) return;
 
-    const bounds = new maps.LatLngBounds();
+    const group = new H.map.Group();
     for (const item of list) {
       const isActive = item.id === activeId;
-      const pin = new maps.marker.AdvancedMarkerElement({
-        map,
-        position: { lat: item.lat, lng: item.lng },
-        content: pinElement(item.label, isActive),
-        title: item.label,
-        zIndex: isActive ? 1 : 0,
-        gmpClickable: true,
-      });
-      pin.addEventListener('gmp-click', () => onSelectRef.current(item.id));
-      state.pins.push(pin);
-      bounds.extend({ lat: item.lat, lng: item.lng });
+      const marker = new H.map.DomMarker(
+        { lat: item.lat, lng: item.lng },
+        { icon: new H.map.DomIcon(pinElement(item.label, isActive)), zIndex: isActive ? 1 : 0 },
+      );
+      marker.addEventListener('tap', () => onSelectRef.current(item.id));
+      group.addObject(marker);
     }
+    map.addObject(group);
+    state.group = group;
 
     // Fit only when the listings change, not when another pin is chosen.
     const idsKey = list.map((item) => item.id).join(',');
@@ -133,15 +123,13 @@ export function MarkersMap({
       map.setZoom(MAX_FIT_ZOOM);
       return;
     }
-    map.fitBounds(bounds, 64);
-    maps.event.addListenerOnce(map, 'idle', () => {
-      if (map.getZoom() > MAX_FIT_ZOOM) map.setZoom(MAX_FIT_ZOOM);
-    });
+    map.getViewModel().setLookAtData({ bounds: group.getBoundingBox() });
+    if (map.getZoom() > MAX_FIT_ZOOM) map.setZoom(MAX_FIT_ZOOM);
   }, [status, markersKey, activeId]);
 
   function zoomBy(step) {
     const map = mapRef.current?.map;
-    if (map) map.setZoom(map.getZoom() + step);
+    if (map) map.setZoom(map.getZoom() + step, true);
   }
 
   if (status === 'failed') return fallback;

@@ -40,7 +40,7 @@ Frontend and backend are developed **in parallel**. When the frontend needs some
 | State | Redux Toolkit | Server state through **RTK Query**; slices only for client state |
 | Forms | React Hook Form | Validation schemas with `zod` + `@hookform/resolvers/zod` (zod works fine in plain JS) |
 | Styling | Tailwind CSS v4 with `@tailwindcss/vite` | CSS-first config, RTL, class-based dark mode |
-| Maps | Google Maps JavaScript API (loaded from Google, Arabic) + its Geocoder | Section 10 |
+| Maps | HERE Maps API for JavaScript (`@here/maps-api-for-javascript`) + HERE Geocoding & Search REST API | Section 10 |
 | Font | Cairo | `@fontsource/cairo` (self-hosted) |
 | Lint/format | ESLint (Vite default) + Prettier | |
 
@@ -189,8 +189,7 @@ export default defineConfig({
 ```
 # .env.example  (commit this)
 VITE_API_BASE_URL=          # empty in dev → same origin via the proxy; full URL in production
-VITE_GOOGLE_MAPS_API_KEY=   # Google Maps API key (Maps JavaScript API + Geocoding API)
-VITE_GOOGLE_MAPS_MAP_ID=    # Google Maps map ID; empty → Google's DEMO_MAP_ID
+VITE_HERE_API_KEY=          # HERE platform API key
 VITE_GOOGLE_CLIENT_ID=      # Google OAuth Web client ID (public); empty → the Google button is hidden
 ```
 
@@ -1018,38 +1017,36 @@ Call `POST /logout` with the refresh token read at click time (`getState`), then
 
 ---
 
-## 10. Maps — Google Maps
+## 10. Maps — HERE
 
 ### 10.1 Setup
 
-The Maps JavaScript API is loaded at runtime from Google (`https://maps.googleapis.com/maps/api/js` with `key`, `v=weekly`, `language=ar`, `region=PS`, `loading=async` and a ready `callback`), the first time a map mounts (`src/lib/maps/googleMaps.js`). Then `importLibrary('maps')` and `importLibrary('marker')`; the Geocoder library is imported on first use. No npm package.
+The library is loaded at runtime from HERE's CDN (`https://js.api.here.com/v3/3.1/` — `mapsjs-core`, `-service`, `-mapevents`, `-ui` and `mapsjs-ui.css`), in order, the first time a map mounts (`src/lib/maps/platform.js`). The npm package (`@here/maps-api-for-javascript`, on HERE's own registry in `.npmrc`) could not be installed: that registry is blocked in the build environment. Switching to it later only changes `loadHere()`.
 
-The API key is visible in the browser by nature. Restrict it to the app's domains and keep it only in `VITE_GOOGLE_MAPS_API_KEY` (`.env.local`). Without a key every map shows its fallback and the pages still work.
+The API key is visible in the browser by nature. Restrict it to the app's domains in the HERE platform settings where possible, and keep it only in `VITE_HERE_API_KEY` (`.env.local`). Without a key every map shows its fallback and the pages still work.
 
-**Getting a key:** Google Cloud console → a project with a billing account (Google asks for a card; the monthly free usage is enough for development) → *APIs & Services* → enable **Maps JavaScript API** and **Geocoding API** → *Credentials* → *Create credentials* → *API key*. Restrict it: *Application restrictions* → *Websites* → `http://localhost:5173/*` (and the deployed origin later); *API restrictions* → the two APIs above.
-
-**Map ID:** the markers are Advanced Markers, which need a map ID. `VITE_GOOGLE_MAPS_MAP_ID` holds one made under *Google Maps Platform* → *Map Management* (type JavaScript, vector). Empty → Google's `DEMO_MAP_ID`, which works for development.
+**Getting a key:** sign in at `platform.here.com` → *Access Manager* → *Apps* → create an app → *API Keys* → create a key. The free plan covers Maps API for JavaScript, the Raster Tile API (the satellite tiles) and Geocoding & Search. Under the key's *Restrictions* allow the frontend origins (`http://localhost:5173` in development, and the deployed one later).
 
 ### 10.2 Code layout (`src/lib/maps/`)
 
-- `googleMaps.js` — loads the library once (`loadGoogleMaps()`, a failed tag is removed so a retry adds a fresh one), `hasMapKey()`, the default view, and `createMap(maps, element, { center, zoom, satellite, ownControls, clickableIcons })`: `google.maps.Map` with the map ID, `colorScheme` from the site theme at creation (dark or light), and the «خريطة | قمر صناعي» switch (`mapTypeControl` with `roadmap` and `hybrid`, at the logical top-start). `satellite` starts on `hybrid`. `ownControls` (the map page) hides Google's zoom and full-screen buttons and uses `gestureHandling: 'greedy'`; otherwise `cooperative`, so a page scroll passes over the map.
-- `GoogleMap.jsx` — a map with **one** marker (the picker and the details page). Props: `center`, `zoom`, `marker`, `onPick`, `satellite`, `label`, `className`, `fallback` (rendered when the library can't load). The marker is an `AdvancedMarkerElement` with a brand `PinElement` (colors read from the theme tokens). With `onPick`, a map click reports the point, the marker is draggable (`gmpDraggable`, `dragend` reports the new point) and the places' icons are not clickable. Listeners are cleared on unmount.
-- `MarkersMap.jsx` — the map page: one `AdvancedMarkerElement` price pin per listing (Figma 71:1398, the chosen pin in brand and on top), `gmp-click` → `onSelect(id)`, the view fitted to the pins when the listings change (`fitBounds`, then the zoom capped at 15 on the next `idle`), and the Figma zoom buttons (71:1410) instead of Google's.
-- `LocationPicker.jsx` — used in the create-listing and edit forms: opens on the satellite photos, so the seller finds the building or the plot itself; click (or drag the marker) to set a point. Reports `{ latitude, longitude }` through `onPick`; the form keeps them in two text fields (`setValue`), which also work without a map.
-- `geocoding.js` — thin wrappers over `google.maps.Geocoder` (same key; the Geocoding API must be enabled):
-  - reverse geocode after picking a point → suggest `fullAddress` / `city` / `region` (the first result that is not a plus code; `locality` is the city, `sublocality` or `neighborhood` the area; the user can edit; never overwrite something they typed)
-  - address search box → move the map to the result (`bounds` around Palestine and `region: 'ps'` bias the results)
-  - Arabic results come from the script's `language=ar`. Both return `null` on no result or any error.
+- `platform.js` — loads the library once (`loadHere()`, no duplicate tags on retry), creates **one** `H.service.Platform({ apikey })` lazily and reuses it, `hasMapKey()`, the default view, and `createHereMap(H, element, { center, zoom, defaultUi })`: `H.Map` on the **satellite** layer — `platform.getRasterTileService({ queryParams: { style: 'explore.satellite.day', lang: 'ar' } })` → `H.service.rasterTile.Provider` → `H.map.layer.TileLayer` (satellite photos with roads and Arabic place names), `Behavior` + `MapEvents`, HERE's default UI when `defaultUi` without its map-style menu (`removeControl('mapsettings')`: the map is always satellite), the window-resize listener, and one `dispose()` for all of it.
+- `HereMap.jsx` — a map with **one** marker (the picker and the details page), built with `createHereMap` and disposed on unmount. Props: `center`, `zoom`, `marker`, `onPick`, `label`, `className`, `fallback` (rendered when the library can't load). With `onPick`, a tap reports the point and the marker is draggable (`volatility: true`, `draggable = true`; the map's behaviour is paused during the drag, HERE's documented pattern).
+- `MarkersMap.jsx` — the map page: one `H.map.DomMarker` price pin per listing in an `H.map.Group` (Figma 71:1398, the chosen pin in brand), the view fitted to the pins when the listings change (`setLookAtData` with the group's bounds, zoom capped at 15), a pin tap → `onSelect(id)`, and the Figma zoom buttons (71:1410) instead of HERE's UI.
+- `LocationPicker.jsx` — used in the create-listing form: click (or drag the marker) to set a point. Convert the tap with `map.screenToGeo(evt.currentPointer.viewportX, evt.currentPointer.viewportY)`. Reports `{ latitude, longitude }` through `onPick`; the form keeps them in two text fields (`setValue`), which also work without a map.
+- `geocoding.js` — thin wrappers over HERE Geocoding & Search (REST, same API key):
+  - reverse geocode after picking a point → suggest `fullAddress` / `city` (the user can edit; never overwrite something they typed)
+  - address search box → move the map to the result
+  - request Arabic results (`lang=ar`) and restrict to the area around Palestine.
 - Pages without a map never download the library: it is loaded only when a map mounts.
 
 ### 10.3 Behaviour
 
 - Default view: centered on Palestine, roughly `{ lat: 31.9, lng: 35.2 }`, zoom ≈ 8.
-- Every map has the «خريطة | قمر صناعي» switch; the picker starts on the satellite photos, the details page and `/map` on the street map.
+- Every map (details, picker, `/map`) shows the satellite photos, so buyers and sellers see the real buildings and land.
 - Details page: a single marker at the listing's `latitude`/`longitude`, no dragging. From 1280px up the map shows at once; on phones it waits behind «عرض على الخريطة», so the library is downloaded only when asked.
 - Keep the map inside a fixed-height container with rounded corners.
 - **Map page `/map`** (Figma 71:1300): the same search as `/properties` (filters, sort and page in the URL, 12 per page), the list at the start and the map with a price pin per listing; a pin and its row light up together. Search results have **no coordinates yet** (backend request #7), so the page reads each listing's location from `GET /User/Properties/{id}` (`getPropertyLocations`, one query for the page's ids; the details are server-cached). When summaries carry `latitude` / `longitude`, drop that query and read them from the results.
-- If the key is missing or the library fails to load, show a static fallback card with the address text — the page must still work. A key that Google rejects (wrong referrer, API not enabled, no billing) shows Google's own error box on the map; the browser console says why.
+- If the key is missing or the library fails to load, show a static fallback card with the address text — the page must still work.
 
 ---
 
@@ -1174,7 +1171,7 @@ Each step ends in a working app, and each is its own branch + PR.
 ### Phase 2 — from the 2026-09-30 contract
 
 1. **Contract update** — this file + `BACKEND_REQUESTS.md`, new base paths, `problemDetails.js` understands error-code keys, API cache reset on login/logout.
-2. **Browse and details** — home, search with URL-synced filters, pagination, `PropertyCard` with `mainImageUrl` and the sold/rented ribbon; details page with gallery, key facts, seller card with the phone rule, a map with a single marker; skeleton/empty/error states.
+2. **Browse and details** — home, search with URL-synced filters, pagination, `PropertyCard` with `mainImageUrl` and the sold/rented ribbon; details page with gallery, key facts, seller card with the phone rule, HERE map with a single marker; skeleton/empty/error states.
 3. **Create listing + media** (done) — multi-step form, `LocationPicker` + reverse geocoding, then the media step after create: sequential image upload, document upload, readiness checklist.
 4. **Owner area** (done) — `/my-properties` with thumbnails, `/my-properties/:id` with state badge, rejection alert, checklist and every action from 6.8 (with confirm dialogs), media manager, `/my-properties/:id/edit`; the buyer-first dashboard.
 5. **Favorites** (done) — `/ids` + heart everywhere, `/favorites` page.
