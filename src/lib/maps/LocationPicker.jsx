@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { ar } from '../../locales/ar.js';
 import { searchPlace } from './geocoding.js';
-import { HereMap } from './HereMap.jsx';
-import { DEFAULT_CENTER, DEFAULT_ZOOM, hasMapKey } from './platform.js';
+import { GoogleMap } from './GoogleMap.jsx';
+import { DEFAULT_CENTER, DEFAULT_ZOOM, hasMapKey } from './googleMaps.js';
 
 const text = ar.listing;
 
@@ -11,8 +11,9 @@ const POINT_ZOOM = 15;
 
 /**
  * Figma "حدد الموقع" (91:1980): the 200px map box (bg/inset, radius 14). A tap on the map
- * reports the point; a search box above moves the map (not in Figma). Without a map (no key,
- * or HERE can't load) the box says so and the coordinates are typed in the fields under it.
+ * reports the point; a search box above moves the map (not in Figma). The map opens on the
+ * satellite photos, so the seller can find the building or the plot itself. Without a map (no
+ * key, or Google can't load) the box says so and the coordinates are typed in the fields under it.
  *
  * @param {{
  *   latitude: number | null,
@@ -83,11 +84,12 @@ export function LocationPicker({ latitude, longitude, onPick }) {
         </button>
       </div>
       {notFound && <p className="text-caption text-danger">{text.mapNotFound}</p>}
-      <HereMap
+      <GoogleMap
         center={view.center}
         zoom={view.zoom}
         marker={marker}
         onPick={onPick}
+        satellite
         label={text.mapLabel}
         className="h-[200px] overflow-hidden rounded-[14px] bg-inset"
         fallback={unavailable}

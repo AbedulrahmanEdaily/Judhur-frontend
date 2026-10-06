@@ -1,20 +1,28 @@
-import { HERE_API_KEY } from '../../config/env.js';
+import { loadGoogleMaps } from './googleMaps.js';
 
-// HERE Geocoding & Search v7 (REST, same key). Arabic results, limited to the area around
-// Palestine. Both return null when there is no key, no result, or the request fails — the
-// address fields stay for the user to fill in.
+// Google Geocoding through the Maps library (same key; the Geocoding API must be enabled on it).
+// Arabic results, leaning toward the area around Palestine. Both return null when there is no
+// key, no result, or the request fails — the address fields stay for the user to fill in.
 
-const PALESTINE_AREA = 'bbox:34.2,29.4,35.95,33.4';
+const PALESTINE_AREA = { south: 29.4, west: 34.2, north: 33.4, east: 35.95 };
 
-async function getJson(url) {
-  if (!HERE_API_KEY) return null;
+/** The results of a Geocoder request; empty on no result or any failure. */
+async function geocode(request) {
   try {
-    const response = await fetch(url);
-    if (!response.ok) return null;
-    return await response.json();
+    const maps = await loadGoogleMaps();
+    const { Geocoder } = await maps.importLibrary('geocoding');
+    const response = await new Geocoder().geocode(request);
+    return response.results;
   } catch {
-    return null;
+    // No result is an error too (ZERO_RESULTS).
+    return [];
   }
+}
+
+/** The long name of the address part of one type («locality» is the city). */
+function addressPart(result, type) {
+  const part = result.address_components.find((component) => component.types.includes(type));
+  return part?.long_name;
 }
 
 /**
@@ -23,15 +31,15 @@ async function getJson(url) {
  * @returns {Promise<{ label: string, city?: string, district?: string } | null>}
  */
 export async function reverseGeocode({ latitude, longitude }) {
-  const params = new URLSearchParams({
-    at: `${latitude},${longitude}`,
-    lang: 'ar',
-    apiKey: HERE_API_KEY,
-  });
-  const data = await getJson(`https://revgeocode.search.hereapi.com/v1/revgeocode?${params}`);
-  const address = data?.items?.[0]?.address;
-  if (!address) return null;
-  return { label: address.label, city: address.city, district: address.district };
+  const results = await geocode({ location: { lat: latitude, lng: longitude } });
+  // A plus code («8G9V+2X») is not an address a buyer can read.
+  const result = results.find((item) => !item.types.includes('plus_code'));
+  if (!result) return null;
+  return {
+    label: result.formatted_address,
+    city: addressPart(result, 'locality'),
+    district: addressPart(result, 'sublocality') ?? addressPart(result, 'neighborhood'),
+  };
 }
 
 /**
@@ -40,14 +48,8 @@ export async function reverseGeocode({ latitude, longitude }) {
  * @returns {Promise<{ lat: number, lng: number } | null>}
  */
 export async function searchPlace(text) {
-  const params = new URLSearchParams({
-    q: text,
-    in: PALESTINE_AREA,
-    lang: 'ar',
-    apiKey: HERE_API_KEY,
-  });
-  const data = await getJson(`https://geocode.search.hereapi.com/v1/geocode?${params}`);
-  const position = data?.items?.[0]?.position;
-  if (!position) return null;
-  return { lat: position.lat, lng: position.lng };
+  const results = await geocode({ address: text, bounds: PALESTINE_AREA, region: 'ps' });
+  if (results.length === 0) return null;
+  const location = results[0].geometry.location;
+  return { lat: location.lat(), lng: location.lng() };
 }

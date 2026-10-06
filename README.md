@@ -7,7 +7,7 @@ Project conventions and the API contract live in [`CLAUDE.md`](./CLAUDE.md); ope
 
 ```bash
 npm install
-cp .env.example .env.local   # fill in VITE_HERE_API_KEY
+cp .env.example .env.local   # fill in VITE_GOOGLE_MAPS_API_KEY
 npm run dev                  # http://localhost:5173
 ```
 
