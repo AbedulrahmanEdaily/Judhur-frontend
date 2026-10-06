@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { IconMapPin } from '../../../components/icons/index.js';
-import { HereMap } from '../../../lib/maps/HereMap.jsx';
-import { hasMapKey } from '../../../lib/maps/platform.js';
+import { GoogleMap } from '../../../lib/maps/GoogleMap.jsx';
+import { hasMapKey } from '../../../lib/maps/googleMaps.js';
 import { ar } from '../../../locales/ar.js';
 
 // Close enough to see the streets around the listing.
@@ -14,10 +14,10 @@ function isDesktopWidth() {
 }
 
 /**
- * Figma "الموقع على الخريطة" (67:1177): the 300px map area (bg/inset, radius 14). A HERE map
+ * Figma "الموقع على الخريطة" (67:1177): the 300px map area (bg/inset, radius 14). A Google map
  * with one fixed marker at the listing (the project guide 10.3). On phones the map waits behind
  * «عرض على الخريطة» (not in Figma), so the library is only downloaded when wanted. Without a
- * key, or when HERE can't load, the static card with the brand pin and the place name. The
+ * key, or when Google can't load, the static card with the brand pin and the place name. The
  * "nearby" row is not in the API.
  *
  * @param {{ place: string, latitude: number, longitude: number }} props
@@ -52,7 +52,7 @@ export function LocationCard({ place, latitude, longitude }) {
       <h2 className="text-[19px] leading-[1.78] font-bold text-text">{ar.property.mapTitle}</h2>
       {(!canShowMap || !isMapOpen) && staticCard}
       {canShowMap && isMapOpen && (
-        <HereMap
+        <GoogleMap
           center={point}
           zoom={DETAILS_ZOOM}
           marker={point}
