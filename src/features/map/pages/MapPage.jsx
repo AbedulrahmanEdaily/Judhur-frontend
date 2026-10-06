@@ -6,7 +6,7 @@ import { ErrorState } from '../../../components/ui/ErrorState.jsx';
 import { Pagination } from '../../../components/ui/Pagination.jsx';
 import { Skeleton } from '../../../components/ui/Skeleton.jsx';
 import { MarkersMap } from '../../../lib/maps/MarkersMap.jsx';
-import { hasMapKey } from '../../../lib/maps/googleMaps.js';
+import { hasMapKey } from '../../../lib/maps/platform.js';
 import { formatNumber, formatPrice } from '../../../lib/format.js';
 import { toProblem } from '../../../lib/http/problemDetails.js';
 import { ar } from '../../../locales/ar.js';
@@ -29,7 +29,7 @@ const NO_IDS = [];
  * map with a price pin per listing. The same search as `/properties` (filters, sort and page in
  * the URL), 12 listings at a time. A pin and its row light up together: tapping a pin brings
  * its row into view, pointing at a row lights its pin. Below 1280px the map sits above the list
- * (no mobile frame in Figma). Without a Maps key the list still works.
+ * (no mobile frame in Figma). Without a HERE key the list still works.
  */
 export default function MapPage() {
   const [searchParams, setSearchParams] = useSearchParams();
