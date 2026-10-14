@@ -100,6 +100,13 @@ export function AccountMenu() {
                 {ar.accountNav.myProperties}
               </Link>
               <Link
+                to="/messages"
+                onClick={() => setIsOpen(false)}
+                className="block rounded-sm px-3 py-2 text-body-sm text-text hover:bg-inset focus-visible:outline-2 focus-visible:outline-brand"
+              >
+                {ar.conversations.menuLink}
+              </Link>
+              <Link
                 to="/favorites"
                 onClick={() => setIsOpen(false)}
                 className="block rounded-sm px-3 py-2 text-body-sm text-text hover:bg-inset focus-visible:outline-2 focus-visible:outline-brand"

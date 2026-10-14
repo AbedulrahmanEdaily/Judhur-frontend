@@ -428,6 +428,68 @@
  */
 
 // ---------------------------------------------------------------------------
+// Conversations — /api/v1/User/Conversations (role User)
+// ---------------------------------------------------------------------------
+
+/**
+ * @typedef {Object} Message
+ * @property {string} id
+ * @property {string} conversationId
+ * @property {string} senderId
+ * @property {string} content
+ * @property {string} sentAtUtc
+ * @property {string} [readAtUtc] when the recipient read it
+ * @property {boolean} isMine
+ *
+ * @typedef {Object} ConversationProperty
+ * @property {string} id
+ * @property {string} title
+ * @property {string} [mainImageUrl]
+ * @property {boolean} isAvailable false once the listing is no longer public
+ *
+ * @typedef {Object} ChatParticipant
+ * @property {string} id
+ * @property {string} fullName
+ * @property {string} [profileImageUrl]
+ *
+ * @typedef {'Buyer'|'Seller'} ConversationRole
+ *
+ * @typedef {Object} ConversationSummary Item of `GET /` (latest first).
+ * @property {string} id
+ * @property {ConversationProperty} property
+ * @property {ChatParticipant} [otherParty] missing if that account no longer exists
+ * @property {ConversationRole} myRole
+ * @property {string} [lastMessagePreview]
+ * @property {boolean} lastMessageIsMine
+ * @property {string} [lastMessageAtUtc]
+ * @property {number} unreadCount
+ *
+ * @typedef {Object} ConversationDetails `GET /{id}`.
+ * @property {string} id
+ * @property {ConversationProperty} property
+ * @property {ChatParticipant} [otherParty]
+ * @property {ConversationRole} myRole
+ * @property {string} createdAtUtc
+ *
+ * @typedef {Object} MessagesPage `GET /{id}/messages?before=&limit=`.
+ * @property {Message[]} items newest first
+ * @property {boolean} hasMore
+ *
+ * @typedef {Object} StartConversationRequest Body of `POST /`.
+ * @property {string} propertyId
+ * @property {string} message 1–2000 after trim
+ *
+ * @typedef {Object} StartedConversation `201` (new) or `200` (existing) of `POST /`.
+ * @property {string} conversationId
+ * @property {boolean} isNew
+ * @property {Message} message
+ *
+ * @typedef {Object} MessagesReadEvent The hub's `messagesRead`.
+ * @property {string} conversationId
+ * @property {string} readAtUtc
+ */
+
+// ---------------------------------------------------------------------------
 // Errors
 // ---------------------------------------------------------------------------
 

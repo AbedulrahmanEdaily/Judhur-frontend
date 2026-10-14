@@ -9,15 +9,13 @@ import {
   IconNavProfile,
   IconNavReports,
 } from '../icons/index.js';
+import { useUnreadMessages } from '../../features/conversations/useUnreadMessages.js';
 import { useFavoriteIds } from '../../features/favorites/useFavoriteIds.js';
 import { useUnreadCount } from '../../features/notifications/useUnreadCount.js';
 import { formatNumber } from '../../lib/format.js';
 import { ar } from '../../locales/ar.js';
 
 const text = ar.accountNav;
-
-// Pages without an API yet stay in the list, not clickable, marked «قريباً».
-const chatsItem = { label: text.chats, Icon: IconNavChats };
 
 const itemClasses =
   'flex items-center gap-2.5 rounded-md px-3.5 py-[11px] text-[14.5px] leading-[1.72] focus-visible:outline-2 focus-visible:outline-brand';
@@ -27,19 +25,6 @@ function countClasses(isActive) {
   return clsx(
     'rounded-full px-2 py-0.5 text-[11px] leading-[1.72] font-semibold',
     isActive ? 'bg-brand text-inverse' : 'bg-inset text-muted',
-  );
-}
-
-function renderUpcomingItem({ label, Icon }) {
-  return (
-    <span aria-disabled="true" className={clsx(itemClasses, 'cursor-default text-text-secondary')}>
-      <Icon className="shrink-0 text-muted" />
-      {label}
-      <span className="flex-1" />
-      <span className="rounded-full bg-inset px-2 py-0.5 text-[11px] leading-[1.72] font-semibold text-muted">
-        {text.soon}
-      </span>
-    </span>
   );
 }
 
@@ -56,8 +41,8 @@ function navItemClasses({ isActive }) {
  * on bg/surface with 70px sides, and from 1280px up the 264px sidebar (75:669) at the start:
  * items 14×11, radius md, 18px icon, 14.5 label; the active one on brand/subtle with a brand
  * count pill, the others text/secondary with a bg/inset pill. The favorites count comes from
- * the cached ids list (useFavoriteIds), the notifications count is the unread one (shown when
- * there are some).
+ * the cached ids list (useFavoriteIds); the conversations and notifications counts are the
+ * unread ones (shown when there are some).
  *
  * @param {{ listingsCount?: number, children: import('react').ReactNode }} props
  */
@@ -65,8 +50,10 @@ export function AccountShell({ listingsCount, children }) {
   const isListingsActive = useMatch({ path: '/my-properties', end: false }) !== null;
   const isFavoritesActive = useMatch('/favorites') !== null;
   const isNotificationsActive = useMatch('/notifications') !== null;
+  const isMessagesActive = useMatch({ path: '/messages', end: false }) !== null;
   const favorites = useFavoriteIds();
   const unread = useUnreadCount();
+  const unreadMessages = useUnreadMessages();
 
   return (
     <div className="min-h-full bg-surface">
@@ -97,7 +84,16 @@ export function AccountShell({ listingsCount, children }) {
               </span>
             )}
           </NavLink>
-          {renderUpcomingItem(chatsItem)}
+          <NavLink to="/messages" className={navItemClasses}>
+            <IconNavChats className="shrink-0" />
+            {text.chats}
+            <span className="flex-1" />
+            {unreadMessages.count > 0 && (
+              <span className={countClasses(isMessagesActive)}>
+                {formatNumber(unreadMessages.count)}
+              </span>
+            )}
+          </NavLink>
           <NavLink to="/notifications" className={navItemClasses}>
             <IconNavNotifications className="shrink-0" />
             {text.notifications}

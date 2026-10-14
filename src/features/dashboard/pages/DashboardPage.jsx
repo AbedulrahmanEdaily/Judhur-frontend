@@ -22,6 +22,7 @@ import { ErrorState } from '../../../components/ui/ErrorState.jsx';
 import { Skeleton } from '../../../components/ui/Skeleton.jsx';
 import { selectCurrentUser } from '../../auth/authSlice.js';
 import { useLogout } from '../../auth/hooks/useLogout.js';
+import { useUnreadMessages } from '../../conversations/useUnreadMessages.js';
 import { useFavoriteIds } from '../../favorites/useFavoriteIds.js';
 import { useMyProfile } from '../../profile/useMyProfile.js';
 import { useUnreadCount } from '../../notifications/useUnreadCount.js';
@@ -59,6 +60,7 @@ export default function DashboardPage() {
   const mine = useGetMyPropertiesQuery();
   const favorites = useFavoriteIds();
   const unread = useUnreadCount();
+  const unreadMessages = useUnreadMessages();
   const { profile } = useMyProfile();
   const latest = useGetPropertiesQuery(LATEST_QUERY);
 
@@ -272,13 +274,21 @@ export default function DashboardPage() {
               <IconFieldChevron className="shrink-0 rotate-90 text-muted" />
             </Link>
           </li>
-          <li aria-disabled="true" className="flex items-center gap-3 px-4 py-[15px]">
-            <IconRowChats className="shrink-0 text-muted" />
-            <span className="text-[14.5px] leading-[1.72] text-text-secondary">{nav.chats}</span>
-            <span className="flex-1" />
-            <span className="rounded-full bg-inset px-2 py-0.5 text-[11px] leading-[1.72] font-semibold text-muted">
-              {nav.soon}
-            </span>
+          <li>
+            <Link
+              to="/messages"
+              className="flex items-center gap-3 px-4 py-[15px] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand"
+            >
+              <IconRowChats className="shrink-0 text-muted" />
+              <span className="text-[14.5px] leading-[1.72] text-text">{nav.chats}</span>
+              <span className="flex-1" />
+              {unreadMessages.count > 0 && (
+                <span className="rounded-full bg-inset px-2 py-0.5 text-[11px] leading-[1.72] font-semibold text-muted">
+                  {formatNumber(unreadMessages.count)}
+                </span>
+              )}
+              <IconFieldChevron className="shrink-0 rotate-90 text-muted" />
+            </Link>
           </li>
           {/* Not in the mobile Figma list: the notifications page has no other way in on a phone. */}
           <li>

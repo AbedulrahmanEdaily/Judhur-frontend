@@ -99,6 +99,23 @@ export const router = createBrowserRouter([
             }),
           },
           {
+            path: 'messages',
+            handle: { hideMobileTopBar: true },
+            lazy: async () => ({
+              Component: (await import('../features/conversations/pages/MessagesPage.jsx')).default,
+            }),
+            children: [
+              {
+                path: ':conversationId',
+                // The mobile chat (84:530) has its own top bar and composer at the bottom.
+                handle: { hideMobileTopBar: true, hideMobileTabBar: true },
+                lazy: async () => ({
+                  Component: (await import('../features/conversations/pages/ChatPage.jsx')).default,
+                }),
+              },
+            ],
+          },
+          {
             path: 'my-reports',
             handle: { hideMobileTopBar: true },
             lazy: async () => ({

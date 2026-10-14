@@ -1,8 +1,12 @@
+import { useSelector } from 'react-redux';
 import { Link } from 'react-router';
 import { IconFieldChevron } from '../../../components/icons/index.js';
 import { Avatar } from '../../../components/ui/Avatar.jsx';
 import { formatPrice } from '../../../lib/format.js';
 import { ar } from '../../../locales/ar.js';
+import { selectCurrentUser, selectIsAuthenticated } from '../../auth/authSlice.js';
+import { ContactSellerButton } from '../../conversations/components/ContactSellerButton.jsx';
+import { canContactSeller } from '../../conversations/contactRules.js';
 import { PAYMENT_TYPE_LABELS } from '../constants.js';
 import { PhoneButton } from './PhoneButton.jsx';
 
@@ -10,13 +14,15 @@ const text = ar.property;
 
 /**
  * Figma price + seller card (67:1195): asking price 34 bold brand/text with the price per m² and
- * payment type, then the seller (Avatar 40 + name 15 bold) and the phone button. The seller row
- * links to the public seller page; its «عرض صفحة البائع» line and arrow are not in Figma. The
- * rating and the messaging have no API, so those parts of the frame are left out.
+ * payment type, then the seller (Avatar 40 + name 15 bold), «تواصل مع البائع» (67:1214, not for
+ * the owner or admins) and the phone button. The seller row links to the public seller page;
+ * its «عرض صفحة البائع» line and arrow are not in Figma. The rating has no API.
  *
  * @param {{ property: import('../../../api/types.js').PropertyDetails }} props
  */
 export function PriceCard({ property }) {
+  const isAuthenticated = useSelector(selectIsAuthenticated);
+  const user = useSelector(selectCurrentUser);
   const pricePerSquareMeter = formatPrice(property.price / property.area);
 
   return (
@@ -50,6 +56,9 @@ export function PriceCard({ property }) {
             </span>
             <IconFieldChevron className="shrink-0 rotate-90 text-muted" />
           </Link>
+          {canContactSeller(isAuthenticated, user, property) && (
+            <ContactSellerButton property={property} />
+          )}
           <PhoneButton phoneNumber={property.user.phoneNumber} />
         </>
       )}

@@ -12,6 +12,7 @@ export const NOTIFICATIONS_PATH = '/api/v1/User/Notifications';
 export const SELLERS_PATH = '/api/v1/User/Sellers';
 export const USER_REPORTS_PATH = '/api/v1/User/Reports';
 export const ADMIN_REPORTS_PATH = '/api/v1/Admin/Reports';
+export const CONVERSATIONS_PATH = '/api/v1/User/Conversations';
 
 const REFRESH_URL = `${ACCOUNT_PATH}/refresh-token`;
 
@@ -137,6 +138,31 @@ async function refreshUnlessReplaced(api, extraOptions, staleToken) {
   } finally {
     release();
   }
+}
+
+/**
+ * A valid access token for the real-time hub (the project guide 6.17): refreshed first, under the
+ * same locks as every request, when it has expired or is about to. Null when signed out.
+ *
+ * @param {{ getState: () => any, dispatch: (action: any) => any }} store
+ */
+export async function freshAccessToken(store) {
+  await refreshMutex.waitForUnlock();
+  const { accessToken, expiresOnUtc } = selectAuth(store.getState());
+  if (accessToken && expiresSoon(expiresOnUtc)) {
+    // The BaseQueryApi fields fetchBaseQuery reads, for the refresh request.
+    const api = {
+      getState: store.getState,
+      dispatch: store.dispatch,
+      signal: new AbortController().signal,
+      abort: () => {},
+      extra: undefined,
+      endpoint: 'refreshToken',
+      type: 'mutation',
+    };
+    await refreshUnlessReplaced(api, {}, accessToken);
+  }
+  return selectAuth(store.getState()).accessToken;
 }
 
 /**
