@@ -7,7 +7,9 @@ import { HeaderSearch } from './HeaderSearch.jsx';
 import { Logo } from './Logo.jsx';
 import { ThemeToggle } from './ThemeToggle.jsx';
 import { selectIsAdmin, selectIsAuthenticated } from '../../features/auth/authSlice.js';
+import { useUnreadMessages } from '../../features/conversations/useUnreadMessages.js';
 import { NotificationsBell } from '../../features/notifications/components/NotificationsBell.jsx';
+import { UnreadBadge } from '../../features/notifications/components/UnreadBadge.jsx';
 import { ar } from '../../locales/ar.js';
 
 // Links without `to` point at pages that are not built yet: they stay visible, not clickable.
@@ -39,6 +41,7 @@ export function Header() {
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const isAdmin = useSelector(selectIsAdmin);
   const links = isAdmin ? adminLinks : visitorLinks;
+  const unreadMessages = useUnreadMessages();
 
   return (
     <header className="sticky top-0 z-40 hidden border border-border bg-bg xl:block">
@@ -118,14 +121,27 @@ export function Header() {
               </Link>
             )}
             <NotificationsBell className={iconButtonClasses} />
-            <button
-              type="button"
-              aria-disabled="true"
-              aria-label={ar.nav.messages}
-              className={iconButtonClasses}
-            >
-              <IconChat />
-            </button>
+            {/* Conversations (users only): the unread messages count on the icon. */}
+            {!isAdmin && (
+              <Link
+                to="/messages"
+                aria-label={ar.conversations.unreadNav(unreadMessages.count)}
+                className={clsx('relative block', iconButtonClasses)}
+              >
+                <IconChat />
+                {unreadMessages.count > 0 && <UnreadBadge count={unreadMessages.count} />}
+              </Link>
+            )}
+            {isAdmin && (
+              <button
+                type="button"
+                aria-disabled="true"
+                aria-label={ar.nav.messages}
+                className={iconButtonClasses}
+              >
+                <IconChat />
+              </button>
+            )}
             <ThemeToggle />
           </div>
         )}

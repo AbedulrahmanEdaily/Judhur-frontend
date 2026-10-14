@@ -3,7 +3,7 @@
 > Project context for Claude Code working in the **frontend repository**. Read this whole file before writing code.
 > The backend lives in a **separate repository** that you cannot see. Section 6 (API contract) is your only source of truth for the backend — never guess an endpoint, a field name, or a status code.
 >
-> Contract snapshot taken from the backend source on 2026-09-30 (backend `main` + the `feature/Favorite` branch); notifications, my profile and the public seller page added 2026-10-01; security hardening (error `code`, image moderation, limits, rate limits) added 2026-10-04; reports added 2026-10-14.
+> Contract snapshot taken from the backend source on 2026-09-30 (backend `main` + the `feature/Favorite` branch); notifications, my profile and the public seller page added 2026-10-01; security hardening (error `code`, image moderation, limits, rate limits) added 2026-10-04; reports added 2026-10-14; conversations and the real-time hub added 2026-10-15.
 >
 > **Read DESIGN.md before any UI work; for anything visual it overrides this file.**
 
@@ -41,6 +41,7 @@ Frontend and backend are developed **in parallel**. When the frontend needs some
 | Forms | React Hook Form | Validation schemas with `zod` + `@hookform/resolvers/zod` (zod works fine in plain JS) |
 | Styling | Tailwind CSS v4 with `@tailwindcss/vite` | CSS-first config, RTL, class-based dark mode |
 | Maps | HERE Maps API for JavaScript (`@here/maps-api-for-javascript`) + HERE Geocoding & Search REST API | Section 10 |
+| Real time | `@microsoft/signalr` | One hub connection, section 6.17 |
 | Font | Cairo | `@fontsource/cairo` (self-hosted) |
 | Lint/format | ESLint (Vite default) + Prettier | |
 
@@ -187,6 +188,13 @@ export default defineConfig({
         changeOrigin: true,
         secure: false, // backend uses a self-signed dev certificate
       },
+      // The SignalR hub (6.17): WebSockets go through the proxy too.
+      '/hubs': {
+        target: 'https://localhost:7000',
+        changeOrigin: true,
+        secure: false,
+        ws: true,
+      },
     },
   },
 });
@@ -225,6 +233,8 @@ The backend seeds an admin and a normal user on startup. Get the credentials fro
 | Notifications | `/api/v1/User/Notifications/...` | yes |
 | Public seller page | `/api/v1/User/Sellers/...` | yes |
 | Reports (reporter) | `/api/v1/User/Reports/...` | yes |
+| Conversations | `/api/v1/User/Conversations/...` | yes |
+| Real-time hub (SignalR) | `/hubs/chat` | no |
 | Admin moderation | `/api/v1/Admin/Properties/...` | yes |
 | Admin reports | `/api/v1/Admin/Reports/...` | yes |
 
@@ -244,10 +254,12 @@ The backend seeds an admin and a normal user on startup. Get the credentials fro
 | `/User/Notifications/*` | `401` | ✅ | ✅ |
 | `GET /User/Sellers/{id}` | ✅ | ✅ | ✅ |
 | `/User/Reports/*` | `401` | ✅ | `403` |
+| `/User/Conversations/*` | `401` | ✅ | `403` |
+| `/hubs/chat` | `401` | ✅ | ✅ (notifications only) |
 | `/Identity/Account/me*` (6.12) | `401` | ✅ | ✅ |
 | `/Admin/Properties/*` and `/Admin/Reports/*` | `401` | `403` | ✅ |
 
-Admins never create, own, favorite, or report listings. Hide those actions for admins in the UI.
+Admins never create, own, favorite, report, or message about listings. Hide those actions for admins in the UI.
 
 #### Server-side cache
 
@@ -766,7 +778,7 @@ Only `Pending` listings that pass the readiness checklist (6.8) appear here.
 | `POST` | `/{notificationId}/read` | `204` (also when it was already read) | `404` missing or not yours |
 | `POST` | `/read-all` | `204` | — |
 
-- **Bell** in the navbar for every signed-in user (`NotificationsBell`): the unread badge (hidden at `0`) from `GET /unread-count`, polled every 60 s and refetched on window focus, skipped for guests (`useUnreadCount`). A click opens the latest 5 (`pageSize=5`, refetched on each open), «تعليم الكل كمقروء» and «عرض الكل» → `/notifications`.
+- **Bell** in the navbar for every signed-in user (`NotificationsBell`): the unread badge (hidden at `0`) from `GET /unread-count`, refetched on window focus, skipped for guests (`useUnreadCount`). It is polled every 60 s **only while the real-time hub is disconnected**; connected, the hub pushes `notificationReceived` (6.17). A click opens the latest 5 (`pageSize=5`, refetched on each open), «تعليم الكل كمقروء» and «عرض الكل» → `/notifications`.
 - **Opening a notification** calls `POST /{id}/read` without checking `isRead`. `PropertyApproved`, `PropertyRejected` and `PropertySuspended` then go to `/my-properties/{referenceId}`; `ReportResolved` (sent for a resolved **and** a dismissed report) goes to `/my-reports`; any other type is only marked as read.
 - Icons: approved check (success), rejected flag (danger), suspended pause (danger), report reviewed flag (info). Unknown types get the generic bell icon — never hide or break on a new type.
 - Marking read is optimistic: the cached pages and the unread count change at once, are undone on failure, and are refetched after.
@@ -819,10 +831,65 @@ Only `Pending` listings that pass the readiness checklist (6.8) appear here.
 Nothing below exists — don't call it. Build nothing that depends on it without a `BACKEND_REQUESTS.md` entry.
 
 - Delete account, account preferences (email notifications, phone visibility)
-- Conversations / messages (SignalR), reviews
+- Reviews, message attachments
 - AI price estimation
 - Currency on prices (still `DEFAULT_CURRENCY`)
 - Admin statistics, user management, and AI-usage screens (in Figma, no endpoints)
+
+### 6.16 Conversations — `/api/v1/User/Conversations` (role `User`)
+
+A conversation is one buyer and one seller about one listing.
+
+```ts
+// Message
+{ id, conversationId, senderId, content, sentAtUtc, readAtUtc?, isMine }      // readAtUtc: when the recipient read it
+
+// ConversationProperty
+{ id, title, mainImageUrl?, isAvailable }                                     // isAvailable false once the listing is hidden
+
+// ChatParticipant
+{ id, fullName, profileImageUrl? }
+
+// ConversationSummary — GET /
+{ id, property: ConversationProperty, otherParty?: ChatParticipant, myRole: 'Buyer' | 'Seller',
+  lastMessagePreview?, lastMessageIsMine, lastMessageAtUtc?, unreadCount }
+
+// ConversationDetails — GET /{id}
+{ id, property: ConversationProperty, otherParty?: ChatParticipant, myRole, createdAtUtc }
+```
+
+| Method | Route | Success | Errors |
+|---|---|---|---|
+| `POST` | `/` `{ propertyId, message }` | `201` new / `200` existing → `{ conversationId, isNew, message: Message }` | `404` listing not public · `409` `code: "ConversationErrors.CannotStartConversationWithSelf"` · a plain database `409` (no `code`) on a double click → ask once more · `429` |
+| `GET` | `/?page=&pageSize=` | `200` `PaginatedList<ConversationSummary>`, latest first | `400` |
+| `GET` | `/unread-count` | `200` `{ count }` (unread **messages**) | — |
+| `GET` | `/{id}` | `200` `ConversationDetails` | `404` missing or not yours |
+| `GET` | `/{id}/messages?before=&limit=` | `200` `{ items: Message[] (newest first), hasMore }` | `400` `ConversationErrors.InvalidCursor` |
+| `POST` | `/{id}/messages` `{ content }` | `201` `Message` | `400` (content 1–2000 after trim) · `429` → «أرسلت رسائل كثيرة، انتظر قليلًا» |
+| `POST` | `/{id}/read` | `204` | `404` |
+
+- **Messages paging:** the first page has no `before`; an older page sends `before` = the id of the oldest message shown. `limit` defaults to 30 (max 100). RTK Query `getMessages` is an **infinite query** (`useGetMessagesInfiniteQuery`): `getNextPageParam` returns the oldest id while `hasMore`. New messages (sent, or pushed by the hub) are added to the cached first page (`addMessageToChat`, deduped by id) — never by refetching every page.
+- **Contact the seller:** «تواصل مع البائع» on the public details page (the price card from 1280px up, the mobile action bar below) for a signed-in `User` who is not the owner; guests get a login link that comes back; admins and the owner see the phone button only. It opens a dialog with the message prefilled «مرحبًا، هل العقار ما زال متاحًا؟». Success → `/messages/{conversationId}`; invalidates `Conversations` and `UnreadMessages`.
+- **Inbox `/messages`:** per conversation the other party (avatar + name, «مستخدم محذوف» when missing), the listing thumbnail + title, «الإعلان لم يعد متاحًا» when `!property.isAvailable`, the preview prefixed «أنت: » when `lastMessageIsMine`, the relative time, the unread count and a role chip (`myRole`: مشترٍ / بائع). 20 per page (`?page=`). From 1280px up the list and the open chat sit side by side (Figma 76:968); on phones the list and the chat are separate pages (84:530).
+- **Chat `/messages/:conversationId`:** header from `GET /{id}` (the other party, a property card linking to `/properties/{property.id}` or the unavailable note); the messages reversed for display (oldest at the top), mine at the end in brand, theirs at the start (Figma Chat Bubble 47:799), the time, ✓ / ✓✓ on mine (`readAtUtc`), a day pill when the day changes. Scrolling to the top (or «تحميل رسائل أقدم») loads the older page and keeps the scroll position. Composer: Enter sends, Shift+Enter adds a line, disabled while sending, counter from 1800 to 2000; the answer is added to the chat.
+- **Read:** when the chat is open and visible and has unread messages from the other party (on open and on every new one), `POST /{id}/read`; the cache marks them read at once, then `UnreadMessages` and `Conversations` are invalidated.
+- **Unread badge:** `useUnreadMessages()` (`GET /unread-count`) on the navbar chat icon, the account sidebar «المحادثات», the mobile tab bar and the mobile dashboard row; refetched on focus, polled every 60 s only while the hub is disconnected.
+
+### 6.17 Real time — SignalR hub `/hubs/chat`
+
+- **One connection** (`src/lib/realtime/chatHub.js`) to `${API_BASE_URL}/hubs/chat`, built with `HubConnectionBuilder().withUrl(url, { accessTokenFactory }).withAutomaticReconnect()`. `accessTokenFactory` is `freshAccessToken(store)` from `baseQuery.js`: the existing refresh (mutex + cross-tab lock) runs first when the token has expired or is about to. In development the Vite proxy forwards `/hubs` with `ws: true`.
+- SignalR sends the token as `access_token` in the WebSocket URL (browsers can't set headers there) — the one place a token is in a URL, required by the protocol; never log that URL.
+- **Lifecycle:** started on app start when a session exists and on `sessionStarted` / `sessionRefreshed` (a session that arrives from another tab); stopped on `sessionEnded`. The server closes the connection when the token expires: `onclose` starts it again with a fresh token while still signed in (retry after 2 s, then up to 30 s). Admins connect too (notifications).
+- `ui.isRealtimeConnected` (ui slice) says whether the hub is connected; the two unread counts poll only while it is `false`.
+- **Events from the server:**
+
+| Event | Payload | What the client does |
+|---|---|---|
+| `messageReceived` | `Message` | Open chat with that id: add it (deduped), and it is marked read while visible. Otherwise: `UnreadMessages` count +1 (not for my own). Always invalidate `Conversations` (an unknown conversation shows up that way). |
+| `messagesRead` | `{ conversationId, readAtUtc }` | Set `readAtUtc` on my unread messages of that chat (✓✓). |
+| `notificationReceived` | `Notification` (6.11) | Prepend it to the cached first page of notifications, `UnreadCount` +1, a small toast with its `title`. |
+
+- **On reconnect** (and on window focus) refetch `Conversations`, `UnreadMessages`, `UnreadCount`, `Notifications` and the open chat: anything sent while disconnected, and my own messages sent from another tab (the hub does not echo them), is caught up.
 
 ### 6.15 Reports — `/api/v1/User/Reports` (role `User`) and `/api/v1/Admin/Reports` (role `Admin`)
 
@@ -926,6 +993,13 @@ src/
       pages/ProfilePage.jsx
     sellers/
       sellersApi.js            # public seller profile (6.13)
+    conversations/
+      conversationsApi.js      # start, list, unread count, details, messages (infinite query), send, read (6.16)
+      useUnreadMessages.js     # the unread messages count (polled only while the hub is down)
+      schemas.js               # message text (1–2000)
+      components/              # ContactSellerButton, ContactSellerDialog, ConversationList, ConversationListItem,
+                               # ChatHeader, ChatMessages, ChatBubble, ChatComposer
+      pages/                   # MessagesPage (inbox + outlet), ChatPage
     reports/
       reportsApi.js            # report a listing, my reports (6.15)
       constants.js             # ReportReason / ReportStatus lists, Arabic labels, badge tones, limits
@@ -959,6 +1033,7 @@ src/
     storage.js                 # safe localStorage get/set/remove (try/catch)
     http/problemDetails.js     # section 6.2 helper
     maps/                      # section 10
+    realtime/chatHub.js        # the SignalR connection and its events (6.17)
   locales/ar.js
   styles/index.css
   assets/
@@ -1152,6 +1227,8 @@ API paths below are relative to the base paths in section 6.1.
 | `/notifications` | signed in (user or admin) | All notifications (20 per page, `?page=`), grouped by day, unread on brand/subtle, mark all read; the account sidebar and the mobile dashboard link here with the unread count | `GET /User/Notifications`, `GET …/unread-count`, `POST …/{id}/read`, `POST …/read-all` |
 | `/profile` | signed in (user or admin) | Personal data + photo, password (change, or set for Google accounts); account sidebar for users, admin sidebar for admins; «حسابي» in the account menu | `GET/PUT /me`, `PUT/DELETE /me/photo`, `PUT /me/password` |
 | `/sellers/:id` | public | Seller header (photo, name, city, bio, member since, listings count) + their listings, 12 per page | `GET /User/Sellers/{id}`, `GET /User/Properties?sellerId=` |
+| `/messages` | user | Conversations (Figma 76:968): the list, and from 1280px up the open chat beside it; 20 per page | `GET /User/Conversations` |
+| `/messages/:conversationId` | user | Chat: header, messages with older pages, composer, read marks (mobile 84:530) | `GET /User/Conversations/{id}`, `GET …/messages`, `POST …/messages`, `POST …/read` |
 | `/my-reports` | user | The user's reports (10 per page, `?page=`): status, reason, date, details, «رد الإدارة»; «بلاغاتي» in the account menu, sidebar and mobile dashboard | `GET /User/Reports/mine` |
 | `/admin` | admin | Redirects to the queue | — |
 | `/admin/properties` | admin | Pending queue | `GET /Admin/Properties/pending` |
@@ -1191,6 +1268,9 @@ Loading (skeletons, not spinners, for lists and cards) · empty (friendly Arabic
   | `MyProfile` | `GET /me` | none — `PUT /me`, the photo and the password patch the cache with the answer |
   | `SellerProfile` (`id`) | seller page | profile update, photo upload / delete |
   | `MyReports` | `/User/Reports/mine` | report a listing |
+  | `Conversations` | conversations list | start, send, read, every `messageReceived`, reconnect |
+  | `Conversation` (`id`) | details and the messages (infinite query) of one chat | reconnect only — new messages are added to the cache |
+  | `UnreadMessages` | `/User/Conversations/unread-count` | start, read, reconnect — `messageReceived` patches it |
   | `AdminReports` | admin reports list | dismiss, resolve |
   | `AdminReport` (`id`) | admin report review | dismiss, resolve (suspending also invalidates `Property`, `ReviewProperty` and `PendingProperties`) |
 
@@ -1231,7 +1311,7 @@ When Abdulrahman confirms something is done: mark it `done`, update section 6 of
 | 9 | Currency | open |
 | 10 | CORS for deployment | partly done — only `http://localhost:5173` is allowed |
 | 11 | Image and document upload | done — section 6.7 |
-| 12 | Section 6.14 features | partly done — notifications, profile, seller page and reports done; see 6.14 for the rest |
+| 12 | Section 6.14 features | partly done — notifications, profile, seller page, reports, conversations and real time done; see 6.14 for the rest |
 | 13 | Register without a user name | done — the email is the login |
 | 14 | Password reset by link or code | open |
 | 15 | `requestId` on every ProblemDetails | done — with `instance`, on every error |
@@ -1261,7 +1341,8 @@ Each step ends in a working app, and each is its own branch + PR.
 7. **Notifications** (done) — bell with the polled unread badge and dropdown, `/notifications` page, sidebar link.
 8. **Profile and seller page** (done) — register without a user name, `GET /me` in the header, `/profile` (data, photo, password), `/sellers/:id`, seller box link.
 9. **Reports** (done) — «إبلاغ» on the details page + dialog, `/my-reports`, admin `/admin/reports` + review with dismiss / resolve / suspend, the two new notification types.
-10. **The rest** — as backend endpoints land (section 6.14 and `BACKEND_REQUESTS.md`).
+10. **Conversations and real time** (done) — «تواصل مع البائع», `/messages` + chat with older pages and read marks, the SignalR hub (messages, read marks, notifications), polling only while disconnected.
+11. **The rest** — as backend endpoints land (section 6.14 and `BACKEND_REQUESTS.md`).
 
 Every data screen keeps the four states (loading skeleton · empty · error with retry · success).
 

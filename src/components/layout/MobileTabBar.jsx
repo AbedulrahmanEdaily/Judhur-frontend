@@ -15,6 +15,8 @@ import {
   selectIsAuthenticated,
 } from '../../features/auth/authSlice.js';
 import { useLogout } from '../../features/auth/hooks/useLogout.js';
+import { useUnreadMessages } from '../../features/conversations/useUnreadMessages.js';
+import { UnreadBadge } from '../../features/notifications/components/UnreadBadge.jsx';
 import { ar } from '../../locales/ar.js';
 
 const itemClasses = 'flex flex-1 flex-col items-center gap-1 text-[10.5px] leading-[1.72]';
@@ -34,6 +36,8 @@ export function MobileTabBar() {
   const user = useSelector(selectCurrentUser);
   const { logout, isLoggingOut } = useLogout();
   const [isAccountOpen, setIsAccountOpen] = useState(false);
+  const unreadMessages = useUnreadMessages();
+  const isMessages = pathname.startsWith('/messages');
   const isHome = pathname === '/';
   const isSearch = pathname === '/properties';
   const isAccount =
@@ -85,10 +89,26 @@ export function MobileTabBar() {
         </span>
       )}
 
-      <span aria-disabled="true" className={clsx(itemClasses, inactiveClasses)}>
-        <IconTabChat />
-        {ar.nav.messages}
-      </span>
+      {/* Admins have no conversations; guests reach login through the page's guard. */}
+      {!isAdmin && (
+        <Link
+          to="/messages"
+          aria-current={isMessages ? 'page' : undefined}
+          className={clsx(itemClasses, isMessages ? activeClasses : inactiveClasses)}
+        >
+          <span className="relative">
+            <IconTabChat />
+            {unreadMessages.count > 0 && <UnreadBadge count={unreadMessages.count} />}
+          </span>
+          {ar.nav.messages}
+        </Link>
+      )}
+      {isAdmin && (
+        <span aria-disabled="true" className={clsx(itemClasses, inactiveClasses)}>
+          <IconTabChat />
+          {ar.nav.messages}
+        </span>
+      )}
 
       {!isAuthenticated && (
         <Link to="/login" className={clsx(itemClasses, inactiveClasses)}>

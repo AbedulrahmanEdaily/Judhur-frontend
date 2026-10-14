@@ -44,6 +44,13 @@ export function formatDate(value) {
   return dateFormatter.format(typeof value === 'string' ? new Date(value) : value);
 }
 
+const timeFormatter = new Intl.DateTimeFormat(LOCALE, { hour: 'numeric', minute: '2-digit' });
+
+/** @param {string | Date} value ISO-8601 string or Date → "10:42 ص" */
+export function formatTime(value) {
+  return timeFormatter.format(typeof value === 'string' ? new Date(value) : value);
+}
+
 const monthYearFormatter = new Intl.DateTimeFormat(LOCALE, { month: 'long', year: 'numeric' });
 
 /** @param {string | Date} value ISO-8601 string or Date → "مارس 2024" */

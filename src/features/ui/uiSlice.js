@@ -17,7 +17,12 @@ function readInitialTheme() {
 
 const uiSlice = createSlice({
   name: 'ui',
-  initialState: () => ({ ...readInitialTheme(), notice: /** @type {Notice | null} */ (null) }),
+  initialState: () => ({
+    ...readInitialTheme(),
+    notice: /** @type {Notice | null} */ (null),
+    // The real-time hub (the project guide 6.17): while connected, nothing needs polling.
+    isRealtimeConnected: false,
+  }),
   reducers: {
     themeToggled(state) {
       state.theme = state.theme === 'dark' ? 'light' : 'dark';
@@ -30,10 +35,15 @@ const uiSlice = createSlice({
     noticeDismissed(state) {
       state.notice = null;
     },
+    /** @param {{ payload: boolean }} action */
+    realtimeConnectionChanged(state, action) {
+      state.isRealtimeConnected = action.payload;
+    },
   },
 });
 
-export const { themeToggled, noticeShown, noticeDismissed } = uiSlice.actions;
+export const { themeToggled, noticeShown, noticeDismissed, realtimeConnectionChanged } =
+  uiSlice.actions;
 export const uiReducer = uiSlice.reducer;
 
 /** @param {{ ui: { theme: Theme } }} state */
@@ -42,3 +52,5 @@ export const selectTheme = (state) => state.ui.theme;
 export const selectThemeIsExplicit = (state) => state.ui.themeIsExplicit;
 /** @param {{ ui: { notice: Notice | null } }} state */
 export const selectNotice = (state) => state.ui.notice;
+/** @param {{ ui: { isRealtimeConnected: boolean } }} state */
+export const selectIsRealtimeConnected = (state) => state.ui.isRealtimeConnected;
