@@ -20,6 +20,9 @@ export const baseApi = createApi({
     'UnreadCount',
     'MyProfile',
     'SellerProfile',
+    'MyReports',
+    'AdminReports',
+    'AdminReport',
   ],
   endpoints: () => ({}),
 });

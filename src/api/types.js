@@ -340,19 +340,91 @@
 // ---------------------------------------------------------------------------
 
 /**
- * @typedef {'PropertyApproved'|'PropertyRejected'} NotificationType more types may come later
+ * @typedef {'PropertyApproved'|'PropertyRejected'|'PropertySuspended'|'ReportResolved'} NotificationType
+ *   more types may come later
  *
  * @typedef {Object} Notification Item of `GET /` (newest first).
  * @property {string} id
  * @property {NotificationType | string} type
  * @property {string} title Arabic, shown as sent
  * @property {string} body Arabic, shown as sent
- * @property {string} [referenceId] the listing id for the property types
+ * @property {string} [referenceId] the listing id for the three property types, the report id
+ *   for ReportResolved
  * @property {boolean} isRead
  * @property {string} createdAtUtc ISO-8601 with offset
  *
  * @typedef {Object} UnreadCount `GET /unread-count`.
  * @property {number} count
+ */
+
+// ---------------------------------------------------------------------------
+// Reports — /api/v1/User/Reports (role User) and /api/v1/Admin/Reports (role Admin)
+// ---------------------------------------------------------------------------
+
+/**
+ * @typedef {'Fraud'|'IncorrectInformation'|'Duplicate'|'InappropriateContent'|'Other'} ReportReason
+ * @typedef {'Pending'|'Resolved'|'Dismissed'} ReportStatus
+ *
+ * @typedef {Object} CreateReportRequest Body of `POST /User/Reports`.
+ * @property {string} propertyId
+ * @property {ReportReason} reason
+ * @property {string | null} [details] ≤1000, required when the reason is Other
+ *
+ * @typedef {Object} CreatedReport `201` of `POST /User/Reports`.
+ * @property {string} id
+ *
+ * @typedef {Object} MyReport Item of `GET /User/Reports/mine` (paginated).
+ * @property {string} id
+ * @property {string} propertyId
+ * @property {string} propertyTitle
+ * @property {ReportReason} reason
+ * @property {string} [details]
+ * @property {ReportStatus} status
+ * @property {string} [adminNote] the admin's note to the reporter
+ * @property {string} createdAtUtc
+ * @property {string} [reviewedAtUtc]
+ *
+ * @typedef {Object} ReportSummary Item of `GET /Admin/Reports?status=` (paginated).
+ * @property {string} id
+ * @property {string} propertyId
+ * @property {string} propertyTitle
+ * @property {boolean} propertyIsDeleted
+ * @property {ReportReason} reason
+ * @property {ReportStatus} status
+ * @property {number} pendingReportsOnProperty
+ * @property {string} createdAtUtc
+ * @property {string} [reviewedAtUtc]
+ *
+ * @typedef {Object} ReportedProperty The listing inside ReportDetails.
+ * @property {string} id
+ * @property {string} title
+ * @property {string} city
+ * @property {ModerationStatus} moderationStatus
+ * @property {boolean} isActive
+ * @property {boolean} isDeleted
+ * @property {string} [mainImageUrl]
+ * @property {string} sellerId
+ *
+ * @typedef {Object} ReportDetails `GET /Admin/Reports/{id}`.
+ * @property {string} id
+ * @property {ReportReason} reason
+ * @property {string} [details]
+ * @property {ReportStatus} status
+ * @property {string} [adminNote]
+ * @property {string} createdAtUtc
+ * @property {string} [reviewedAtUtc]
+ * @property {string} reporterId
+ * @property {UserInfo} [reporter] missing if the reporter account no longer exists
+ * @property {ReportedProperty} property
+ * @property {number} otherPendingReportsOnProperty
+ *
+ * @typedef {Object} DismissReportRequest Body of `POST /Admin/Reports/{id}/dismiss`.
+ * @property {string | null} [adminNote] ≤1000, shown to the reporter
+ *
+ * @typedef {Object} ResolveReportRequest Body of `POST /Admin/Reports/{id}/resolve`.
+ * @property {string | null} [adminNote] ≤1000, shown to the reporters
+ * @property {boolean} suspendProperty
+ * @property {string} [suspensionReason] required when suspending, ≤500, shown to the owner
  */
 
 // ---------------------------------------------------------------------------
@@ -369,6 +441,7 @@
  *   or `Group.Name` error codes
  * @property {string} [instance]
  * @property {string} [requestId]
+ * @property {string} [code] stable error code of a non-validation error (401/403/404/409)
  */
 
 export {};

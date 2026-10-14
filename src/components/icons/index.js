@@ -99,3 +99,4 @@ export { IconNotificationApproved } from './IconNotificationApproved.jsx';
 export { IconNotificationRejected } from './IconNotificationRejected.jsx';
 export { IconNotificationBell } from './IconNotificationBell.jsx';
 export { IconMinus17 } from './IconMinus17.jsx';
+export { IconFlag16 } from './IconFlag16.jsx';

@@ -106,6 +106,13 @@ export function AccountMenu() {
               >
                 {ar.accountNav.favorites}
               </Link>
+              <Link
+                to="/my-reports"
+                onClick={() => setIsOpen(false)}
+                className="block rounded-sm px-3 py-2 text-body-sm text-text hover:bg-inset focus-visible:outline-2 focus-visible:outline-brand"
+              >
+                {ar.accountNav.reports}
+              </Link>
               <div className="my-1 h-px bg-border" />
             </>
           )}
@@ -117,6 +124,13 @@ export function AccountMenu() {
                 className="block rounded-sm px-3 py-2 text-body-sm text-text hover:bg-inset focus-visible:outline-2 focus-visible:outline-brand"
               >
                 {ar.admin.nav.queue}
+              </Link>
+              <Link
+                to="/admin/reports"
+                onClick={() => setIsOpen(false)}
+                className="block rounded-sm px-3 py-2 text-body-sm text-text hover:bg-inset focus-visible:outline-2 focus-visible:outline-brand"
+              >
+                {ar.admin.nav.reports}
               </Link>
               <div className="my-1 h-px bg-border" />
             </>

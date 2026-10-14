@@ -7,6 +7,7 @@ import {
   IconNavListings,
   IconNavNotifications,
   IconNavProfile,
+  IconNavReports,
 } from '../icons/index.js';
 import { useFavoriteIds } from '../../features/favorites/useFavoriteIds.js';
 import { useUnreadCount } from '../../features/notifications/useUnreadCount.js';
@@ -106,6 +107,10 @@ export function AccountShell({ listingsCount, children }) {
                 {formatNumber(unread.count)}
               </span>
             )}
+          </NavLink>
+          <NavLink to="/my-reports" className={navItemClasses}>
+            <IconNavReports className="shrink-0" />
+            {text.reports}
           </NavLink>
           <NavLink to="/profile" className={navItemClasses}>
             <IconNavProfile className="shrink-0" />

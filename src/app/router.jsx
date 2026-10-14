@@ -99,6 +99,13 @@ export const router = createBrowserRouter([
             }),
           },
           {
+            path: 'my-reports',
+            handle: { hideMobileTopBar: true },
+            lazy: async () => ({
+              Component: (await import('../features/reports/pages/MyReportsPage.jsx')).default,
+            }),
+          },
+          {
             path: 'my-properties/:propertyId/edit',
             handle: { hideMobileTopBar: true },
             lazy: async () => ({
@@ -145,6 +152,18 @@ export const router = createBrowserRouter([
             path: 'admin/properties/:propertyId',
             lazy: async () => ({
               Component: (await import('../features/admin/pages/ReviewPropertyPage.jsx')).default,
+            }),
+          },
+          {
+            path: 'admin/reports',
+            lazy: async () => ({
+              Component: (await import('../features/admin/pages/ReportsPage.jsx')).default,
+            }),
+          },
+          {
+            path: 'admin/reports/:reportId',
+            lazy: async () => ({
+              Component: (await import('../features/admin/pages/ReviewReportPage.jsx')).default,
             }),
           },
         ],

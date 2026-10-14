@@ -1,5 +1,5 @@
 import { baseApi } from '../../api/baseApi.js';
-import { ADMIN_PROPERTIES_PATH } from '../../api/baseQuery.js';
+import { ADMIN_PROPERTIES_PATH, ADMIN_REPORTS_PATH } from '../../api/baseQuery.js';
 
 /** `/api/v1/Admin/Properties/{id}` with the id made safe for a URL. */
 function adminPropertyPath(propertyId) {
@@ -16,7 +16,27 @@ function decisionTags(propertyId) {
   ];
 }
 
-// Admin moderation (the project guide 6.10), role Admin: 401 without a token, 403 for users.
+/** `/api/v1/Admin/Reports/{id}` with the id made safe for a URL. */
+function adminReportPath(reportId) {
+  return `${ADMIN_REPORTS_PATH}/${encodeURIComponent(reportId)}`;
+}
+
+/** What a report decision makes stale; suspending also hides the listing from the public. */
+function reportDecisionTags(reportId, propertyId, suspended) {
+  const tags = ['AdminReports', { type: 'AdminReport', id: reportId }];
+  if (suspended) {
+    tags.push(
+      { type: 'Property', id: propertyId },
+      { type: 'Property', id: 'LIST' },
+      { type: 'ReviewProperty', id: propertyId },
+      'PendingProperties',
+    );
+  }
+  return tags;
+}
+
+// Admin moderation (the project guide 6.10) and reports (6.15), role Admin: 401 without a
+// token, 403 for users.
 export const adminApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     /**
@@ -56,6 +76,46 @@ export const adminApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: (_result, _error, { propertyId }) => decisionTags(propertyId),
     }),
+
+    /** `?status=Pending|Resolved|Dismissed&page=&pageSize=` → PaginatedList<ReportSummary>. */
+    getAdminReports: builder.query({
+      query: ({ status, page, pageSize }) => ({
+        url: ADMIN_REPORTS_PATH,
+        params: { status, page, pageSize },
+      }),
+      providesTags: ['AdminReports'],
+    }),
+
+    /** 200 → ReportDetails (any status). 404 missing. */
+    getAdminReport: builder.query({
+      query: (reportId) => adminReportPath(reportId),
+      providesTags: (_result, _error, reportId) => [{ type: 'AdminReport', id: reportId }],
+    }),
+
+    /** Body: { adminNote } (≤ 1000, optional). 204; closes this report only. */
+    dismissReport: builder.mutation({
+      query: ({ reportId, adminNote }) => ({
+        url: `${adminReportPath(reportId)}/dismiss`,
+        method: 'POST',
+        body: { adminNote },
+      }),
+      invalidatesTags: (_result, _error, { reportId }) => reportDecisionTags(reportId),
+    }),
+
+    /**
+     * Body: { adminNote, suspendProperty, suspensionReason } — the reason (≤ 500) only when
+     * suspending. 204; closes every pending report on the listing. 409
+     * ReportErrors.AlreadyReviewed.
+     */
+    resolveReport: builder.mutation({
+      query: ({ reportId, adminNote, suspendProperty, suspensionReason }) => {
+        const body = { adminNote, suspendProperty };
+        if (suspendProperty) body.suspensionReason = suspensionReason;
+        return { url: `${adminReportPath(reportId)}/resolve`, method: 'POST', body };
+      },
+      invalidatesTags: (_result, _error, { reportId, propertyId, suspendProperty }) =>
+        reportDecisionTags(reportId, propertyId, suspendProperty),
+    }),
   }),
 });
 
@@ -64,4 +124,8 @@ export const {
   useGetReviewPropertyQuery,
   useApprovePropertyMutation,
   useRejectPropertyMutation,
+  useGetAdminReportsQuery,
+  useGetAdminReportQuery,
+  useDismissReportMutation,
+  useResolveReportMutation,
 } = adminApi;
