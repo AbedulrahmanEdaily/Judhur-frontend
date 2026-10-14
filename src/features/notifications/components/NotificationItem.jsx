@@ -3,9 +3,11 @@ import { Link } from 'react-router';
 import clsx from 'clsx';
 import { baseApi } from '../../../api/baseApi.js';
 import {
+  IconNavReports,
   IconNotificationApproved,
   IconNotificationBell,
   IconNotificationRejected,
+  IconPause,
 } from '../../../components/icons/index.js';
 import { useToast } from '../../../components/ui/useToast.js';
 import { formatRelativeTime } from '../../../lib/format.js';
@@ -16,20 +18,27 @@ import { useMarkNotificationAsReadMutation } from '../notificationsApi.js';
 const text = ar.notifications;
 
 // Figma icon circles: approved check on success-soft, rejected flag on danger-soft, and the bell
-// on warning-soft for any other (future) type.
+// on warning-soft for any other (future) type. Not in Figma: the suspended pause on
+// danger-soft and the reviewed-report flag on info-soft (17px like the others).
 const typeIcons = {
   PropertyApproved: { Icon: IconNotificationApproved, classes: 'bg-success-soft text-success' },
   PropertyRejected: { Icon: IconNotificationRejected, classes: 'bg-danger-soft text-danger' },
+  PropertySuspended: { Icon: IconPause, classes: 'bg-danger-soft text-danger' },
+  ReportResolved: { Icon: IconNavReports, classes: 'bg-info-soft text-info' },
 };
 const otherTypeIcon = { Icon: IconNotificationBell, classes: 'bg-warning-soft text-warning' };
 
-/** The property notifications open the owner's listing; other types have no page. */
+const PROPERTY_TYPES = ['PropertyApproved', 'PropertyRejected', 'PropertySuspended'];
+
+/**
+ * The property notifications open the owner's listing, a reviewed report opens «بلاغاتي»;
+ * other types have no page.
+ */
 function notificationPath(notification) {
-  const isPropertyType =
-    notification.type === 'PropertyApproved' || notification.type === 'PropertyRejected';
-  if (isPropertyType && notification.referenceId) {
+  if (PROPERTY_TYPES.includes(notification.type) && notification.referenceId) {
     return `/my-properties/${notification.referenceId}`;
   }
+  if (notification.type === 'ReportResolved') return '/my-reports';
   return null;
 }
 
@@ -58,14 +67,17 @@ export function NotificationItem({ notification, onOpen }) {
 
   async function handleOpen() {
     if (onOpen) onOpen();
-    // Approved / rejected: the listing changed on the server, so its cached owner data is stale.
-    if (path) {
+    // The listing or the report changed on the server, so the cached copy is stale.
+    if (PROPERTY_TYPES.includes(notification.type)) {
       dispatch(
         baseApi.util.invalidateTags([
           'MyProperties',
           { type: 'MyProperty', id: notification.referenceId },
         ]),
       );
+    }
+    if (notification.type === 'ReportResolved') {
+      dispatch(baseApi.util.invalidateTags(['MyReports']));
     }
     try {
       await markAsRead(notification.id).unwrap();
@@ -77,7 +89,7 @@ export function NotificationItem({ notification, onOpen }) {
   const content = (
     <>
       <span className={clsx('shrink-0 rounded-full p-[9px]', classes)}>
-        <Icon />
+        <Icon width={17} height={17} />
       </span>
       <span className="flex min-w-0 flex-1 flex-col gap-[3px]">
         <span className="flex items-start gap-2">

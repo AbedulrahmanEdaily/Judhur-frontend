@@ -41,6 +41,7 @@ export function MobileTabBar() {
     pathname === '/favorites' ||
     pathname === '/profile' ||
     pathname === '/notifications' ||
+    pathname === '/my-reports' ||
     pathname.startsWith('/my-properties');
 
   return (
@@ -140,6 +141,13 @@ export function MobileTabBar() {
                 className="block rounded-sm px-3 py-2 text-body-sm text-text hover:bg-inset"
               >
                 {ar.admin.nav.queue}
+              </Link>
+              <Link
+                to="/admin/reports"
+                onClick={() => setIsAccountOpen(false)}
+                className="block rounded-sm px-3 py-2 text-body-sm text-text hover:bg-inset"
+              >
+                {ar.admin.nav.reports}
               </Link>
               <div className="my-1 h-px bg-border" />
               <button

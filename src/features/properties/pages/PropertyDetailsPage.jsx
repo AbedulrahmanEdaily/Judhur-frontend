@@ -17,6 +17,7 @@ import { PropertyGallery } from '../components/PropertyGallery.jsx';
 import { SafetyTips } from '../components/SafetyTips.jsx';
 import { ShareButton } from '../components/ShareButton.jsx';
 import { FavoriteButton } from '../../favorites/components/FavoriteButton.jsx';
+import { ReportListingButton } from '../../reports/components/ReportListingButton.jsx';
 import { PROPERTY_TYPE_PLURALS } from '../constants.js';
 import { useGetPropertyByIdQuery } from '../propertiesApi.js';
 import { searchPath } from '../searchFilters.js';
@@ -115,10 +116,11 @@ export default function PropertyDetailsPage() {
               className="order-first gap-1.5 xl:order-none xl:gap-2"
             />
           </div>
-          {/* Figma «إجراءات» (65:1168): «حفظ» then «مشاركة»; «إبلاغ» has no API. */}
+          {/* Figma «إجراءات» (65:1168): «حفظ», «مشاركة», then «إبلاغ». */}
           <div className="hidden gap-2 xl:flex">
             <FavoriteButton propertyId={property.id} title={property.title} variant="details" />
             <ShareButton title={property.title} />
+            <ReportListingButton property={property} />
           </div>
         </div>
       </section>
@@ -141,6 +143,10 @@ export default function PropertyDetailsPage() {
         <aside className="order-last flex flex-col gap-3.5 xl:order-none xl:w-[360px] xl:shrink-0 xl:gap-[18px]">
           <PriceCard property={property} />
           <SafetyTips />
+          {/* Not in the mobile Figma: the header actions are hidden below 1280px. */}
+          <div className="xl:hidden">
+            <ReportListingButton property={property} variant="block" />
+          </div>
         </aside>
 
         <div className="flex min-w-0 flex-1 flex-col gap-3.5 xl:gap-5">

@@ -3,7 +3,7 @@
 > Project context for Claude Code working in the **frontend repository**. Read this whole file before writing code.
 > The backend lives in a **separate repository** that you cannot see. Section 6 (API contract) is your only source of truth for the backend — never guess an endpoint, a field name, or a status code.
 >
-> Contract snapshot taken from the backend source on 2026-09-30 (backend `main` + the `feature/Favorite` branch); notifications, my profile and the public seller page added 2026-10-01; security hardening (error `code`, image moderation, limits, rate limits) added 2026-10-04.
+> Contract snapshot taken from the backend source on 2026-09-30 (backend `main` + the `feature/Favorite` branch); notifications, my profile and the public seller page added 2026-10-01; security hardening (error `code`, image moderation, limits, rate limits) added 2026-10-04; reports added 2026-10-14.
 >
 > **Read DESIGN.md before any UI work; for anything visual it overrides this file.**
 
@@ -61,7 +61,7 @@ Supporting packages you may add: `async-mutex` (token refresh lock — required)
 
 ### Arabic labels for API enums
 
-Enums arrive from the API as **strings** (section 6.1). Keep this mapping in `src/features/properties/constants.js` and never display a raw enum value.
+Enums arrive from the API as **strings** (section 6.1). Keep this mapping in `src/features/properties/constants.js` (the report enums in `src/features/reports/constants.js`) and never display a raw enum value.
 
 | Enum | Value | Arabic label |
 |---|---|---|
@@ -88,6 +88,14 @@ Enums arrive from the API as **strings** (section 6.1). Keep this mapping in `sr
 | ModerationStatus | `Pending` | قيد المراجعة |
 | | `Approved` | منشور |
 | | `Rejected` | مرفوض |
+| ReportReason | `Fraud` | احتيال |
+| | `IncorrectInformation` | معلومات غير صحيحة |
+| | `Duplicate` | إعلان مكرر |
+| | `InappropriateContent` | محتوى غير لائق |
+| | `Other` | سبب آخر |
+| ReportStatus | `Pending` | قيد المراجعة |
+| | `Resolved` | تم اتخاذ إجراء |
+| | `Dismissed` | لا توجد مخالفة |
 
 Confirm the exact wording with Abdulrahman once; after that treat this table as fixed.
 
@@ -216,7 +224,9 @@ The backend seeds an admin and a normal user on startup. Get the credentials fro
 | Favorites | `/api/v1/User/Favorites/...` | yes |
 | Notifications | `/api/v1/User/Notifications/...` | yes |
 | Public seller page | `/api/v1/User/Sellers/...` | yes |
+| Reports (reporter) | `/api/v1/User/Reports/...` | yes |
 | Admin moderation | `/api/v1/Admin/Properties/...` | yes |
+| Admin reports | `/api/v1/Admin/Reports/...` | yes |
 
 - The path constants live in `src/api/baseQuery.js`. Paths are case-insensitive on the server; use exactly the casing shown here.
 - **JSON**: camelCase property names. **Enums are strings** (`"ForSale"`, not `1`). **Null properties are omitted** from responses — treat a missing key as `null`.
@@ -233,10 +243,11 @@ The backend seeds an admin and a normal user on startup. Get the credentials fro
 | `/User/Favorites/*` | `401` | ✅ | `403` |
 | `/User/Notifications/*` | `401` | ✅ | ✅ |
 | `GET /User/Sellers/{id}` | ✅ | ✅ | ✅ |
+| `/User/Reports/*` | `401` | ✅ | `403` |
 | `/Identity/Account/me*` (6.12) | `401` | ✅ | ✅ |
-| `/Admin/Properties/*` | `401` | `403` | ✅ |
+| `/Admin/Properties/*` and `/Admin/Reports/*` | `401` | `403` | ✅ |
 
-Admins never create, own, or favorite listings. Hide those actions for admins in the UI.
+Admins never create, own, favorite, or report listings. Hide those actions for admins in the UI.
 
 #### Server-side cache
 
@@ -252,6 +263,8 @@ Admins never create, own, or favorite listings. Hide those actions for admins in
 | `LandClassification` | `A` `B` `C` | |
 | `LegalStatus` | `Tabo` `Maliye` `Taswiye` | |
 | `ModerationStatus` | `Pending` `Approved` `Rejected` | |
+| `ReportReason` | `Fraud` `IncorrectInformation` `Duplicate` `InappropriateContent` `Other` | `Other` needs `details` |
+| `ReportStatus` | `Pending` `Resolved` `Dismissed` | |
 
 The Arabic labels are in section 3.
 
@@ -732,15 +745,15 @@ Only `Pending` listings that pass the readiness checklist (6.8) appear here.
 
 ### 6.11 Notifications — `/api/v1/User/Notifications` (any signed-in role)
 
-`User` and `Admin` both have notifications. Today the backend sends them to the seller when an admin approves or rejects a listing.
+`User` and `Admin` both have notifications. Today the backend sends them to the seller when an admin approves, rejects or suspends a listing, and to the reporter when an admin closes their report.
 
 ```ts
 // Notification
 {
   id: string,
-  type: 'PropertyApproved' | 'PropertyRejected',   // more types will come later
+  type: 'PropertyApproved' | 'PropertyRejected' | 'PropertySuspended' | 'ReportResolved',   // more types will come later
   title: string, body: string,                     // Arabic, written by the server — show them as they are
-  referenceId?: string,                            // the listing id for the two property types
+  referenceId?: string,                            // the listing id for the three property types, the report id for ReportResolved
   isRead: boolean,
   createdAtUtc: string
 }
@@ -754,8 +767,8 @@ Only `Pending` listings that pass the readiness checklist (6.8) appear here.
 | `POST` | `/read-all` | `204` | — |
 
 - **Bell** in the navbar for every signed-in user (`NotificationsBell`): the unread badge (hidden at `0`) from `GET /unread-count`, polled every 60 s and refetched on window focus, skipped for guests (`useUnreadCount`). A click opens the latest 5 (`pageSize=5`, refetched on each open), «تعليم الكل كمقروء» and «عرض الكل» → `/notifications`.
-- **Opening a notification** calls `POST /{id}/read` without checking `isRead`. `PropertyApproved` and `PropertyRejected` then go to `/my-properties/{referenceId}`; any other type is only marked as read.
-- Unknown types get the generic bell icon — never hide or break on a new type.
+- **Opening a notification** calls `POST /{id}/read` without checking `isRead`. `PropertyApproved`, `PropertyRejected` and `PropertySuspended` then go to `/my-properties/{referenceId}`; `ReportResolved` (sent for a resolved **and** a dismissed report) goes to `/my-reports`; any other type is only marked as read.
+- Icons: approved check (success), rejected flag (danger), suspended pause (danger), report reviewed flag (info). Unknown types get the generic bell icon — never hide or break on a new type.
 - Marking read is optimistic: the cached pages and the unread count change at once, are undone on failure, and are refetched after.
 
 ### 6.12 My profile — `/api/Identity/Account/me` (token required, any role)
@@ -806,10 +819,67 @@ Only `Pending` listings that pass the readiness checklist (6.8) appear here.
 Nothing below exists — don't call it. Build nothing that depends on it without a `BACKEND_REQUESTS.md` entry.
 
 - Delete account, account preferences (email notifications, phone visibility)
-- Conversations / messages (SignalR), reviews, reports
+- Conversations / messages (SignalR), reviews
 - AI price estimation
 - Currency on prices (still `DEFAULT_CURRENCY`)
 - Admin statistics, user management, and AI-usage screens (in Figma, no endpoints)
+
+### 6.15 Reports — `/api/v1/User/Reports` (role `User`) and `/api/v1/Admin/Reports` (role `Admin`)
+
+```ts
+// MyReport — GET /User/Reports/mine
+{ id, propertyId, propertyTitle, reason: ReportReason, details?, status: ReportStatus, adminNote?, createdAtUtc, reviewedAtUtc? }
+
+// ReportSummary — GET /Admin/Reports
+{ id, propertyId, propertyTitle, propertyIsDeleted, reason, status, pendingReportsOnProperty, createdAtUtc, reviewedAtUtc? }
+
+// ReportDetails — GET /Admin/Reports/{id}
+{
+  id, reason, details?, status, adminNote?, createdAtUtc, reviewedAtUtc?,
+  reporterId, reporter?: UserInfo,          // missing if the reporter account no longer exists
+  property: { id, title, city, moderationStatus, isActive, isDeleted, mainImageUrl?, sellerId },
+  otherPendingReportsOnProperty: number
+}
+```
+
+#### `POST /User/Reports` — report a listing
+
+```json
+{ "propertyId": "guid", "reason": "Fraud", "details": "string | null (≤1000, required when reason is Other)" }
+```
+
+- `201` → `{ id }`. Invalidates `MyReports`.
+- `400` validation (`Reason`, `Details`) · `404` the listing is not public · `409` `code: "ReportErrors.CannotReportOwnProperty"` · `409` `code: "ReportErrors.DuplicateReport"` (the user already has a pending report on this listing → «لديك بلاغ قيد المراجعة على هذا الإعلان») · `429` after **10 an hour**.
+- UI: «إبلاغ» (Figma 65:1169) on the public details page, next to «مشاركة» from 1280px up and as «إبلاغ عن الإعلان» under the safety tips below it. Only for a signed-in `User` who is not the owner (`property.user.id !== ` the JWT `sub`); guests get a login link that comes back; admins see nothing. It opens a dialog: the reason as radio buttons, the details textarea (required for `Other`, counter to 1000), submit. Success toast «تم إرسال البلاغ، سنراجعه قريبًا».
+
+#### `GET /User/Reports/mine?page=&pageSize=`
+
+- `200` → `PaginatedList<MyReport>`, newest first. Tag `MyReports`.
+- Page `/my-reports`: status badge, reason, date, the user's details, and «رد الإدارة» with `adminNote` when present. The title links to `/properties/{propertyId}` (which may show «العقار غير متاح» if the listing was hidden).
+
+#### `GET /Admin/Reports?status=Pending|Resolved|Dismissed&page=&pageSize=`
+
+- `200` → `PaginatedList<ReportSummary>`; `Pending` is oldest first. Tag `AdminReports`.
+- Page `/admin/reports` (Figma 82:1026): tabs for the three statuses (`?status=`, Pending by default), a «محذوف» badge when `propertyIsDeleted`, a «N بلاغات» badge when `pendingReportsOnProperty > 1`, «افحص» → the review page.
+
+#### `GET /Admin/Reports/{id}`
+
+- `200` → `ReportDetails`; `404` missing. Tag `AdminReport` (`id`).
+- Page `/admin/reports/:reportId`: the report, the reporter, a property card (badges for deleted / not published / paused) with a link to `/admin/properties/{property.id}`, and «يوجد N بلاغات أخرى على هذا الإعلان» when `otherPendingReportsOnProperty > 0`.
+
+#### `POST /Admin/Reports/{id}/dismiss` and `POST /Admin/Reports/{id}/resolve`
+
+Only offered while `status === 'Pending'`. Every action goes through a confirm dialog with «ملاحظة للمبلّغ» (`adminNote`, optional, ≤1000, shown to the reporters).
+
+| Button | Request | Effect |
+|---|---|---|
+| «لا توجد مخالفة» | `POST /{id}/dismiss` `{ adminNote? }` | `204`; closes this report only |
+| «اتخاذ إجراء» | `POST /{id}/resolve` `{ adminNote?, suspendProperty: false }` | `204`; closes **all** pending reports on the listing (the dialog says so when `otherPendingReportsOnProperty > 0`) |
+| «اتخاذ إجراء وإيقاف الإعلان» | `POST /{id}/resolve` `{ adminNote?, suspendProperty: true, suspensionReason }` | `204`; the same, and the listing becomes `Rejected` with `rejectionReason = suspensionReason` (required, ≤500, shown to the owner). Only when `property.moderationStatus === 'Approved' && !property.isDeleted` |
+
+- `409` `code: "ReportErrors.AlreadyReviewed"` or a concurrency `409` → toast and refetch. `400` on the note / reason → on the dialog fields.
+- After any action invalidate `AdminReports` and `AdminReport(id)`; after suspending also `Property` and `PendingProperties` (and `ReviewProperty` of the listing).
+- **Owner side:** a suspended listing is just `moderationStatus: 'Rejected'` with the admin's reason, so the rejected owner UI (reason alert, edit, resubmit) covers it; only the `PropertySuspended` notification is new.
 
 ---
 
@@ -856,6 +926,12 @@ src/
       pages/ProfilePage.jsx
     sellers/
       sellersApi.js            # public seller profile (6.13)
+    reports/
+      reportsApi.js            # report a listing, my reports (6.15)
+      constants.js             # ReportReason / ReportStatus lists, Arabic labels, badge tones, limits
+      schemas.js               # report form (reason + details), admin decision form (note, suspension)
+      components/              # ReportListingButton, ReportListingDialog
+      pages/MyReportsPage.jsx
       components/SellerHeader.jsx
       pages/SellerPage.jsx
     notifications/
@@ -865,9 +941,9 @@ src/
       pages/NotificationsPage.jsx
     dashboard/pages/DashboardPage.jsx
     admin/
-      adminApi.js              # pending queue, review, approve, reject (6.10)
-      pages/                   # PendingPropertiesPage, ReviewPropertyPage
-      components/              # AdminShell (sidebar), ReviewDocumentCard, RejectPropertyDialog
+      adminApi.js              # pending queue, review, approve, reject (6.10); reports list, review, dismiss, resolve (6.15)
+      pages/                   # PendingPropertiesPage, ReviewPropertyPage, ReportsPage, ReviewReportPage
+      components/              # AdminShell (sidebar), ReviewDocumentCard, RejectPropertyDialog, ReportDecisionDialog
     ui/uiSlice.js              # theme (+ future UI-only state)
   components/
     ui/                        # Button, Input, Select + SelectMenu (the one dropdown list), Textarea, Checkbox, Modal, ConfirmDialog, Badge, VerifiedBadge,
@@ -1076,9 +1152,12 @@ API paths below are relative to the base paths in section 6.1.
 | `/notifications` | signed in (user or admin) | All notifications (20 per page, `?page=`), grouped by day, unread on brand/subtle, mark all read; the account sidebar and the mobile dashboard link here with the unread count | `GET /User/Notifications`, `GET …/unread-count`, `POST …/{id}/read`, `POST …/read-all` |
 | `/profile` | signed in (user or admin) | Personal data + photo, password (change, or set for Google accounts); account sidebar for users, admin sidebar for admins; «حسابي» in the account menu | `GET/PUT /me`, `PUT/DELETE /me/photo`, `PUT /me/password` |
 | `/sellers/:id` | public | Seller header (photo, name, city, bio, member since, listings count) + their listings, 12 per page | `GET /User/Sellers/{id}`, `GET /User/Properties?sellerId=` |
+| `/my-reports` | user | The user's reports (10 per page, `?page=`): status, reason, date, details, «رد الإدارة»; «بلاغاتي» in the account menu, sidebar and mobile dashboard | `GET /User/Reports/mine` |
 | `/admin` | admin | Redirects to the queue | — |
 | `/admin/properties` | admin | Pending queue | `GET /Admin/Properties/pending` |
 | `/admin/properties/:id` | admin | Review page, document link, approve, reject | `GET /Admin/Properties/{id}` + actions |
+| `/admin/reports` | admin | Reports (Figma 82:1026): status tabs (`?status=`, `?page=`), 10 per page | `GET /Admin/Reports` |
+| `/admin/reports/:reportId` | admin | Report review: report, reporter, property card, dismiss / resolve / resolve and suspend | `GET /Admin/Reports/{id}` + actions |
 | `*` | public | 404 | — |
 
 ### Search state lives in the URL
@@ -1111,6 +1190,9 @@ Loading (skeletons, not spinners, for lists and cards) · empty (friendly Arabic
   | `UnreadCount` | `/unread-count` | mark read, mark all read — patched optimistically |
   | `MyProfile` | `GET /me` | none — `PUT /me`, the photo and the password patch the cache with the answer |
   | `SellerProfile` (`id`) | seller page | profile update, photo upload / delete |
+  | `MyReports` | `/User/Reports/mine` | report a listing |
+  | `AdminReports` | admin reports list | dismiss, resolve |
+  | `AdminReport` (`id`) | admin report review | dismiss, resolve (suspending also invalidates `Property`, `ReviewProperty` and `PendingProperties`) |
 
 - The whole API cache is reset when a session starts and when it ends (section 8.4), because public responses differ for guests and signed-in users.
 - Keep query args plain and serializable (an object of primitives) so caching works.
@@ -1149,7 +1231,7 @@ When Abdulrahman confirms something is done: mark it `done`, update section 6 of
 | 9 | Currency | open |
 | 10 | CORS for deployment | partly done — only `http://localhost:5173` is allowed |
 | 11 | Image and document upload | done — section 6.7 |
-| 12 | Section 6.14 features | partly done — notifications, profile and seller page done; see 6.14 for the rest |
+| 12 | Section 6.14 features | partly done — notifications, profile, seller page and reports done; see 6.14 for the rest |
 | 13 | Register without a user name | done — the email is the login |
 | 14 | Password reset by link or code | open |
 | 15 | `requestId` on every ProblemDetails | done — with `instance`, on every error |
@@ -1178,7 +1260,8 @@ Each step ends in a working app, and each is its own branch + PR.
 6. **Admin moderation** (done) — queue, review page, document link, approve, reject dialog.
 7. **Notifications** (done) — bell with the polled unread badge and dropdown, `/notifications` page, sidebar link.
 8. **Profile and seller page** (done) — register without a user name, `GET /me` in the header, `/profile` (data, photo, password), `/sellers/:id`, seller box link.
-9. **The rest** — as backend endpoints land (section 6.14 and `BACKEND_REQUESTS.md`).
+9. **Reports** (done) — «إبلاغ» on the details page + dialog, `/my-reports`, admin `/admin/reports` + review with dismiss / resolve / suspend, the two new notification types.
+10. **The rest** — as backend endpoints land (section 6.14 and `BACKEND_REQUESTS.md`).
 
 Every data screen keeps the four states (loading skeleton · empty · error with retry · success).
 

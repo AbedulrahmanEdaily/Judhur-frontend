@@ -6,6 +6,7 @@ import {
   IconAlertBell,
   IconFieldChevron,
   IconNavNotifications,
+  IconNavReports,
   IconPlus17,
   IconRowChats,
   IconRowFavorites,
@@ -293,6 +294,18 @@ export default function DashboardPage() {
                   {formatNumber(unread.count)}
                 </span>
               )}
+              <IconFieldChevron className="shrink-0 rotate-90 text-muted" />
+            </Link>
+          </li>
+          {/* Not in the mobile Figma list: «بلاغاتي» has no other way in on a phone. */}
+          <li>
+            <Link
+              to="/my-reports"
+              className="flex items-center gap-3 px-4 py-[15px] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand"
+            >
+              <IconNavReports width={19} height={19} className="shrink-0 text-muted" />
+              <span className="text-[14.5px] leading-[1.72] text-text">{nav.reports}</span>
+              <span className="flex-1" />
               <IconFieldChevron className="shrink-0 rotate-90 text-muted" />
             </Link>
           </li>

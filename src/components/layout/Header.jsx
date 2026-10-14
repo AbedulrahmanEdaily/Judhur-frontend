@@ -22,7 +22,7 @@ const adminLinks = [
   { label: ar.nav.properties, to: '/properties' },
   { label: ar.nav.approvals, to: '/admin/properties' },
   { label: ar.nav.users },
-  { label: ar.nav.reports },
+  { label: ar.nav.reports, to: '/admin/reports' },
 ];
 
 const iconButtonClasses =
