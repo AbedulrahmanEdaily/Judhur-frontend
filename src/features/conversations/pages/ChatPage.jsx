@@ -112,7 +112,7 @@ export default function ChatPage() {
           isLoadingOlder={chat.isFetchingNextPage}
           onLoadOlder={() => chat.fetchNextPage()}
         />
-        <ChatComposer conversationId={conversationId} />
+        <ChatComposer key={conversationId} conversationId={conversationId} />
       </>
     );
   }

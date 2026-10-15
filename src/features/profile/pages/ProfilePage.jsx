@@ -9,6 +9,7 @@ import { ar } from '../../../locales/ar.js';
 import { AdminShell } from '../../admin/components/AdminShell.jsx';
 import { selectIsAdmin } from '../../auth/authSlice.js';
 import { useGetMyPropertiesQuery } from '../../properties/propertiesApi.js';
+import { DeleteAccountSection } from '../components/DeleteAccountSection.jsx';
 import { PasswordForm } from '../components/PasswordForm.jsx';
 import { ProfileDetailsForm } from '../components/ProfileDetailsForm.jsx';
 import { useMyProfile } from '../useMyProfile.js';
@@ -18,8 +19,8 @@ const text = ar.profile;
 /**
  * Figma "الملف الشخصي — مستخدم" (79:1500): the title and its line, «البيانات الشخصية» (photo,
  * name, city, email, phone, bio) and «الأمان» (password). Users get the account sidebar with
- * «الملف الشخصي» active; admins the admin sidebar. «التفضيلات» and «حذف الحساب» have no API
- * and are left out.
+ * «الملف الشخصي» active; admins the admin sidebar. «منطقة الخطر» (79:1689, delete account) closes
+ * the page for users. «التفضيلات» has no API and is left out.
  */
 export default function ProfilePage() {
   const isAdmin = useSelector(selectIsAdmin);
@@ -45,6 +46,8 @@ export default function ProfilePage() {
         <ProfileDetailsForm profile={profile} />
         {/* A new key after a first password is set, so the form switches to «تغيير». */}
         <PasswordForm key={String(profile.hasPassword)} hasPassword={profile.hasPassword} />
+        {/* Admins can't delete their account (409 Users.AdminCannotDeleteAccount). */}
+        {!isAdmin && <DeleteAccountSection hasPassword={profile.hasPassword} />}
       </>
     );
   }
@@ -75,7 +78,7 @@ export default function ProfilePage() {
   if (isAdmin) {
     return (
       <>
-        <PageTopBar title={text.title} backTo="/admin/properties" />
+        <PageTopBar title={text.title} backTo="/admin" />
         <AdminShell>{body}</AdminShell>
       </>
     );

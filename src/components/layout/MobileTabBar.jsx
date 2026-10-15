@@ -156,11 +156,25 @@ export function MobileTabBar() {
                 {ar.auth.account.profile}
               </Link>
               <Link
+                to="/admin"
+                onClick={() => setIsAccountOpen(false)}
+                className="block rounded-sm px-3 py-2 text-body-sm text-text hover:bg-inset"
+              >
+                {ar.admin.nav.dashboardLink}
+              </Link>
+              <Link
                 to="/admin/properties"
                 onClick={() => setIsAccountOpen(false)}
                 className="block rounded-sm px-3 py-2 text-body-sm text-text hover:bg-inset"
               >
                 {ar.admin.nav.queue}
+              </Link>
+              <Link
+                to="/admin/users"
+                onClick={() => setIsAccountOpen(false)}
+                className="block rounded-sm px-3 py-2 text-body-sm text-text hover:bg-inset"
+              >
+                {ar.admin.nav.usersLink}
               </Link>
               <Link
                 to="/admin/reports"

@@ -64,6 +64,12 @@ export function ReviewForm({ sellerId, review, onDone }) {
       toast.show({ tone: 'success', message: text.created });
     } catch (error) {
       const problem = toProblem(error);
+      // The seller was banned or deleted: the seller page is asked again and shows «البائع غير موجود».
+      if (problem.code === 'Seller.NotFound') {
+        toast.show({ tone: 'error', message: ar.sellers.notFoundTitle });
+        if (onDone) onDone();
+        return;
+      }
       if (problem.status === 409 || problem.status === 404) {
         toast.show({ tone: 'warning', message: problem.message });
         if (onDone) onDone();

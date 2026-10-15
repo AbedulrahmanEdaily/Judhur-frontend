@@ -13,17 +13,24 @@ const text = ar.conversations;
 // The counter shows up near the limit.
 const SHOW_COUNTER_FROM = 1800;
 
+// The other side was banned or deleted (the project guide 6.16).
+const PARTICIPANT_UNAVAILABLE = 'Conversations.ParticipantUnavailable';
+
 /**
  * Figma "إدخال" (76:1118) with "حقل المحادثة / Chat Input" (47:800): bg/surface strip, the input
  * on bg/canvas with border/strong, radius lg, and the brand send button (11×9, radius md) at the
  * end. The attachment clip is left out (no API). Enter sends, Shift+Enter starts a new line;
  * the box grows with the text. The sent message comes back from the server into the chat.
+ * When the other side can no longer be messaged (409 Conversations.ParticipantUnavailable),
+ * the box and the button are disabled with «لم يعد بإمكانك مراسلة هذا المستخدم» (the chat
+ * page mounts a new composer per conversation).
  *
  * @param {{ conversationId: string }} props
  */
 export function ChatComposer({ conversationId }) {
   const [sendMessage] = useSendMessageMutation();
   const [failure, setFailure] = useState(null);
+  const [isClosed, setIsClosed] = useState(false);
   const inputId = useId();
   const errorId = useId();
 
@@ -39,7 +46,7 @@ export function ChatComposer({ conversationId }) {
     defaultValues: { content: '' },
   });
   const content = useWatch({ control, name: 'content' });
-  const canSend = content.trim() !== '' && !isSubmitting;
+  const canSend = content.trim() !== '' && !isSubmitting && !isClosed;
 
   async function onSubmit(values) {
     setFailure(null);
@@ -48,8 +55,15 @@ export function ChatComposer({ conversationId }) {
       reset({ content: '' });
       setFocus('content');
     } catch (error) {
-      if (toProblem(error).status === 429) setFailure(text.tooMany);
-      else setFailure(actionErrorMessage(error));
+      const problem = toProblem(error);
+      if (problem.code === PARTICIPANT_UNAVAILABLE) {
+        setIsClosed(true);
+        setFailure(text.participantUnavailable);
+      } else if (problem.status === 429) {
+        setFailure(text.tooMany);
+      } else {
+        setFailure(actionErrorMessage(error));
+      }
     }
   }
 
@@ -82,8 +96,9 @@ export function ChatComposer({ conversationId }) {
           placeholder={text.placeholder}
           onKeyDown={handleKeyDown}
           readOnly={isSubmitting}
+          disabled={isClosed}
           aria-describedby={failure ? errorId : undefined}
-          className="field-sizing-content max-h-32 min-h-[25px] min-w-0 flex-1 resize-none self-center bg-transparent text-[14.5px] leading-[1.75] text-text outline-none placeholder:text-muted"
+          className="field-sizing-content max-h-32 min-h-[25px] min-w-0 flex-1 resize-none self-center bg-transparent text-[14.5px] leading-[1.75] text-text outline-none placeholder:text-muted disabled:cursor-not-allowed disabled:opacity-60"
           {...register('content')}
         />
         <button

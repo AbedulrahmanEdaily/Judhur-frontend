@@ -76,6 +76,28 @@ export const profileApi = baseApi.injectEndpoints({
      * `Identity.PasswordMismatch` · 429 after 5 tries in 15 minutes. An account without a
      * password (Google) sets its first one, and `hasPassword` becomes true.
      */
+    /**
+     * Body: { newEmail, password? } (the password when the account has one). 204: a link is
+     * sent to the new email; nothing changes before it is opened. 400 Identity.EmailUnchanged /
+     * CurrentPasswordRequired / InvalidPassword · 409 Identity.DuplicateEmail · 429.
+     */
+    changeMyEmail: builder.mutation({
+      query: (body) => ({ url: `${ME_PATH}/email`, method: 'POST', body }),
+    }),
+
+    /**
+     * Body: { password } when the account has one, none for a Google-only account. 204: the
+     * account is gone (the caller ends the session). 400 CurrentPasswordRequired /
+     * InvalidPassword · 409 Users.AdminCannotDeleteAccount · 429.
+     */
+    deleteMyAccount: builder.mutation({
+      query: (password) => {
+        const request = { url: ME_PATH, method: 'DELETE' };
+        if (password) request.body = { password };
+        return request;
+      },
+    }),
+
     changeMyPassword: builder.mutation({
       query: (body) => ({ url: `${ME_PATH}/password`, method: 'PUT', body }),
       async onQueryStarted(body, { dispatch, queryFulfilled }) {
@@ -93,6 +115,8 @@ export const profileApi = baseApi.injectEndpoints({
 });
 
 export const {
+  useChangeMyEmailMutation,
+  useDeleteMyAccountMutation,
   useGetMeQuery,
   useUpdateMyProfileMutation,
   useUploadMyPhotoMutation,

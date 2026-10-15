@@ -67,6 +67,14 @@ export const authApi = baseApi.injectEndpoints({
       query: (body) => ({ url: `${ACCOUNT_PATH}/confirm-email`, method: 'POST', body }),
     }),
 
+    /**
+     * Body: { userId, newEmail, token } from the change-email link. 204 · 400
+     * `Identity.InvalidConfirmationToken` · 409 `Identity.DuplicateEmail`.
+     */
+    confirmEmailChange: builder.mutation({
+      query: (body) => ({ url: `${ACCOUNT_PATH}/confirm-email-change`, method: 'POST', body }),
+    }),
+
     /** Always 204. Rate limited → 429. */
     resendConfirmation: builder.mutation({
       query: (body) => ({ url: `${ACCOUNT_PATH}/resend-confirmation`, method: 'POST', body }),

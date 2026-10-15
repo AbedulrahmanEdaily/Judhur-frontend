@@ -2,12 +2,13 @@ import { HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
 import { baseApi } from '../../api/baseApi.js';
 import { freshAccessToken } from '../../api/baseQuery.js';
 import { API_BASE_URL } from '../../config/env.js';
-import { selectAuth, selectIsAuthenticated } from '../../features/auth/authSlice.js';
+import { selectAuth, selectIsAuthenticated, sessionEnded } from '../../features/auth/authSlice.js';
 import {
   addMessageToChat,
   conversationsApi,
   markMyMessagesRead,
 } from '../../features/conversations/conversationsApi.js';
+import { adminNotificationTags } from '../../features/notifications/adminNotificationTags.js';
 import { notificationsApi } from '../../features/notifications/notificationsApi.js';
 import { noticeShown, realtimeConnectionChanged } from '../../features/ui/uiSlice.js';
 
@@ -62,11 +63,18 @@ function handleMessagesRead({ conversationId, readAtUtc }) {
 /** The toast tone of a pushed notification: a warning for bad news, success otherwise. */
 function noticeTone(type) {
   if (type === 'PropertyRejected' || type === 'PropertySuspended') return 'warning';
+  if (type === 'PropertyPendingReview' || type === 'NewReport') return 'warning';
   return 'success';
 }
 
 /** @param {import('../../api/types.js').Notification} notification */
 function handleNotificationReceived(notification) {
+  // A ban ends the session here at once; the notification says why.
+  if (notification.type === 'AccountBanned') {
+    store.dispatch(sessionEnded('banned'));
+    store.dispatch(noticeShown({ tone: 'error', message: notification.body }));
+    return;
+  }
   const cachedPages = notificationsApi.util.selectCachedArgsForQuery(
     store.getState(),
     'getNotifications',
@@ -87,6 +95,9 @@ function handleNotificationReceived(notification) {
       unread.count += 1;
     }),
   );
+  // For admins: a new listing in the queue or a new report refreshes those lists and numbers.
+  const adminTags = adminNotificationTags(notification.type);
+  if (adminTags) store.dispatch(baseApi.util.invalidateTags(adminTags));
   store.dispatch(noticeShown({ tone: noticeTone(notification.type), message: notification.title }));
 }
 

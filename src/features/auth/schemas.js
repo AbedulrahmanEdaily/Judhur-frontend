@@ -90,6 +90,27 @@ export const profileSchema = z.object({
     .transform((value) => (value === '' ? null : value)),
 });
 
+/** `POST /me/email`: the new email, and the current password when the account has one. */
+export function changeEmailSchema(hasPassword) {
+  let password = z.string();
+  if (hasPassword) password = password.min(1, messages.required);
+  return z.object({ newEmail: email, password });
+}
+
+/**
+ * `DELETE /me`: the password when the account has one; a Google-only account types the
+ * confirm phrase instead.
+ */
+export function deleteAccountSchema(hasPassword) {
+  if (hasPassword) return z.object({ password: z.string().min(1, messages.required) });
+  const phrase = ar.profile.deleteAccount.confirmPhrase;
+  return z.object({
+    confirmText: z
+      .string()
+      .refine((value) => value.trim() === phrase, ar.profile.deleteAccount.phraseMismatch),
+  });
+}
+
 /** `PUT /me/password` for an account that has a password: the current one is required. */
 export const changePasswordSchema = z
   .object({

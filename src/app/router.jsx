@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from 'react-router';
+import { createBrowserRouter } from 'react-router';
 import { AppLayout } from '../components/layout/AppLayout.jsx';
 import { Spinner } from '../components/ui/Spinner.jsx';
 import NotFoundPage from '../features/errors/pages/NotFoundPage.jsx';
@@ -154,10 +154,27 @@ export const router = createBrowserRouter([
         ],
       },
       {
-        // Admin moderation. The statistics page has no API yet, so /admin opens the queue.
+        // The admin area: the dashboard, moderation, reports and users.
         element: <RequireRole role="Admin" />,
         children: [
-          { path: 'admin', element: <Navigate to="/admin/properties" replace /> },
+          {
+            path: 'admin',
+            lazy: async () => ({
+              Component: (await import('../features/admin/pages/DashboardPage.jsx')).default,
+            }),
+          },
+          {
+            path: 'admin/users',
+            lazy: async () => ({
+              Component: (await import('../features/admin/pages/UsersPage.jsx')).default,
+            }),
+          },
+          {
+            path: 'admin/users/:userId',
+            lazy: async () => ({
+              Component: (await import('../features/admin/pages/UserPage.jsx')).default,
+            }),
+          },
           {
             path: 'admin/properties',
             lazy: async () => ({
@@ -242,6 +259,13 @@ export const router = createBrowserRouter([
         path: 'confirm-email',
         lazy: async () => ({
           Component: (await import('../features/auth/pages/ConfirmEmailPage.jsx')).default,
+        }),
+      },
+      {
+        // Public: the link may be opened signed in or not; on success the session ends here.
+        path: 'confirm-email-change',
+        lazy: async () => ({
+          Component: (await import('../features/auth/pages/ConfirmEmailChangePage.jsx')).default,
         }),
       },
     ],
