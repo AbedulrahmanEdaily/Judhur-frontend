@@ -17,7 +17,6 @@ import { ListingLocationFields } from '../components/ListingLocationFields.jsx';
 import { OwnerLoadError } from '../components/OwnerLoadError.jsx';
 import { ownerStateOf } from '../listingState.js';
 import {
-  useGetMyPropertiesQuery,
   useGetMyPropertyQuery,
   useUpdatePropertyDescriptionMutation,
   useUpdatePropertyDetailsMutation,
@@ -51,7 +50,6 @@ export default function EditPropertyPage() {
   const { currentData, isFetching, error, refetch } = useGetMyPropertyQuery(propertyId);
   let property = null;
   if (currentData && currentData.id === propertyId) property = currentData;
-  const { data: myProperties } = useGetMyPropertiesQuery();
   const [updateDetails] = useUpdatePropertyDetailsMutation();
   const [updateDescription] = useUpdatePropertyDescriptionMutation();
 
@@ -201,7 +199,7 @@ export default function EditPropertyPage() {
   return (
     <>
       <PageTopBar title={text.editTitle} backTo={`/my-properties/${propertyId}`} />
-      <AccountShell listingsCount={myProperties?.length}>
+      <AccountShell>
         <div className="hidden flex-col gap-0.5 xl:flex">
           <h1 className="text-[25px] leading-[1.72] font-bold text-text">{text.editTitle}</h1>
           <p className="text-[13.5px] leading-[1.72] text-text-secondary">{text.editSubtitle}</p>

@@ -9,7 +9,6 @@ import { toProblem } from '../../../lib/http/problemDetails.js';
 import { ar } from '../../../locales/ar.js';
 import { PropertyCard } from '../../properties/components/PropertyCard.jsx';
 import { PropertyCardSkeleton } from '../../properties/components/PropertyCardSkeleton.jsx';
-import { useGetMyPropertiesQuery } from '../../properties/propertiesApi.js';
 import { useGetFavoritesQuery } from '../favoritesApi.js';
 import { useFavoriteIds } from '../useFavoriteIds.js';
 
@@ -34,7 +33,6 @@ export default function FavoritesPage() {
   const page = readPage(searchParams);
   const { data, isLoading, error, refetch } = useGetFavoritesQuery({ page, pageSize: PAGE_SIZE });
   const { favoriteIds, isLoaded: idsLoaded } = useFavoriteIds();
-  const myProperties = useGetMyPropertiesQuery();
 
   function changePage(nextPage) {
     const params = new URLSearchParams();
@@ -95,7 +93,7 @@ export default function FavoritesPage() {
   return (
     <>
       <PageTopBar title={text.title} backTo="/dashboard" />
-      <AccountShell listingsCount={myProperties.data?.length}>
+      <AccountShell>
         <div className="flex flex-col gap-0.5">
           <h1 className="hidden text-[25px] leading-[1.72] font-bold text-text xl:block">
             {text.title}

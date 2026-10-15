@@ -17,7 +17,7 @@ const visitorLinks = [
   { label: ar.nav.home, to: '/', end: true },
   { label: ar.nav.properties, to: '/properties' },
   { label: ar.nav.map, to: '/map' },
-  { label: ar.nav.about },
+  { label: ar.nav.about, to: '/about' },
 ];
 const adminLinks = [
   { label: ar.nav.home, to: '/', end: true },

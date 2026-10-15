@@ -18,7 +18,7 @@ import {
   ownerStateOf,
   readinessOf,
 } from '../listingState.js';
-import { useGetMyPropertiesQuery, useGetMyPropertyQuery } from '../propertiesApi.js';
+import { useGetMyPropertyQuery } from '../propertiesApi.js';
 
 const text = ar.ownerProperty;
 
@@ -35,7 +35,6 @@ export default function MyPropertyPage() {
   const { currentData, isFetching, error, refetch } = useGetMyPropertyQuery(propertyId);
   let property = null;
   if (currentData && currentData.id === propertyId) property = currentData;
-  const { data: myProperties } = useGetMyPropertiesQuery();
 
   let content;
   if (error && !isFetching) {
@@ -121,7 +120,7 @@ export default function MyPropertyPage() {
   return (
     <>
       <PageTopBar title={ar.myProperties.title} backTo="/my-properties" />
-      <AccountShell listingsCount={myProperties?.length}>
+      <AccountShell>
         <Link
           to="/my-properties"
           className="hidden items-center gap-1 self-start rounded-sm text-[13px] leading-[1.72] font-semibold text-brand-text focus-visible:outline-2 focus-visible:outline-brand xl:flex"

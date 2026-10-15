@@ -44,6 +44,12 @@ export const router = createBrowserRouter([
         }),
       },
       {
+        path: 'about',
+        lazy: async () => ({
+          Component: (await import('../features/about/pages/AboutPage.jsx')).default,
+        }),
+      },
+      {
         path: 'map',
         lazy: async () => ({
           Component: (await import('../features/map/pages/MapPage.jsx')).default,

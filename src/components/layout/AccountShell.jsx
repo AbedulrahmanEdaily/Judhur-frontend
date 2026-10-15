@@ -11,6 +11,7 @@ import {
 } from '../icons/index.js';
 import { useUnreadMessages } from '../../features/conversations/useUnreadMessages.js';
 import { useFavoriteIds } from '../../features/favorites/useFavoriteIds.js';
+import { useGetMyPropertiesQuery } from '../../features/properties/propertiesApi.js';
 import { useUnreadCount } from '../../features/notifications/useUnreadCount.js';
 import { formatNumber } from '../../lib/format.js';
 import { ar } from '../../locales/ar.js';
@@ -44,9 +45,14 @@ function navItemClasses({ isActive }) {
  * the cached ids list (useFavoriteIds); the conversations and notifications counts are the
  * unread ones (shown when there are some).
  *
- * @param {{ listingsCount?: number, children: import('react').ReactNode }} props
+ * The listings count comes from the cached `/mine` list the sidebar reads itself, so every
+ * account page shows the same numbers.
+ *
+ * @param {{ children: import('react').ReactNode }} props
  */
-export function AccountShell({ listingsCount, children }) {
+export function AccountShell({ children }) {
+  const myProperties = useGetMyPropertiesQuery();
+  const listingsCount = myProperties.data?.length;
   const isListingsActive = useMatch({ path: '/my-properties', end: false }) !== null;
   const isFavoritesActive = useMatch('/favorites') !== null;
   const isNotificationsActive = useMatch('/notifications') !== null;

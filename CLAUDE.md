@@ -1134,19 +1134,20 @@ src/
       useUnreadCount.js        # the polled unread count (60 s + on focus), skipped for guests
       components/              # NotificationsBell, NotificationsMenu (the dropdown), NotificationItem, UnreadBadge
       pages/NotificationsPage.jsx
+    about/pages/AboutPage.jsx     # «عن جذور»: why, how it works, FAQ, contact (static text from ar.js)
     dashboard/pages/DashboardPage.jsx
     admin/
       adminApi.js              # pending queue, review, approve, reject (6.10); reports list, review, dismiss, resolve (6.15)
       usersApi.js              # dashboard stats, users list, user, ban, unban (6.19)
       pages/                   # DashboardPage, PendingPropertiesPage, ReviewPropertyPage, ReportsPage, ReviewReportPage,
                                # UsersPage, UserPage
-      components/              # AdminShell (sidebar), ReviewDocumentCard, RejectPropertyDialog, ReportDecisionDialog,
+      components/              # AdminShell (sidebar, reads the queue and reports counts from AdminStats), ReviewDocumentCard, RejectPropertyDialog, ReportDecisionDialog,
                                # StatCard, UserRow, UserStatusBadge (ban / unban use ConfirmDialog)
     ui/uiSlice.js              # theme (+ future UI-only state)
   components/
     ui/                        # Button, Input, Select + SelectMenu (the one dropdown list), Textarea, Checkbox, Switch, Modal, ConfirmDialog, Badge, VerifiedBadge,
                                # Spinner, Skeleton, EmptyState, ErrorState, Pagination, Toast
-    layout/                    # AppLayout, Header, Footer, MobileTopBar, MobileTabBar, AccountShell (sidebar), PageTopBar
+    layout/                    # AppLayout, Header, Footer, MobileTopBar, MobileTabBar, AccountShell (sidebar, reads the listings count), PageTopBar
     form/                      # FormField wrappers binding RHF + label + error text
   routes/
     RequireAuth.jsx
@@ -1334,6 +1335,7 @@ API paths below are relative to the base paths in section 6.1.
 |---|---|---|---|
 | `/` | public | Home: hero with search box, type categories, the four latest listings | `GET /User/Properties?pageSize=4` |
 | `/properties` | public | Search with filters sidebar (drawer on mobile), sort, pagination; sold/rented ribbon on cards | `GET /User/Properties` |
+| `/about` | public | «عن جذور» (no Figma frame): the platform, «ليش جذور؟», how it works for buyers and sellers (`#how-it-works`), the FAQ (`#faq`), contact | — |
 | `/map` | public | Map of the search (Figma 71:1300): filter pills (open the filters sheet), list + price pins, sort, pagination, «عرض كقائمة» | `GET /User/Properties`, `GET /User/Properties/{id}` per result (coordinates, #7) |
 | `/properties/:id` | public | Details: gallery, key facts, description, map, seller card (phone rule, 6.5), heart | `GET /User/Properties/{id}` |
 | `/login` | guest | Login + Google | `POST /login`, `POST /google` |

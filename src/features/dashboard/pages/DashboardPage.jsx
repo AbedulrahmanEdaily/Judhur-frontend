@@ -172,7 +172,7 @@ export default function DashboardPage() {
   return (
     <>
       <PageTopBar title={text.title} backTo="/" />
-      <AccountShell listingsCount={mine.data?.length}>
+      <AccountShell>
         {/* Welcome — desktop (74:635) and the mobile card (84:586). */}
         <div className="hidden items-center gap-3 xl:flex">
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">

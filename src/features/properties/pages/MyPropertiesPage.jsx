@@ -228,7 +228,7 @@ export default function MyPropertiesPage() {
   return (
     <>
       <PageTopBar title={text.title} backTo="/dashboard" />
-      <AccountShell listingsCount={properties?.length}>
+      <AccountShell>
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
             <h1 className="hidden text-[25px] leading-[1.72] font-bold text-text xl:block">

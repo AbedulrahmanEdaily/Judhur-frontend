@@ -164,7 +164,7 @@ export default function PendingPropertiesPage() {
   }
 
   return (
-    <AdminShell pendingCount={data?.totalCount}>
+    <AdminShell>
       <div className="flex flex-col gap-0.5">
         <h1 className="text-[22px] leading-[1.72] font-bold text-text xl:text-[25px]">
           {text.queueTitle}

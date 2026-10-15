@@ -9,7 +9,7 @@ const itemClasses = 'text-[13.5px] leading-[1.75] text-white/70';
  * Figma "التذييل" (51:801). The frame is pinned to the Dark mode, so the `dark` class keeps it
  * dark in both themes. 120 side padding, 56 top / 34 bottom, 30 gap; columns 60 apart, their
  * text lined up on the left edge as in the frame (counter-axis MIN).
- * Links to pages that are not built yet are plain text for now. Desktop only — the mobile
+ * «عن جذور», «كيف تعمل» and «الأسئلة الشائعة» open the about page and its parts. Desktop only — the mobile
  * frames have no footer.
  */
 export function Footer() {
@@ -44,9 +44,15 @@ export function Footer() {
 
           <div className="flex flex-col items-end gap-2.5 whitespace-nowrap">
             <p className={headingClasses}>{ar.footer.platformTitle}</p>
-            <span className={itemClasses}>{ar.nav.about}</span>
-            <span className={itemClasses}>{ar.footer.howItWorks}</span>
-            <span className={itemClasses}>{ar.footer.faq}</span>
+            <Link to="/about" className={itemClasses}>
+              {ar.nav.about}
+            </Link>
+            <Link to="/about#how-it-works" className={itemClasses}>
+              {ar.footer.howItWorks}
+            </Link>
+            <Link to="/about#faq" className={itemClasses}>
+              {ar.footer.faq}
+            </Link>
           </div>
 
           <div className="flex flex-col items-end gap-2.5 whitespace-nowrap">
