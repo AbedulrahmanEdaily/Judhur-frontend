@@ -3,7 +3,7 @@
 > Project context for Claude Code working in the **frontend repository**. Read this whole file before writing code.
 > The backend lives in a **separate repository** that you cannot see. Section 6 (API contract) is your only source of truth for the backend — never guess an endpoint, a field name, or a status code.
 >
-> Contract snapshot taken from the backend source on 2026-09-30 (backend `main` + the `feature/Favorite` branch); notifications, my profile and the public seller page added 2026-10-01; security hardening (error `code`, image moderation, limits, rate limits) added 2026-10-04; reports added 2026-10-14; conversations and the real-time hub added 2026-10-15; seller reviews added 2026-10-15; admin users, the admin dashboard, bans and the global rate limit added 2026-10-15 (from the backend source, `main` after `feature/admin-users`).
+> Contract snapshot taken from the backend source on 2026-09-30 (backend `main` + the `feature/Favorite` branch); notifications, my profile and the public seller page added 2026-10-01; security hardening (error `code`, image moderation, limits, rate limits) added 2026-10-04; reports added 2026-10-14; conversations and the real-time hub added 2026-10-15; seller reviews added 2026-10-15; admin users, the admin dashboard, bans and the global rate limit added 2026-10-15 (from the backend source, `main` after `feature/admin-users`); the "final backend" changes added 2026-10-15 from Abdulrahman's change list (review `rowVersion`, admin notifications, change email, delete account, an unavailable chat participant) — not yet in the pushed backend source, so check them against Swagger once it is deployed.
 >
 > **Read DESIGN.md before any UI work; for anything visual it overrides this file.**
 
@@ -627,7 +627,7 @@ Both uploads are `multipart/form-data`. Build a `FormData` and **do not set `Con
 - Max **10** images → `400` with `PropertyErrors.MaxImagesReached`.
 - ⚠️ On an **approved** listing, adding an image sends it back to `Pending` (hidden from search until approved again) → the same confirm dialog as editing details first. On a **rejected** listing, show a note that it goes back to review.
 - `400` `Storage.InvalidFileContent` when the file's content does not match its type (also on the document and profile-photo uploads) → show it on that upload.
-- ⚠️ **Upload images one at a time** (await each request before the next). Parallel uploads can collide on the image order and return the database `409` from 6.2.
+- ⚠️ **Upload images one at a time** (await each request before the next). Parallel uploads conflict on the image order and return a `409`.
 - Validate type and size on the client before uploading.
 
 #### `DELETE /{propertyId}/images/{imageId}`
@@ -739,7 +739,8 @@ Only `Pending` listings that pass the readiness checklist (6.8) appear here.
   images: PropertyImage[],
   seller?: UserInfo,                     // missing if the seller account no longer exists
   ownershipDocumentUrl?: string,         // signed link, valid for 10 minutes
-  ownershipDocumentExpiresAtUtc?: string
+  ownershipDocumentExpiresAtUtc?: string,
+  rowVersion: string                     // what the admin reviewed; approve and reject send it back
 }
 ```
 
@@ -749,29 +750,35 @@ Only `Pending` listings that pass the readiness checklist (6.8) appear here.
 
 #### `POST /{propertyId}/approve`
 
-- No body. `204` → back to the queue with a success toast.
+```json
+{ "rowVersion": "string (from GET /{propertyId})" }
+```
+
+- `204` → back to the queue with a success toast.
 - `400` with one of `PropertyErrors.MinImagesRequired`, `PropertyErrors.MainImageRequired`, `PropertyErrors.OwnershipDocumentRequired`.
-- `409` already approved · `404`.
+- `409` `code: "Properties.ChangedSinceReview"` — the owner changed the listing after the review page was loaded → «تم تعديل العقار بعد فتحك للصفحة، راجعه من جديد» and the review page is fetched again (a new `rowVersion`). Any other `409` (already approved) · `404`.
+- The queue's quick «موافقة» / «رفض» have no `rowVersion` in the list: they fetch `GET /{propertyId}` first and send its `rowVersion`.
 
 #### `POST /{propertyId}/reject`
 
 ```json
-{ "rejectionReason": "string (required, ≤500)" }
+{ "rejectionReason": "string (required, ≤500)", "rowVersion": "string (from GET /{propertyId})" }
 ```
 
 - `204`. The owner sees the reason on their listing.
-- `400` missing/too long · `409` the listing is approved (cannot be rejected) or already rejected · `404`.
+- `400` missing/too long · `409` `Properties.ChangedSinceReview` (as for approve) · `409` the listing is approved (cannot be rejected) or already rejected · `404`.
 - Use a dialog with a textarea, a live character counter (500), and quick-pick reasons that fill the textarea (e.g. "الصور غير واضحة", "وثيقة الملكية غير واضحة", "المعلومات غير مكتملة").
 
 ### 6.11 Notifications — `/api/v1/User/Notifications` (any signed-in role)
 
-`User` and `Admin` both have notifications. Today the backend sends them to the seller when an admin approves, rejects or suspends a listing, to the reporter when an admin closes their report, to the seller when someone reviews them, and to a user an admin bans (`AccountBanned`, no `referenceId`; the body has the reason and how many listings were paused).
+`User` and `Admin` both have notifications. Today the backend sends them to the seller when an admin approves, rejects or suspends a listing, to the reporter when an admin closes their report, to the seller when someone reviews them, to a user an admin bans (`AccountBanned`, no `referenceId`; the body has the reason and how many listings were paused), and to the admins when a listing enters the queue (`PropertyPendingReview`, `referenceId` = the listing) or a listing is reported (`NewReport`, `referenceId` = the report).
 
 ```ts
 // Notification
 {
   id: string,
-  type: 'PropertyApproved' | 'PropertyRejected' | 'PropertySuspended' | 'ReportResolved' | 'NewReview' | 'AccountBanned',   // more types will come later
+  type: 'PropertyApproved' | 'PropertyRejected' | 'PropertySuspended' | 'ReportResolved' | 'NewReview' | 'AccountBanned'
+      | 'PropertyPendingReview' | 'NewReport',   // the last two go to admins; more types will come later
   title: string, body: string,                     // Arabic, written by the server — show them as they are
   referenceId?: string,                            // the listing id for the three property types, the report id for ReportResolved, the seller id (me) for NewReview
   isRead: boolean,
@@ -787,8 +794,8 @@ Only `Pending` listings that pass the readiness checklist (6.8) appear here.
 | `POST` | `/read-all` | `204` | — |
 
 - **Bell** in the navbar for every signed-in user (`NotificationsBell`): the unread badge (hidden at `0`) from `GET /unread-count`, refetched on window focus, skipped for guests (`useUnreadCount`). It is polled every 60 s **only while the real-time hub is disconnected**; connected, the hub pushes `notificationReceived` (6.17). A click opens the latest 5 (`pageSize=5`, refetched on each open), «تعليم الكل كمقروء» and «عرض الكل» → `/notifications`.
-- **Opening a notification** calls `POST /{id}/read` without checking `isRead`. `PropertyApproved`, `PropertyRejected` and `PropertySuspended` then go to `/my-properties/{referenceId}`; `ReportResolved` (sent for a resolved **and** a dismissed report) goes to `/my-reports`; `NewReview` goes to `/sellers/{referenceId}#reviews` (my own seller page, the reviews tab); any other type is only marked as read. `AccountBanned` pushed by the hub ends the session at once (6.17).
-- Icons: approved check (success), rejected flag (danger), suspended pause (danger), report reviewed flag (info), new review star (warning). Unknown types get the generic bell icon — never hide or break on a new type.
+- **Opening a notification** calls `POST /{id}/read` without checking `isRead`. `PropertyApproved`, `PropertyRejected` and `PropertySuspended` then go to `/my-properties/{referenceId}`; `ReportResolved` (sent for a resolved **and** a dismissed report) goes to `/my-reports`; `NewReview` goes to `/sellers/{referenceId}#reviews` (my own seller page, the reviews tab); `PropertyPendingReview` goes to `/admin/properties/{referenceId}` and `NewReport` to `/admin/reports/{referenceId}` (both also refresh the queue, the reports and the dashboard numbers, when opened and when pushed by the hub); any other type is only marked as read. `AccountBanned` pushed by the hub ends the session at once (6.17).
+- Icons: approved check (success), rejected flag (danger), suspended pause (danger), report reviewed flag (info), new review star (warning), banned lock (danger), pending review queue tick (warning), new report flag (danger). Unknown types get the generic bell icon — never hide or break on a new type.
 - Marking read is optimistic: the cached pages and the unread count change at once, are undone on failure, and are refetched after.
 
 ### 6.12 My profile — `/api/Identity/Account/me` (token required, any role)
@@ -815,6 +822,37 @@ Only `Pending` listings that pass the readiness checklist (6.8) appear here.
 - `DELETE`: `204` → set `profileImageUrl` to `null` in the cache. Behind a confirm dialog.
 - Both invalidate `Property` (the seller box on listing pages shows the photo) and `SellerProfile`.
 
+#### `POST /me/email` — change the email
+
+```json
+{ "newEmail": "string (valid email, ≤256)", "password": "string? (required when hasPassword)" }
+```
+
+- `204` → «أرسلنا رابط تأكيد إلى بريدك الجديد». Nothing changes until the link is opened; the current email keeps working.
+- `400` `Identity.EmailUnchanged` (→ the email field) · `400` `Identity.CurrentPasswordRequired` / `Identity.InvalidPassword` (→ the password field) · `409` `code: "Identity.DuplicateEmail"` (→ the email field) · `429`.
+- UI: «تغيير البريد» next to the read-only email on `/profile` opens a dialog (new email, and the password only when `hasPassword`).
+
+#### `POST /confirm-email-change` (no token needed)
+
+```json
+{ "userId": "guid", "newEmail": "string", "token": "string" }
+```
+
+- The email sends a link to the frontend page **`/confirm-email-change?userId=&email=&token=`** (public). The page posts once with `newEmail` = the `email` param (as read, like `/confirm-email`).
+- `204` → the session is ended here and the page goes to `/login` with «تم تغيير بريدك، سجّل الدخول بالبريد الجديد».
+- `400` `Identity.InvalidConfirmationToken` → «الرابط غير صالح أو منتهي» with a way back to «حسابي» to ask again · `409` `Identity.DuplicateEmail` → its message.
+
+#### `DELETE /me` — delete my account
+
+```json
+{ "password": "string (only when hasPassword; Google-only accounts send no body)" }
+```
+
+- `204` → the session is ended, the whole API cache reset, home with «تم حذف حسابك».
+- Effects (listed in the confirm dialog): the listings, favorites, notifications and photos are deleted; conversations and reviews stay, shown as «مستخدم محذوف» (no photo — the default avatar).
+- `400` `Identity.CurrentPasswordRequired` / `Identity.InvalidPassword` (→ the password field) · `409` `Users.AdminCannotDeleteAccount` · `429`.
+- UI: the danger zone at the bottom of `/profile` (Figma «منطقة الخطر» 79:1689), hidden for admins; a strong confirm (the password, or typing «حذف حسابي» for a Google-only account).
+
 #### `PUT /me/password`
 
 ```json
@@ -838,7 +876,7 @@ Only `Pending` listings that pass the readiness checklist (6.8) appear here.
 
 Nothing below exists — don't call it. Build nothing that depends on it without a `BACKEND_REQUESTS.md` entry.
 
-- Delete account, account preferences (email notifications, phone visibility)
+- Account preferences (email notifications, phone visibility)
 - Message attachments
 - AI price estimation
 - Currency on prices (still `DEFAULT_CURRENCY`)
@@ -873,7 +911,7 @@ A conversation is one buyer and one seller about one listing.
 | `GET` | `/unread-count` | `200` `{ count }` (unread **messages**) | — |
 | `GET` | `/{id}` | `200` `ConversationDetails` | `404` missing or not yours |
 | `GET` | `/{id}/messages?before=&limit=` | `200` `{ items: Message[] (newest first), hasMore }` | `400` `ConversationErrors.InvalidCursor` |
-| `POST` | `/{id}/messages` `{ content }` | `201` `Message` | `400` (content 1–2000 after trim) · `429` → «أرسلت رسائل كثيرة، انتظر قليلًا» |
+| `POST` | `/{id}/messages` `{ content }` | `201` `Message` | `400` (content 1–2000 after trim) · `409` `code: "Conversations.ParticipantUnavailable"` (the other side was banned or deleted) → the composer is disabled with «لم يعد بإمكانك مراسلة هذا المستخدم» · `429` → «أرسلت رسائل كثيرة، انتظر قليلًا» |
 | `POST` | `/{id}/read` | `204` | `404` |
 
 - **Messages paging:** the first page has no `before`; an older page sends `before` = the id of the oldest message shown. `limit` defaults to 30 (max 100). RTK Query `getMessages` is an **infinite query** (`useGetMessagesInfiniteQuery`): `getNextPageParam` returns the oldest id while `hasMore`. New messages (sent, or pushed by the hub) are added to the cached first page (`addMessageToChat`, deduped by id) — never by refetching every page.
@@ -977,7 +1015,7 @@ A buyer rates a seller (not a listing), once per seller, after the seller answer
 |---|---|---|---|
 | `GET` | `/User/Sellers/{sellerId}/reviews?page=&pageSize=` | `200` `PaginatedList<SellerReview>`, newest first | `400` |
 | `GET` | `/User/Reviews/sellers/{sellerId}/mine` | `200` `MyReviewStatus` | — |
-| `POST` | `/User/Reviews` `{ sellerId, rating, comment? }` | `201` `Review` | `400` (`Rating`, `Comment`) · `409` `code: "ReviewErrors.NotEligible"` / `"ReviewErrors.DuplicateReview"` / `"ReviewErrors.CannotReviewSelf"` · `429` after **5 an hour** |
+| `POST` | `/User/Reviews` `{ sellerId, rating, comment? }` | `201` `Review` | `400` (`Rating`, `Comment`) · `404` `Seller.NotFound` (the seller was banned or deleted → «البائع غير موجود») · `409` `code: "ReviewErrors.NotEligible"` / `"ReviewErrors.DuplicateReview"` / `"ReviewErrors.CannotReviewSelf"` · `429` after **5 an hour** |
 | `PUT` | `/User/Reviews/{reviewId}` `{ rating, comment? }` | `200` `Review` | `400` · `404` |
 | `DELETE` | `/User/Reviews/{reviewId}` | `204` | `404` |
 
@@ -1043,7 +1081,7 @@ src/
       authSlice.js             # session state (section 8)
       authApi.js               # injectEndpoints: login, googleSignIn, register, confirmEmail, resend, sendResetCode, changePassword, logout
       schemas.js               # zod schemas mirroring backend rules
-      pages/                   # LoginPage, RegisterPage, CheckEmailPage, ConfirmEmailPage, ForgotPasswordPage, ResetPasswordPage
+      pages/                   # LoginPage, RegisterPage, CheckEmailPage, ConfirmEmailPage, ConfirmEmailChangePage, ForgotPasswordPage, ResetPasswordPage
       components/
     properties/
       propertiesApi.js         # public search/details + seller endpoints (6.5–6.8)
@@ -1062,7 +1100,8 @@ src/
     profile/
       profileApi.js            # getMe, update, photo upload/delete, password (6.12) — answers patch the getMe cache
       useMyProfile.js          # the signed-in profile (GET /me), skipped for guests
-      components/              # ProfileDetailsForm, ProfilePhotoRow, PasswordForm, ProfilePasswordInput, ProfileSubmitButton
+      components/              # ProfileDetailsForm, ProfilePhotoRow, PasswordForm, ProfilePasswordInput, ProfileSubmitButton,
+                               # ChangeEmailDialog, DeleteAccountSection, DeleteAccountDialog
       pages/ProfilePage.jsx
     sellers/
       sellersApi.js            # public seller profile (6.13)
@@ -1213,6 +1252,7 @@ Must-haves:
 - Retry the original request **once**. Never loop.
 - If the refresh fails (usually `401`), the session was ended elsewhere (for example a login on another device). End the session and show "انتهت جلستك، الرجاء تسجيل الدخول مجدداً". A `403` `Identity.AccountBanned` ends it as `'banned'` and shows the server's title instead.
 - Optional nicety: refresh proactively when `expiresOnUtc` is less than a minute away. The 401 path must still work on its own — the server allows **zero clock skew**.
+- The final backend deploy reset every refresh token once: the first refresh after it answers `401`, the session ends with «انتهت جلستك» and the user lands on login — expected, nothing to handle.
 - `sessionStarted` and `sessionEnded` both call `api.util.resetApiState()`: nothing cached for the previous user (or the guest) survives, and public details are refetched with or without the seller phone (6.5). A session that changes in another tab resets the cache the same way.
 
 ### 8.5 Logout
@@ -1297,6 +1337,7 @@ API paths below are relative to the base paths in section 6.1.
 | `/register/check-email` | guest | "Check your email" + resend | `POST /resend-confirmation` |
 | `/auth/google` | public | Google sends the user back here; signs in, or asks phone + city the first time | `POST /google` |
 | `/confirm-email` | public | Confirms from the email link | `POST /confirm-email` |
+| `/confirm-email-change` | public | Confirms a new email from its link, then login | `POST /confirm-email-change` |
 | `/forgot-password` | guest | Ask for a reset code | `POST /send-reset-password-code` |
 | `/reset-password` | guest | Code + new password | `POST /change-password` |
 | `/dashboard` | user | Buyer-first dashboard; "My listings" block only if they have any | `GET /User/Properties/mine`, `GET /User/Properties` |
@@ -1432,7 +1473,8 @@ Each step ends in a working app, and each is its own branch + PR.
 10. **Conversations and real time** (done) — «تواصل مع البائع», `/messages` + chat with older pages and read marks, the SignalR hub (messages, read marks, notifications), polling only while disconnected.
 11. **Seller reviews** (done) — shared stars, the rating in the details seller box and the seller header, the «التقييمات» tab with my review (create, edit, delete) and the list, the `NewReview` notification.
 12. **Admin users and dashboard** (done) — `/admin` stats, `/admin/users` + the user page with ban / unban, the global `429` toast, banned sessions ended (refresh `403`, the hub's `AccountBanned`).
-13. **The rest** — as backend endpoints land (section 6.14 and `BACKEND_REQUESTS.md`).
+13. **Final backend** (done) — review `rowVersion` and `Properties.ChangedSinceReview`, admin notifications, change email + `/confirm-email-change`, delete account, a chat participant no longer available, a review for a seller who is gone.
+14. **The rest** — as backend endpoints land (section 6.14 and `BACKEND_REQUESTS.md`).
 
 Every data screen keeps the four states (loading skeleton · empty · error with retry · success).
 

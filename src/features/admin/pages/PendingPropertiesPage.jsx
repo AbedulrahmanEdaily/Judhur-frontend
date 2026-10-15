@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useDispatch } from 'react-redux';
 import { Link, useSearchParams } from 'react-router';
 import { Badge } from '../../../components/ui/Badge.jsx';
 import { EmptyState } from '../../../components/ui/EmptyState.jsx';
@@ -7,12 +8,17 @@ import { Pagination } from '../../../components/ui/Pagination.jsx';
 import { Skeleton } from '../../../components/ui/Skeleton.jsx';
 import { useToast } from '../../../components/ui/useToast.js';
 import { formatNumber, formatPrice, formatRelativeTime } from '../../../lib/format.js';
-import { actionErrorMessage, toProblem } from '../../../lib/http/problemDetails.js';
+import { toProblem } from '../../../lib/http/problemDetails.js';
 import { ar } from '../../../locales/ar.js';
 import { PropertyPhoto } from '../../properties/components/PropertyPhoto.jsx';
 import { RowActionsMenu } from '../../properties/components/RowActionsMenu.jsx';
 import { PAYMENT_TYPE_LABELS, PROPERTY_TYPE_LABELS } from '../../properties/constants.js';
-import { useApprovePropertyMutation, useGetPendingPropertiesQuery } from '../adminApi.js';
+import {
+  fetchRowVersion,
+  useApprovePropertyMutation,
+  useGetPendingPropertiesQuery,
+} from '../adminApi.js';
+import { decisionErrorMessage } from '../decisionError.js';
 import { AdminShell } from '../components/AdminShell.jsx';
 import { RejectPropertyDialog } from '../components/RejectPropertyDialog.jsx';
 
@@ -40,6 +46,7 @@ export default function PendingPropertiesPage() {
     page,
     pageSize: PAGE_SIZE,
   });
+  const dispatch = useDispatch();
   const [approveProperty] = useApprovePropertyMutation();
   const [approvingId, setApprovingId] = useState(null);
   const [propertyToReject, setPropertyToReject] = useState(null);
@@ -54,10 +61,11 @@ export default function PendingPropertiesPage() {
   async function handleApprove(property) {
     setApprovingId(property.id);
     try {
-      await approveProperty(property.id).unwrap();
+      const rowVersion = await fetchRowVersion(dispatch, property.id);
+      await approveProperty({ propertyId: property.id, rowVersion }).unwrap();
       toast.show({ tone: 'success', message: text.approved(property.title) });
     } catch (approveError) {
-      toast.show({ tone: 'error', message: actionErrorMessage(approveError) });
+      toast.show({ tone: 'error', message: decisionErrorMessage(approveError) });
     } finally {
       setApprovingId(null);
     }

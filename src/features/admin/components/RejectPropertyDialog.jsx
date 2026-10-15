@@ -1,9 +1,11 @@
 import { IconWarning20 } from '../../../components/icons/index.js';
 import { ConfirmDialog } from '../../../components/ui/ConfirmDialog.jsx';
+import { useDispatch } from 'react-redux';
 import { useToast } from '../../../components/ui/useToast.js';
-import { actionErrorMessage, toProblem } from '../../../lib/http/problemDetails.js';
+import { toProblem } from '../../../lib/http/problemDetails.js';
 import { ar } from '../../../locales/ar.js';
-import { useRejectPropertyMutation } from '../adminApi.js';
+import { fetchRowVersion, useRejectPropertyMutation } from '../adminApi.js';
+import { decisionErrorMessage } from '../decisionError.js';
 
 const text = ar.admin;
 
@@ -13,26 +15,34 @@ const MAX_REASON_LENGTH = 500;
 /**
  * Figma Confirm Dialog «رفض عقار» (48:770) with the reason box, plus a live 500 counter and
  * quick-pick reasons that fill the box (the project guide 6.10; not in Figma). Used by the queue
- * and the review page.
+ * and the review page. The review page passes the `rowVersion` it shows; from the queue it is
+ * read just before sending.
  *
  * @param {{
- *   property: { id: string, title: string } | null,
+ *   property: { id: string, title: string, rowVersion?: string } | null,
  *   onClose: () => void,
  *   onRejected: () => void,
  * }} props
  */
 export function RejectPropertyDialog({ property, onClose, onRejected }) {
   const toast = useToast();
+  const dispatch = useDispatch();
   const [rejectProperty, { isLoading }] = useRejectPropertyMutation();
 
   async function handleConfirm(reason) {
     try {
-      await rejectProperty({ propertyId: property.id, rejectionReason: reason }).unwrap();
+      let rowVersion = property.rowVersion;
+      if (!rowVersion) rowVersion = await fetchRowVersion(dispatch, property.id);
+      await rejectProperty({
+        propertyId: property.id,
+        rejectionReason: reason,
+        rowVersion,
+      }).unwrap();
       toast.show({ tone: 'success', message: text.rejected(property.title) });
       onRejected();
     } catch (error) {
-      toast.show({ tone: 'error', message: actionErrorMessage(error) });
-      // 404 gone / 409 already decided: nothing left to reject. Anything else (network, 400,
+      toast.show({ tone: 'error', message: decisionErrorMessage(error) });
+      // 404 gone / 409 already decided or changed since the review: nothing to reject here. Anything else (network, 400,
       // 500) keeps the dialog and the typed reason so the admin can try again.
       const status = toProblem(error).status;
       if (status === 404 || status === 409) onClose();

@@ -320,6 +320,7 @@
  * @property {UserInfo} [seller] missing if the seller account no longer exists
  * @property {string} [ownershipDocumentUrl] signed link, valid for 10 minutes — never store it
  * @property {string} [ownershipDocumentExpiresAtUtc]
+ * @property {string} rowVersion what was reviewed; sent back on approve and reject
  */
 
 /**
@@ -376,7 +377,7 @@
 // ---------------------------------------------------------------------------
 
 /**
- * @typedef {'PropertyApproved'|'PropertyRejected'|'PropertySuspended'|'ReportResolved'|'NewReview'|'AccountBanned'} NotificationType
+ * @typedef {'PropertyApproved'|'PropertyRejected'|'PropertySuspended'|'ReportResolved'|'NewReview'|'AccountBanned'|'PropertyPendingReview'|'NewReport'} NotificationType
  *   more types may come later
  *
  * @typedef {Object} Notification Item of `GET /` (newest first).
@@ -385,7 +386,8 @@
  * @property {string} title Arabic, shown as sent
  * @property {string} body Arabic, shown as sent
  * @property {string} [referenceId] the listing id for the three property types, the report id
- *   for ReportResolved, my own (seller) id for NewReview
+ *   for ReportResolved, my own (seller) id for NewReview, the listing for PropertyPendingReview
+ *   and the report for NewReport (admins)
  * @property {boolean} isRead
  * @property {string} createdAtUtc ISO-8601 with offset
  *

@@ -62,18 +62,28 @@ export const adminApi = baseApi.injectEndpoints({
       keepUnusedDataFor: 0,
     }),
 
-    /** 204. 400 MinImagesRequired / MainImageRequired / OwnershipDocumentRequired, 409 approved. */
+    /**
+     * Body: { rowVersion } — what was reviewed. 204. 400 MinImagesRequired / MainImageRequired /
+     * OwnershipDocumentRequired, 409 Properties.ChangedSinceReview or already approved.
+     */
     approveProperty: builder.mutation({
-      query: (propertyId) => ({ url: `${adminPropertyPath(propertyId)}/approve`, method: 'POST' }),
-      invalidatesTags: (_result, _error, propertyId) => decisionTags(propertyId),
+      query: ({ propertyId, rowVersion }) => ({
+        url: `${adminPropertyPath(propertyId)}/approve`,
+        method: 'POST',
+        body: { rowVersion },
+      }),
+      invalidatesTags: (_result, _error, { propertyId }) => decisionTags(propertyId),
     }),
 
-    /** Body: { rejectionReason } (≤ 500). 204. 409 when approved or already rejected. */
+    /**
+     * Body: { rejectionReason (≤ 500), rowVersion }. 204. 409 Properties.ChangedSinceReview, or
+     * approved / already rejected.
+     */
     rejectProperty: builder.mutation({
-      query: ({ propertyId, rejectionReason }) => ({
+      query: ({ propertyId, rejectionReason, rowVersion }) => ({
         url: `${adminPropertyPath(propertyId)}/reject`,
         method: 'POST',
-        body: { rejectionReason },
+        body: { rejectionReason, rowVersion },
       }),
       invalidatesTags: (_result, _error, { propertyId }) => decisionTags(propertyId),
     }),
@@ -119,6 +129,25 @@ export const adminApi = baseApi.injectEndpoints({
     }),
   }),
 });
+
+/**
+ * The queue rows have no rowVersion: a quick decision from the queue reads the current one from
+ * the review endpoint first.
+ *
+ * @param {(action: any) => any} dispatch
+ * @param {string} propertyId
+ * @returns {Promise<string>}
+ */
+export async function fetchRowVersion(dispatch, propertyId) {
+  const request = dispatch(
+    adminApi.endpoints.getReviewProperty.initiate(propertyId, {
+      subscribe: false,
+      forceRefetch: true,
+    }),
+  );
+  const review = await request.unwrap();
+  return review.rowVersion;
+}
 
 export const {
   useGetPendingPropertiesQuery,

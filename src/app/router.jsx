@@ -261,6 +261,13 @@ export const router = createBrowserRouter([
           Component: (await import('../features/auth/pages/ConfirmEmailPage.jsx')).default,
         }),
       },
+      {
+        // Public: the link may be opened signed in or not; on success the session ends here.
+        path: 'confirm-email-change',
+        lazy: async () => ({
+          Component: (await import('../features/auth/pages/ConfirmEmailChangePage.jsx')).default,
+        }),
+      },
     ],
   },
 ]);

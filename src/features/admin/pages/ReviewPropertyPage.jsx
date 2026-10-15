@@ -8,7 +8,7 @@ import { ErrorState } from '../../../components/ui/ErrorState.jsx';
 import { Skeleton } from '../../../components/ui/Skeleton.jsx';
 import { useToast } from '../../../components/ui/useToast.js';
 import { formatArea, formatPrice, formatRelativeTime } from '../../../lib/format.js';
-import { actionErrorMessage, toProblem } from '../../../lib/http/problemDetails.js';
+import { toProblem } from '../../../lib/http/problemDetails.js';
 import { ar } from '../../../locales/ar.js';
 import { LocationCard } from '../../properties/components/LocationCard.jsx';
 import {
@@ -19,6 +19,7 @@ import {
   PROPERTY_TYPE_LABELS,
 } from '../../properties/constants.js';
 import { useApprovePropertyMutation, useGetReviewPropertyQuery } from '../adminApi.js';
+import { decisionErrorMessage } from '../decisionError.js';
 import { RejectPropertyDialog } from '../components/RejectPropertyDialog.jsx';
 import { ReviewDocumentCard } from '../components/ReviewDocumentCard.jsx';
 
@@ -69,11 +70,12 @@ export default function ReviewPropertyPage() {
 
   async function handleApprove() {
     try {
-      await approveProperty(property.id).unwrap();
+      await approveProperty({ propertyId: property.id, rowVersion: property.rowVersion }).unwrap();
       toast.show({ tone: 'success', message: text.approved(property.title) });
       navigate('/admin/properties');
     } catch (approveError) {
-      toast.show({ tone: 'error', message: actionErrorMessage(approveError) });
+      // Changed since this page was opened: the new version is fetched to be reviewed again.
+      toast.show({ tone: 'error', message: decisionErrorMessage(approveError) });
       refetch();
     }
   }

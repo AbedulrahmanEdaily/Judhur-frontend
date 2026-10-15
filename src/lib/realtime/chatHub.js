@@ -8,6 +8,7 @@ import {
   conversationsApi,
   markMyMessagesRead,
 } from '../../features/conversations/conversationsApi.js';
+import { adminNotificationTags } from '../../features/notifications/adminNotificationTags.js';
 import { notificationsApi } from '../../features/notifications/notificationsApi.js';
 import { noticeShown, realtimeConnectionChanged } from '../../features/ui/uiSlice.js';
 
@@ -62,6 +63,7 @@ function handleMessagesRead({ conversationId, readAtUtc }) {
 /** The toast tone of a pushed notification: a warning for bad news, success otherwise. */
 function noticeTone(type) {
   if (type === 'PropertyRejected' || type === 'PropertySuspended') return 'warning';
+  if (type === 'PropertyPendingReview' || type === 'NewReport') return 'warning';
   return 'success';
 }
 
@@ -93,6 +95,9 @@ function handleNotificationReceived(notification) {
       unread.count += 1;
     }),
   );
+  // For admins: a new listing in the queue or a new report refreshes those lists and numbers.
+  const adminTags = adminNotificationTags(notification.type);
+  if (adminTags) store.dispatch(baseApi.util.invalidateTags(adminTags));
   store.dispatch(noticeShown({ tone: noticeTone(notification.type), message: notification.title }));
 }
 

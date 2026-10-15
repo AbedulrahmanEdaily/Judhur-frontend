@@ -3,6 +3,8 @@ import { Link } from 'react-router';
 import clsx from 'clsx';
 import { baseApi } from '../../../api/baseApi.js';
 import {
+  IconFlag16,
+  IconNavQueue,
   IconNavReports,
   IconNotificationApproved,
   IconNotificationBell,
@@ -15,14 +17,16 @@ import { useToast } from '../../../components/ui/useToast.js';
 import { formatRelativeTime } from '../../../lib/format.js';
 import { actionErrorMessage } from '../../../lib/http/problemDetails.js';
 import { ar } from '../../../locales/ar.js';
+import { adminNotificationTags } from '../adminNotificationTags.js';
 import { useMarkNotificationAsReadMutation } from '../notificationsApi.js';
 
 const text = ar.notifications;
 
 // Figma icon circles: approved check on success-soft, rejected flag on danger-soft, and the bell
 // on warning-soft for any other (future) type. Not in Figma: the suspended pause on
-// danger-soft, the reviewed-report flag on info-soft and the new-review star (73:1615) on
-// warning-soft, 17px like the others.
+// danger-soft, the reviewed-report flag on info-soft, the new-review star (73:1615) on
+// warning-soft, the ban lock on danger-soft, and for admins the queue tick on warning-soft and
+// the new-report flag on danger-soft — 17px like the others.
 const typeIcons = {
   PropertyApproved: { Icon: IconNotificationApproved, classes: 'bg-success-soft text-success' },
   PropertyRejected: { Icon: IconNotificationRejected, classes: 'bg-danger-soft text-danger' },
@@ -30,6 +34,8 @@ const typeIcons = {
   ReportResolved: { Icon: IconNavReports, classes: 'bg-info-soft text-info' },
   NewReview: { Icon: IconStar, classes: 'bg-warning-soft text-warning' },
   AccountBanned: { Icon: IconLock, classes: 'bg-danger-soft text-danger' },
+  PropertyPendingReview: { Icon: IconNavQueue, classes: 'bg-warning-soft text-warning' },
+  NewReport: { Icon: IconFlag16, classes: 'bg-danger-soft text-danger' },
 };
 const otherTypeIcon = { Icon: IconNotificationBell, classes: 'bg-warning-soft text-warning' };
 
@@ -37,7 +43,8 @@ const PROPERTY_TYPES = ['PropertyApproved', 'PropertyRejected', 'PropertySuspend
 
 /**
  * The property notifications open the owner's listing, a reviewed report opens «بلاغاتي», a new
- * review opens my seller page on «التقييمات»; other types have no page.
+ * review opens my seller page on «التقييمات»; for admins a listing waiting for review opens its
+ * review and a new report opens it. Other types have no page.
  */
 function notificationPath(notification) {
   if (PROPERTY_TYPES.includes(notification.type) && notification.referenceId) {
@@ -46,6 +53,12 @@ function notificationPath(notification) {
   if (notification.type === 'ReportResolved') return '/my-reports';
   if (notification.type === 'NewReview' && notification.referenceId) {
     return `/sellers/${notification.referenceId}#reviews`;
+  }
+  if (notification.type === 'PropertyPendingReview' && notification.referenceId) {
+    return `/admin/properties/${notification.referenceId}`;
+  }
+  if (notification.type === 'NewReport' && notification.referenceId) {
+    return `/admin/reports/${notification.referenceId}`;
   }
   return null;
 }
@@ -95,6 +108,8 @@ export function NotificationItem({ notification, onOpen }) {
         ]),
       );
     }
+    const adminTags = adminNotificationTags(notification.type);
+    if (adminTags) dispatch(baseApi.util.invalidateTags(adminTags));
     try {
       await markAsRead(notification.id).unwrap();
     } catch (error) {

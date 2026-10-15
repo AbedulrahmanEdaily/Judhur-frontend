@@ -1,10 +1,14 @@
 import clsx from 'clsx';
+import { IconNavProfile } from '../icons/index.js';
+import { ar } from '../../locales/ar.js';
 
 /**
  * Figma "صورة المستخدم / Avatar" (44:769): a brand/subtle circle with the first letter
  * (semibold brand/text), or the photo when there is one. The default is the «متوسط» size
  * (44:765): 40px with a 16px letter. Other places pass their own `sizeClassName` (box and
- * letter size): the navbar 38, the profile photo 68 and the seller page 92.
+ * letter size): the navbar 38, the profile photo 68 and the seller page 92. A deleted account
+ * (the server names it «مستخدم محذوف», with no photo) or a missing name gets the default
+ * person icon instead of a letter.
  *
  * @param {{ name: string, imageUrl?: string | null, sizeClassName?: string, className?: string }} props
  */
@@ -17,6 +21,21 @@ export function Avatar({ name, imageUrl, sizeClassName = 'size-10 text-[16px]', 
         loading="lazy"
         className={clsx('shrink-0 rounded-full object-cover', sizeClassName, className)}
       />
+    );
+  }
+  const isAnonymous = name.trim() === '' || name === ar.conversations.deletedUser;
+  if (isAnonymous) {
+    return (
+      <span
+        aria-hidden="true"
+        className={clsx(
+          'flex shrink-0 items-center justify-center rounded-full bg-inset text-muted',
+          sizeClassName,
+          className,
+        )}
+      >
+        <IconNavProfile className="size-1/2" />
+      </span>
     );
   }
   return (

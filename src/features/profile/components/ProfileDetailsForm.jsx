@@ -9,6 +9,7 @@ import { profileSchema } from '../../auth/schemas.js';
 import { ListingInput } from '../../properties/components/ListingInput.jsx';
 import { ListingTextarea } from '../../properties/components/ListingTextarea.jsx';
 import { useUpdateMyProfileMutation } from '../profileApi.js';
+import { ChangeEmailDialog } from './ChangeEmailDialog.jsx';
 import { ProfilePhotoRow } from './ProfilePhotoRow.jsx';
 import { ProfileSubmitButton } from './ProfileSubmitButton.jsx';
 
@@ -30,7 +31,8 @@ function formValuesOf(profile) {
  * Figma «البيانات الشخصية» card (79:1619): raised, border/subtle, radius lg, 26×24, 18 gap —
  * the photo row, then name | city, email | phone in rows of two (14 gap), and «نبذة عنك».
  * `PUT /me` always gets all four fields; the answer replaces the cached profile. The email is
- * shown read-only (it is the login). «احفظ التعديلات» sits under the card.
+ * read-only here (it is the login); «تغيير البريد» in its field opens the change-email dialog,
+ * which sends a confirmation link. «احفظ التعديلات» sits under the card.
  *
  * @param {{ profile: import('../../../api/types.js').MyProfile }} props
  */
@@ -38,6 +40,7 @@ export function ProfileDetailsForm({ profile }) {
   const toast = useToast();
   const [updateProfile] = useUpdateMyProfileMutation();
   const [failure, setFailure] = useState(null);
+  const [isChangingEmail, setIsChangingEmail] = useState(false);
   const formId = useId();
 
   const {
@@ -98,7 +101,17 @@ export function ProfileDetailsForm({ profile }) {
               type="email"
               value={profile.email}
               readOnly
-              hint={text.emailReadOnly}
+              hint={text.emailHint}
+              suffix={
+                <button
+                  type="button"
+                  onClick={() => setIsChangingEmail(true)}
+                  aria-haspopup="dialog"
+                  className="rounded-sm font-semibold text-brand-text hover:underline focus-visible:outline-2 focus-visible:outline-brand"
+                >
+                  {text.changeEmail.open}
+                </button>
+              }
             />
             <ListingInput
               label={fields.phoneNumber}
@@ -124,6 +137,14 @@ export function ProfileDetailsForm({ profile }) {
       <ProfileSubmitButton form={formId} loading={isSubmitting}>
         {text.save}
       </ProfileSubmitButton>
+      {/* Outside the form: the dialog has its own form. */}
+      {isChangingEmail && (
+        <ChangeEmailDialog
+          currentEmail={profile.email}
+          hasPassword={profile.hasPassword}
+          onClose={() => setIsChangingEmail(false)}
+        />
+      )}
     </div>
   );
 }
