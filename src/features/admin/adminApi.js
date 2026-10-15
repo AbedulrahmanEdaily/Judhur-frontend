@@ -10,6 +10,7 @@ function adminPropertyPath(propertyId) {
 function decisionTags(propertyId) {
   return [
     'PendingProperties',
+    'AdminStats',
     { type: 'ReviewProperty', id: propertyId },
     { type: 'Property', id: propertyId },
     { type: 'Property', id: 'LIST' },
@@ -23,7 +24,7 @@ function adminReportPath(reportId) {
 
 /** What a report decision makes stale; suspending also hides the listing from the public. */
 function reportDecisionTags(reportId, propertyId, suspended) {
-  const tags = ['AdminReports', { type: 'AdminReport', id: reportId }];
+  const tags = ['AdminReports', { type: 'AdminReport', id: reportId }, 'AdminStats'];
   if (suspended) {
     tags.push(
       { type: 'Property', id: propertyId },

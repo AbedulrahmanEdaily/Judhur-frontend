@@ -2,7 +2,7 @@ import { HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
 import { baseApi } from '../../api/baseApi.js';
 import { freshAccessToken } from '../../api/baseQuery.js';
 import { API_BASE_URL } from '../../config/env.js';
-import { selectAuth, selectIsAuthenticated } from '../../features/auth/authSlice.js';
+import { selectAuth, selectIsAuthenticated, sessionEnded } from '../../features/auth/authSlice.js';
 import {
   addMessageToChat,
   conversationsApi,
@@ -67,6 +67,12 @@ function noticeTone(type) {
 
 /** @param {import('../../api/types.js').Notification} notification */
 function handleNotificationReceived(notification) {
+  // A ban ends the session here at once; the notification says why.
+  if (notification.type === 'AccountBanned') {
+    store.dispatch(sessionEnded('banned'));
+    store.dispatch(noticeShown({ tone: 'error', message: notification.body }));
+    return;
+  }
   const cachedPages = notificationsApi.util.selectCachedArgsForQuery(
     store.getState(),
     'getNotifications',

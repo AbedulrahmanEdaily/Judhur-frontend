@@ -126,11 +126,25 @@ export function AccountMenu() {
           {isAdmin && (
             <>
               <Link
+                to="/admin"
+                onClick={() => setIsOpen(false)}
+                className="block rounded-sm px-3 py-2 text-body-sm text-text hover:bg-inset focus-visible:outline-2 focus-visible:outline-brand"
+              >
+                {ar.admin.nav.dashboardLink}
+              </Link>
+              <Link
                 to="/admin/properties"
                 onClick={() => setIsOpen(false)}
                 className="block rounded-sm px-3 py-2 text-body-sm text-text hover:bg-inset focus-visible:outline-2 focus-visible:outline-brand"
               >
                 {ar.admin.nav.queue}
+              </Link>
+              <Link
+                to="/admin/users"
+                onClick={() => setIsOpen(false)}
+                className="block rounded-sm px-3 py-2 text-body-sm text-text hover:bg-inset focus-visible:outline-2 focus-visible:outline-brand"
+              >
+                {ar.admin.nav.usersLink}
               </Link>
               <Link
                 to="/admin/reports"

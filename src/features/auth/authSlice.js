@@ -10,7 +10,7 @@ import { userFromAccessToken } from './jwt.js';
  * @property {'anonymous'|'authenticated'} status
  */
 
-/** @typedef {'logout'|'expired'} SessionEndReason */
+/** @typedef {'logout'|'expired'|'banned'} SessionEndReason — a ban shows the server's message itself */
 
 /** @type {AuthState} */
 export const anonymousState = {

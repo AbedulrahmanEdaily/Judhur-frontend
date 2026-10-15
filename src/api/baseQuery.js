@@ -3,6 +3,10 @@ import { fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { API_BASE_URL } from '../config/env.js';
 import { selectAuth, sessionEnded, sessionRefreshed } from '../features/auth/authSlice.js';
 import { loadStoredTokens } from '../features/auth/authStorage.js';
+import { noticeShown } from '../features/ui/uiSlice.js';
+import { formatNumber } from '../lib/format.js';
+import { toProblem } from '../lib/http/problemDetails.js';
+import { ar } from '../locales/ar.js';
 
 export const ACCOUNT_PATH = '/api/Identity/Account';
 export const USER_PROPERTIES_PATH = '/api/v1/User/Properties';
@@ -12,6 +16,8 @@ export const NOTIFICATIONS_PATH = '/api/v1/User/Notifications';
 export const SELLERS_PATH = '/api/v1/User/Sellers';
 export const USER_REPORTS_PATH = '/api/v1/User/Reports';
 export const ADMIN_REPORTS_PATH = '/api/v1/Admin/Reports';
+export const ADMIN_USERS_PATH = '/api/v1/Admin/Users';
+export const ADMIN_STATS_PATH = '/api/v1/Admin/Stats';
 export const CONVERSATIONS_PATH = '/api/v1/User/Conversations';
 export const REVIEWS_PATH = '/api/v1/User/Reviews';
 
@@ -35,6 +41,12 @@ const REFRESH_LOCK_NAME = 'judhur.refresh';
 
 /** Refresh ahead of time when the access token has less than this left. */
 const REFRESH_AHEAD_MS = 60_000;
+
+const ACCOUNT_BANNED = 'Identity.AccountBanned';
+
+/** Several requests can hit the rate limit together: one toast for them all. */
+const RATE_LIMIT_NOTICE_GAP_MS = 5000;
+let lastRateLimitNoticeAt = 0;
 
 // The server keeps exactly one refresh token per user and each one works once, so two parallel
 // refreshes would log the user out. Only one may run at a time: the mutex inside this tab, the
@@ -81,6 +93,23 @@ function isSessionRejected(error) {
   );
 }
 
+/**
+ * Every endpoint is rate limited (the project guide 6.2): on a 429, one toast — with the wait
+ * from `Retry-After` (seconds) when the server sends it. The request is never retried here.
+ */
+function noticeIfRateLimited(result, api) {
+  if (result.error?.status !== 429) return;
+  if (Date.now() - lastRateLimitNoticeAt < RATE_LIMIT_NOTICE_GAP_MS) return;
+  lastRateLimitNoticeAt = Date.now();
+
+  const seconds = Number(result.meta?.response?.headers.get('Retry-After'));
+  let message = ar.errors.rateLimited;
+  if (Number.isInteger(seconds) && seconds > 0) {
+    message = ar.errors.rateLimitedFor(formatNumber(seconds));
+  }
+  api.dispatch(noticeShown({ tone: 'warning', message }));
+}
+
 /** Tokens another tab stored after rotating the session, if they differ from ours. */
 function newerTokensFromOtherTab(refreshToken) {
   const stored = loadStoredTokens();
@@ -104,8 +133,13 @@ async function refreshSession(api, extraOptions) {
     extraOptions,
   );
 
+  noticeIfRateLimited(result, api);
   if (result.data) {
     api.dispatch(sessionRefreshed(/** @type {any} */ (result.data)));
+  } else if (toProblem(result.error).code === ACCOUNT_BANNED) {
+    // Banned by an admin: the session is over, and the server says why.
+    api.dispatch(sessionEnded('banned'));
+    api.dispatch(noticeShown({ tone: 'error', message: toProblem(result.error).message }));
   } else if (isSessionRejected(result.error)) {
     // Another tab may have won the rotation while this request was in flight.
     const latest = newerTokensFromOtherTab(refreshToken);
@@ -184,6 +218,7 @@ export async function baseQueryWithReauth(args, api, extraOptions) {
 
   const tokenUsed = selectAuth(api.getState()).accessToken;
   const result = await authorizedQuery(args, api, extraOptions);
+  noticeIfRateLimited(result, api);
   if (exempt || !tokenUsed || result.error?.status !== 401) return result;
 
   await refreshUnlessReplaced(api, extraOptions, tokenUsed);
@@ -192,5 +227,7 @@ export async function baseQueryWithReauth(args, api, extraOptions) {
   if (!currentToken || currentToken === tokenUsed) return result; // session ended or not renewed
 
   // Retry the original request once — never loop.
-  return authorizedQuery(args, api, extraOptions);
+  const retried = await authorizedQuery(args, api, extraOptions);
+  noticeIfRateLimited(retried, api);
+  return retried;
 }

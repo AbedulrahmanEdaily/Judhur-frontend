@@ -376,7 +376,7 @@
 // ---------------------------------------------------------------------------
 
 /**
- * @typedef {'PropertyApproved'|'PropertyRejected'|'PropertySuspended'|'ReportResolved'|'NewReview'} NotificationType
+ * @typedef {'PropertyApproved'|'PropertyRejected'|'PropertySuspended'|'ReportResolved'|'NewReview'|'AccountBanned'} NotificationType
  *   more types may come later
  *
  * @typedef {Object} Notification Item of `GET /` (newest first).
@@ -523,6 +523,39 @@
  * @typedef {Object} MessagesReadEvent The hub's `messagesRead`.
  * @property {string} conversationId
  * @property {string} readAtUtc
+ */
+
+// ---------------------------------------------------------------------------
+// Admin users and dashboard — /api/v1/Admin/Users, /api/v1/Admin/Stats (role Admin)
+// ---------------------------------------------------------------------------
+
+/**
+ * @typedef {'All'|'Active'|'Banned'|'Unconfirmed'} AdminUserStatus
+ *
+ * @typedef {Object} AdminUser Item of `GET /Admin/Users` and `GET /Admin/Users/{id}`.
+ * @property {string} id
+ * @property {string} fullName
+ * @property {string} email
+ * @property {string} [phoneNumber]
+ * @property {string} city
+ * @property {string} [profileImageUrl]
+ * @property {boolean} isAdmin
+ * @property {boolean} emailConfirmed
+ * @property {string} [bannedAtUtc] set while banned
+ * @property {string} [banReason]
+ * @property {string} createdAtUtc
+ * @property {number} propertiesCount
+ * @property {number} activeListingsCount
+ * @property {number} pendingReportsOnListings
+ *
+ * @typedef {Object} AdminStats `GET /Admin/Stats`. Admins are not counted as users.
+ * @property {{ totalUsers: number, newUsers: number, bannedUsers: number, unconfirmedUsers: number }} users
+ *   newUsers: the last seven days
+ * @property {{ published: number, waitingForReview: number, incomplete: number, rejected: number,
+ *   inactive: number, sold: number, rented: number }} properties
+ * @property {number} pendingReports
+ * @property {{ newUsers: number, newListings: number, messages: number, reviews: number,
+ *   reports: number }} lastSevenDays
  */
 
 // ---------------------------------------------------------------------------

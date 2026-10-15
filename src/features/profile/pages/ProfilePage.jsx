@@ -75,7 +75,7 @@ export default function ProfilePage() {
   if (isAdmin) {
     return (
       <>
-        <PageTopBar title={text.title} backTo="/admin/properties" />
+        <PageTopBar title={text.title} backTo="/admin" />
         <AdminShell>{body}</AdminShell>
       </>
     );

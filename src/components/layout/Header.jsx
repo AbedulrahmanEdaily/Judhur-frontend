@@ -23,7 +23,7 @@ const adminLinks = [
   { label: ar.nav.home, to: '/', end: true },
   { label: ar.nav.properties, to: '/properties' },
   { label: ar.nav.approvals, to: '/admin/properties' },
-  { label: ar.nav.users },
+  { label: ar.nav.users, to: '/admin/users' },
   { label: ar.nav.reports, to: '/admin/reports' },
 ];
 
@@ -107,7 +107,7 @@ export function Header() {
             <AccountMenu />
             {isAdmin && (
               <Link
-                to="/admin/properties"
+                to="/admin"
                 className="flex items-center gap-1.5 rounded-md bg-accent-subtle px-3.5 py-2 text-[13px] leading-[1.65] font-semibold whitespace-nowrap text-text transition-colors hover:bg-inset focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
               >
                 <IconAdminShield />

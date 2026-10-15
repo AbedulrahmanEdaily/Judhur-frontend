@@ -28,6 +28,9 @@ export const baseApi = createApi({
     'UnreadMessages',
     'SellerReviews',
     'MyReviewStatus',
+    'AdminStats',
+    'AdminUsers',
+    'AdminUser',
   ],
   endpoints: () => ({}),
 });

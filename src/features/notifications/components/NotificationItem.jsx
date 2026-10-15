@@ -7,6 +7,7 @@ import {
   IconNotificationApproved,
   IconNotificationBell,
   IconNotificationRejected,
+  IconLock,
   IconPause,
   IconStar,
 } from '../../../components/icons/index.js';
@@ -28,6 +29,7 @@ const typeIcons = {
   PropertySuspended: { Icon: IconPause, classes: 'bg-danger-soft text-danger' },
   ReportResolved: { Icon: IconNavReports, classes: 'bg-info-soft text-info' },
   NewReview: { Icon: IconStar, classes: 'bg-warning-soft text-warning' },
+  AccountBanned: { Icon: IconLock, classes: 'bg-danger-soft text-danger' },
 };
 const otherTypeIcon = { Icon: IconNotificationBell, classes: 'bg-warning-soft text-warning' };
 

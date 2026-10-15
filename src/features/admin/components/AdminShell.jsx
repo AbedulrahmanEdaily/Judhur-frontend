@@ -13,8 +13,6 @@ import { ar } from '../../../locales/ar.js';
 const text = ar.admin.nav;
 
 // Admin pages without an API yet stay in the list, not clickable, marked «قريباً».
-const statsItem = { label: text.stats, Icon: IconNavStats };
-const usersItem = { label: text.users, Icon: IconNavProfile };
 const aiUsageItem = { label: text.aiUsage, Icon: IconNavAi };
 
 const itemClasses =
@@ -52,9 +50,9 @@ function renderCount(count) {
 }
 
 /**
- * The admin pages' frame — Figma "المحتوى" of «طابور الموافقات» (80:836) and «البلاغات»
- * (82:1109): bg/surface with 70px sides and, from 1280px up, the 268px admin sidebar (80:838)
- * at the start. The open item is brand/subtle; the queue and the reports show their waiting
+ * The admin pages' frame — Figma "المحتوى" of «لوحة الإحصائيات» (80:602), «طابور الموافقات»
+ * (80:836), «إدارة المستخدمين» (82:910) and «البلاغات» (82:1109): bg/surface with 70px sides
+ * and, from 1280px up, the 268px admin sidebar (80:838) at the start. The open item is brand/subtle; the queue and the reports show their waiting
  * count in a danger pill when the page knows it.
  *
  * @param {{
@@ -71,14 +69,20 @@ export function AdminShell({ pendingCount, openReportsCount, children }) {
           aria-label={ar.nav.adminPanel}
           className="hidden w-[268px] shrink-0 flex-col gap-1.5 rounded-lg border border-border bg-raised px-[13px] py-[21px] xl:flex"
         >
-          {renderUpcomingItem(statsItem)}
+          <NavLink to="/admin" end className={navItemClasses}>
+            <IconNavStats className="shrink-0" />
+            {text.stats}
+          </NavLink>
           <NavLink to="/admin/properties" className={navItemClasses}>
             <IconNavQueue className="shrink-0" />
             {text.queue}
             <span className="flex-1" />
             {renderCount(pendingCount)}
           </NavLink>
-          {renderUpcomingItem(usersItem)}
+          <NavLink to="/admin/users" className={navItemClasses}>
+            <IconNavProfile className="shrink-0" />
+            {text.users}
+          </NavLink>
           <NavLink to="/admin/reports" className={navItemClasses}>
             <IconNavReports className="shrink-0" />
             {text.reports}
