@@ -13,6 +13,7 @@ export const SELLERS_PATH = '/api/v1/User/Sellers';
 export const USER_REPORTS_PATH = '/api/v1/User/Reports';
 export const ADMIN_REPORTS_PATH = '/api/v1/Admin/Reports';
 export const CONVERSATIONS_PATH = '/api/v1/User/Conversations';
+export const REVIEWS_PATH = '/api/v1/User/Reviews';
 
 const REFRESH_URL = `${ACCOUNT_PATH}/refresh-token`;
 

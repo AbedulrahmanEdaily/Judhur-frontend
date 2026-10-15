@@ -1,16 +1,18 @@
 import { IconPin } from '../../../components/icons/index.js';
 import { Avatar } from '../../../components/ui/Avatar.jsx';
-import { formatMonthYear, formatNumber } from '../../../lib/format.js';
+import { StarRating } from '../../../components/ui/StarRating.jsx';
+import { formatMonthYear } from '../../../lib/format.js';
 import { ar } from '../../../locales/ar.js';
 
 const text = ar.sellers;
 
 /**
  * Figma «ترويسة» of the seller page (73:1443): bg/canvas, 100px sides, 34 top / 30 bottom; the
- * 92px photo with a 2px brand ring, the name 27 bold, then a muted 13 line. The API has no
- * rating, verified seller or messaging, so «4.8 (32 تقييم)», «موثّق» and «راسل البائع» are
- * left out: the listings count takes the rating's place, then the city (13.5 secondary with the
- * 14px pin) and «عضو منذ …». The bio under it is not in Figma.
+ * 92px photo with a 2px brand ring, the name 27 bold, then a muted 13 line (73:1454): the rating
+ * (73:1462 — five 15px stars where Figma has one, the average 13.5 semibold, «(N تقييم)» 12.5
+ * muted; «لا توجد تقييمات بعد» without reviews), the city (13.5 secondary with the 14px pin)
+ * and «عضو منذ …». The API has no verified seller, so «موثّق» is left out; «راسل البائع» needs a
+ * listing to start a conversation, so it stays on the listing pages. The bio is not in Figma.
  *
  * @param {{ seller: import('../../../api/types.js').SellerProfile }} props
  */
@@ -28,9 +30,12 @@ export function SellerHeader({ seller }) {
           {seller.fullName}
         </h1>
         <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] leading-[1.74] text-muted">
-          <span className="font-semibold text-text">
-            {text.listingsCount(formatNumber(seller.activeListingsCount))}
-          </span>
+          <StarRating
+            value={seller.averageRating}
+            count={seller.reviewsCount}
+            showValue
+            size="md"
+          />
           <span aria-hidden="true">·</span>
           <span className="flex items-center gap-[5px] text-[13.5px] text-text-secondary">
             <IconPin width={14} height={14} className="shrink-0 text-muted" />

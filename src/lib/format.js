@@ -34,6 +34,16 @@ export function formatNumber(value) {
   return numberFormatter.format(value);
 }
 
+const ratingFormatter = new Intl.NumberFormat(LOCALE, {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+});
+
+/** @param {number} value a seller's average rating, one decimal → "4.8", "5.0" */
+export function formatRating(value) {
+  return ratingFormatter.format(value);
+}
+
 /** @param {number} value area in square meters → "120 م²" */
 export function formatArea(value) {
   return `${numberFormatter.format(value)} م²`;

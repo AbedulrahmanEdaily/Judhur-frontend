@@ -3,7 +3,7 @@
 > Project context for Claude Code working in the **frontend repository**. Read this whole file before writing code.
 > The backend lives in a **separate repository** that you cannot see. Section 6 (API contract) is your only source of truth for the backend — never guess an endpoint, a field name, or a status code.
 >
-> Contract snapshot taken from the backend source on 2026-09-30 (backend `main` + the `feature/Favorite` branch); notifications, my profile and the public seller page added 2026-10-01; security hardening (error `code`, image moderation, limits, rate limits) added 2026-10-04; reports added 2026-10-14; conversations and the real-time hub added 2026-10-15.
+> Contract snapshot taken from the backend source on 2026-09-30 (backend `main` + the `feature/Favorite` branch); notifications, my profile and the public seller page added 2026-10-01; security hardening (error `code`, image moderation, limits, rate limits) added 2026-10-04; reports added 2026-10-14; conversations and the real-time hub added 2026-10-15; seller reviews added 2026-10-15.
 >
 > **Read DESIGN.md before any UI work; for anything visual it overrides this file.**
 
@@ -234,6 +234,7 @@ The backend seeds an admin and a normal user on startup. Get the credentials fro
 | Public seller page | `/api/v1/User/Sellers/...` | yes |
 | Reports (reporter) | `/api/v1/User/Reports/...` | yes |
 | Conversations | `/api/v1/User/Conversations/...` | yes |
+| Reviews (reviewer) | `/api/v1/User/Reviews/...` | yes |
 | Real-time hub (SignalR) | `/hubs/chat` | no |
 | Admin moderation | `/api/v1/Admin/Properties/...` | yes |
 | Admin reports | `/api/v1/Admin/Reports/...` | yes |
@@ -252,14 +253,15 @@ The backend seeds an admin and a normal user on startup. Get the credentials fro
 | Every other `/User/Properties/*` (seller actions) | `401` | ✅ | `403` |
 | `/User/Favorites/*` | `401` | ✅ | `403` |
 | `/User/Notifications/*` | `401` | ✅ | ✅ |
-| `GET /User/Sellers/{id}` | ✅ | ✅ | ✅ |
+| `GET /User/Sellers/{id}` and `GET /User/Sellers/{id}/reviews` | ✅ | ✅ | ✅ |
+| `/User/Reviews/*` | `401` | ✅ | `403` |
 | `/User/Reports/*` | `401` | ✅ | `403` |
 | `/User/Conversations/*` | `401` | ✅ | `403` |
 | `/hubs/chat` | `401` | ✅ | ✅ (notifications only) |
 | `/Identity/Account/me*` (6.12) | `401` | ✅ | ✅ |
 | `/Admin/Properties/*` and `/Admin/Reports/*` | `401` | `403` | ✅ |
 
-Admins never create, own, favorite, report, or message about listings. Hide those actions for admins in the UI.
+Admins never create, own, favorite, report, review, or message about listings and sellers. Hide those actions for admins in the UI.
 
 #### Server-side cache
 
@@ -468,7 +470,9 @@ All bodies are JSON. None of these require an `Authorization` header (the `/me` 
 }
 
 // SellerProfile — GET /User/Sellers/{id} (6.13); never the email or the phone
-{ id: string, fullName: string, profileImageUrl?: string, city: string, bio?: string, memberSinceUtc: string, activeListingsCount: number }
+{ id: string, fullName: string, profileImageUrl?: string, city: string, bio?: string, memberSinceUtc: string, activeListingsCount: number,
+  averageRating?: number,        // missing without reviews (6.18)
+  reviewsCount: number }
 
 // PropertySummary — search results AND favorites list (same card)
 {
@@ -521,6 +525,7 @@ Query parameters (all optional; **omit** empty ones instead of sending `=`):
   area, city, region?, fullAddress, latitude, longitude,
   landClassification, legalStatus,
   user: UserInfo,                // the seller
+  sellerRating: { averageRating?: number, reviewsCount: number },   // the seller's reviews (6.18); averageRating missing without reviews
   images: PropertyImage[]
 }
 ```
@@ -757,15 +762,15 @@ Only `Pending` listings that pass the readiness checklist (6.8) appear here.
 
 ### 6.11 Notifications — `/api/v1/User/Notifications` (any signed-in role)
 
-`User` and `Admin` both have notifications. Today the backend sends them to the seller when an admin approves, rejects or suspends a listing, and to the reporter when an admin closes their report.
+`User` and `Admin` both have notifications. Today the backend sends them to the seller when an admin approves, rejects or suspends a listing, to the reporter when an admin closes their report, and to the seller when someone reviews them.
 
 ```ts
 // Notification
 {
   id: string,
-  type: 'PropertyApproved' | 'PropertyRejected' | 'PropertySuspended' | 'ReportResolved',   // more types will come later
+  type: 'PropertyApproved' | 'PropertyRejected' | 'PropertySuspended' | 'ReportResolved' | 'NewReview',   // more types will come later
   title: string, body: string,                     // Arabic, written by the server — show them as they are
-  referenceId?: string,                            // the listing id for the three property types, the report id for ReportResolved
+  referenceId?: string,                            // the listing id for the three property types, the report id for ReportResolved, the seller id (me) for NewReview
   isRead: boolean,
   createdAtUtc: string
 }
@@ -779,8 +784,8 @@ Only `Pending` listings that pass the readiness checklist (6.8) appear here.
 | `POST` | `/read-all` | `204` | — |
 
 - **Bell** in the navbar for every signed-in user (`NotificationsBell`): the unread badge (hidden at `0`) from `GET /unread-count`, refetched on window focus, skipped for guests (`useUnreadCount`). It is polled every 60 s **only while the real-time hub is disconnected**; connected, the hub pushes `notificationReceived` (6.17). A click opens the latest 5 (`pageSize=5`, refetched on each open), «تعليم الكل كمقروء» and «عرض الكل» → `/notifications`.
-- **Opening a notification** calls `POST /{id}/read` without checking `isRead`. `PropertyApproved`, `PropertyRejected` and `PropertySuspended` then go to `/my-properties/{referenceId}`; `ReportResolved` (sent for a resolved **and** a dismissed report) goes to `/my-reports`; any other type is only marked as read.
-- Icons: approved check (success), rejected flag (danger), suspended pause (danger), report reviewed flag (info). Unknown types get the generic bell icon — never hide or break on a new type.
+- **Opening a notification** calls `POST /{id}/read` without checking `isRead`. `PropertyApproved`, `PropertyRejected` and `PropertySuspended` then go to `/my-properties/{referenceId}`; `ReportResolved` (sent for a resolved **and** a dismissed report) goes to `/my-reports`; `NewReview` goes to `/sellers/{referenceId}#reviews` (my own seller page, the reviews tab); any other type is only marked as read.
+- Icons: approved check (success), rejected flag (danger), suspended pause (danger), report reviewed flag (info), new review star (warning). Unknown types get the generic bell icon — never hide or break on a new type.
 - Marking read is optimistic: the cached pages and the unread count change at once, are undone on failure, and are refetched after.
 
 ### 6.12 My profile — `/api/Identity/Account/me` (token required, any role)
@@ -823,7 +828,7 @@ Only `Pending` listings that pass the readiness checklist (6.8) appear here.
 #### `GET /{sellerId}`
 
 - `200` → `SellerProfile` (6.4), tag `SellerProfile` (`id`). `404` (`code: "Seller.NotFound"`) → «البائع غير موجود».
-- The page `/sellers/:id` shows the photo, name, city, bio, «عضو منذ» (month and year of `memberSinceUtc`) and `activeListingsCount`, then the seller's listings from `GET /User/Properties?sellerId={id}&page=&pageSize=` with `PropertyCard` and `Pagination`.
+- The page `/sellers/:id` shows the photo, name, the rating (stars, `averageRating` with one decimal, «(N تقييم)», 6.18), city, «عضو منذ» (month and year of `memberSinceUtc`) and bio, then two tabs: «عقاراته (activeListingsCount)» — the seller's listings from `GET /User/Properties?sellerId={id}&page=&pageSize=` with `PropertyCard` and `Pagination` (`?page=`) — and «التقييمات (reviewsCount)» (`#reviews`, 6.18).
 - **Never** shows an email or a phone. The seller box on the listing details page (`user.id`) links here.
 
 ### 6.14 Not built yet on the backend
@@ -831,7 +836,7 @@ Only `Pending` listings that pass the readiness checklist (6.8) appear here.
 Nothing below exists — don't call it. Build nothing that depends on it without a `BACKEND_REQUESTS.md` entry.
 
 - Delete account, account preferences (email notifications, phone visibility)
-- Reviews, message attachments
+- Message attachments
 - AI price estimation
 - Currency on prices (still `DEFAULT_CURRENCY`)
 - Admin statistics, user management, and AI-usage screens (in Figma, no endpoints)
@@ -948,6 +953,38 @@ Only offered while `status === 'Pending'`. Every action goes through a confirm d
 - After any action invalidate `AdminReports` and `AdminReport(id)`; after suspending also `Property` and `PendingProperties` (and `ReviewProperty` of the listing).
 - **Owner side:** a suspended listing is just `moderationStatus: 'Rejected'` with the admin's reason, so the rejected owner UI (reason alert, edit, resubmit) covers it; only the `PropertySuspended` notification is new.
 
+### 6.18 Reviews — `/api/v1/User/Sellers/{sellerId}/reviews` (public) and `/api/v1/User/Reviews` (role `User`)
+
+A buyer rates a seller (not a listing), once per seller, after the seller answered them in a conversation. The server decides who may review (`canReview`).
+
+```ts
+// SellerReview — GET /User/Sellers/{sellerId}/reviews
+{ id, rating, comment?, reviewer?: { fullName, profileImageUrl? }, createdAtUtc, isEdited }   // reviewer missing if the account no longer exists
+
+// Review — my own; POST and PUT answer it
+{ id, sellerId, rating, comment?, createdAtUtc, lastModifiedUtc }
+
+// MyReviewStatus — GET /User/Reviews/sellers/{sellerId}/mine
+{ canReview: boolean, review?: Review }
+```
+
+- `rating`: 0.5 to 5 in steps of 0.5. `comment`: optional, ≤ 500; an empty comment is sent as `null` (on `PUT` it clears it).
+
+| Method | Route | Success | Errors |
+|---|---|---|---|
+| `GET` | `/User/Sellers/{sellerId}/reviews?page=&pageSize=` | `200` `PaginatedList<SellerReview>`, newest first | `400` |
+| `GET` | `/User/Reviews/sellers/{sellerId}/mine` | `200` `MyReviewStatus` | — |
+| `POST` | `/User/Reviews` `{ sellerId, rating, comment? }` | `201` `Review` | `400` (`Rating`, `Comment`) · `409` `code: "ReviewErrors.NotEligible"` / `"ReviewErrors.DuplicateReview"` / `"ReviewErrors.CannotReviewSelf"` · `429` after **5 an hour** |
+| `PUT` | `/User/Reviews/{reviewId}` `{ rating, comment? }` | `200` `Review` | `400` · `404` |
+| `DELETE` | `/User/Reviews/{reviewId}` | `204` | `404` |
+
+- **Seller page, tab «التقييمات» (`#reviews`):** the list (10 per page, `?reviewsPage=`): avatar, name («مستخدم محذوف» when `reviewer` is missing), five stars, the comment, the relative date and «(معدّل)» when `isEdited`; an empty state when there are none. Above it, «تقييمك»:
+  - a signed-in `User` who is not this seller (`sellerId !== ` the JWT `sub`) calls `GET /mine`: with `review` → the card «تقييمك» with «تعديل» (the same form, `PUT`) and «حذف» (confirm dialog, `DELETE`); with `canReview` → the form «قيّم هذا البائع» (the star input + the comment with a counter to 500, `POST`); neither → «يمكنك تقييم البائع بعد التواصل معه ورده على رسالتك».
+  - a guest → «سجّل الدخول لتقييم البائع» (a login link that comes back to `#reviews`). Admins and the seller themself see nothing there.
+- **Shared stars:** `StarRating` (read-only, half stars, the half on the start side so it follows RTL, optional average and «(N تقييم)», «لا توجد تقييمات بعد» at 0) and `StarRatingInput` (clickable half stars, a keyboard slider: arrows ±0.5 — left adds in RTL — Home / End, digits 1–5).
+- **Details page:** the seller box shows `sellerRating` (stars, average, «(N تقييم)», or «لا توجد تقييمات بعد») under the seller name, linking to `/sellers/{user.id}#reviews`.
+- **After create / update / delete** invalidate `SellerProfile(sellerId)`, `SellerReviews(sellerId)`, `MyReviewStatus(sellerId)` and `Property` (the details show the rating). A `409` (any code, or a database `409` without one) or a `404` means the state changed elsewhere: the same tags are invalidated, so the review area shows the current state; the message is shown as a toast or above the form.
+
 ---
 
 ## 7. Project structure
@@ -993,6 +1030,13 @@ src/
       pages/ProfilePage.jsx
     sellers/
       sellersApi.js            # public seller profile (6.13)
+      components/SellerHeader.jsx
+      pages/SellerPage.jsx
+    reviews/
+      reviewsApi.js            # seller reviews, my review status, create, update, delete (6.18)
+      constants.js             # rating range and step, comment limit, page size
+      schemas.js               # the review form (rating + comment)
+      components/              # SellerReviewsTab, SellerReviewItem, MyReviewArea, MyReviewCard, ReviewForm
     conversations/
       conversationsApi.js      # start, list, unread count, details, messages (infinite query), send, read (6.16)
       useUnreadMessages.js     # the unread messages count (polled only while the hub is down)
@@ -1006,8 +1050,6 @@ src/
       schemas.js               # report form (reason + details), admin decision form (note, suspension)
       components/              # ReportListingButton, ReportListingDialog
       pages/MyReportsPage.jsx
-      components/SellerHeader.jsx
-      pages/SellerPage.jsx
     notifications/
       notificationsApi.js      # list, unread count, mark one / all read (6.11) — optimistic count
       useUnreadCount.js        # the polled unread count (60 s + on focus), skipped for guests
@@ -1226,7 +1268,7 @@ API paths below are relative to the base paths in section 6.1.
 | `/favorites` | user | Favorites grid (12 per page, `?page=`), cards leave at once when unsaved; sidebar and dashboard link here with the ids count | `GET /User/Favorites`, `GET /User/Favorites/ids` |
 | `/notifications` | signed in (user or admin) | All notifications (20 per page, `?page=`), grouped by day, unread on brand/subtle, mark all read; the account sidebar and the mobile dashboard link here with the unread count | `GET /User/Notifications`, `GET …/unread-count`, `POST …/{id}/read`, `POST …/read-all` |
 | `/profile` | signed in (user or admin) | Personal data + photo, password (change, or set for Google accounts); account sidebar for users, admin sidebar for admins; «حسابي» in the account menu | `GET/PUT /me`, `PUT/DELETE /me/photo`, `PUT /me/password` |
-| `/sellers/:id` | public | Seller header (photo, name, city, bio, member since, listings count) + their listings, 12 per page | `GET /User/Sellers/{id}`, `GET /User/Properties?sellerId=` |
+| `/sellers/:id` | public | Seller header (photo, name, rating, city, member since, bio), tabs: their listings (12 per page) and «التقييمات» (`#reviews`, my review + the list, 10 per page) | `GET /User/Sellers/{id}`, `GET /User/Properties?sellerId=`, `GET /User/Sellers/{id}/reviews`, `/User/Reviews/*` |
 | `/messages` | user | Conversations (Figma 76:968): the list, and from 1280px up the open chat beside it; 20 per page | `GET /User/Conversations` |
 | `/messages/:conversationId` | user | Chat: header, messages with older pages, composer, read marks (mobile 84:530) | `GET /User/Conversations/{id}`, `GET …/messages`, `POST …/messages`, `POST …/read` |
 | `/my-reports` | user | The user's reports (10 per page, `?page=`): status, reason, date, details, «رد الإدارة»; «بلاغاتي» in the account menu, sidebar and mobile dashboard | `GET /User/Reports/mine` |
@@ -1256,7 +1298,7 @@ Loading (skeletons, not spinners, for lists and cards) · empty (friendly Arabic
 
   | Tag | Provided by | Invalidated by |
   |---|---|---|
-  | `Property` (`LIST`, `id`) | search, details | approve, reject, every seller mutation on that id, delete |
+  | `Property` (`LIST`, `id`) | search, details | approve, reject, every seller mutation on that id, delete, review create / update / delete |
   | `MyProperties` | `/mine` | create, every seller mutation, delete |
   | `MyProperty` (`id`) | `/mine/{id}` | every seller mutation on that id |
   | `Favorites` | favorites list | add, remove |
@@ -1266,7 +1308,9 @@ Loading (skeletons, not spinners, for lists and cards) · empty (friendly Arabic
   | `Notifications` | notifications list | mark read, mark all read — patched optimistically |
   | `UnreadCount` | `/unread-count` | mark read, mark all read — patched optimistically |
   | `MyProfile` | `GET /me` | none — `PUT /me`, the photo and the password patch the cache with the answer |
-  | `SellerProfile` (`id`) | seller page | profile update, photo upload / delete |
+  | `SellerProfile` (`id`) | seller page | profile update, photo upload / delete, review create / update / delete |
+  | `SellerReviews` (`sellerId`) | the seller's reviews | review create / update / delete |
+  | `MyReviewStatus` (`sellerId`) | `/User/Reviews/sellers/{id}/mine` | review create / update / delete (also after a `409` or `404`) |
   | `MyReports` | `/User/Reports/mine` | report a listing |
   | `Conversations` | conversations list | start, send, read, every `messageReceived`, reconnect |
   | `Conversation` (`id`) | details and the messages (infinite query) of one chat | reconnect only — new messages are added to the cache |
@@ -1311,7 +1355,7 @@ When Abdulrahman confirms something is done: mark it `done`, update section 6 of
 | 9 | Currency | open |
 | 10 | CORS for deployment | partly done — only `http://localhost:5173` is allowed |
 | 11 | Image and document upload | done — section 6.7 |
-| 12 | Section 6.14 features | partly done — notifications, profile, seller page, reports, conversations and real time done; see 6.14 for the rest |
+| 12 | Section 6.14 features | partly done — notifications, profile, seller page, reports, conversations, real time and reviews done; see 6.14 for the rest |
 | 13 | Register without a user name | done — the email is the login |
 | 14 | Password reset by link or code | open |
 | 15 | `requestId` on every ProblemDetails | done — with `instance`, on every error |
@@ -1342,7 +1386,8 @@ Each step ends in a working app, and each is its own branch + PR.
 8. **Profile and seller page** (done) — register without a user name, `GET /me` in the header, `/profile` (data, photo, password), `/sellers/:id`, seller box link.
 9. **Reports** (done) — «إبلاغ» on the details page + dialog, `/my-reports`, admin `/admin/reports` + review with dismiss / resolve / suspend, the two new notification types.
 10. **Conversations and real time** (done) — «تواصل مع البائع», `/messages` + chat with older pages and read marks, the SignalR hub (messages, read marks, notifications), polling only while disconnected.
-11. **The rest** — as backend endpoints land (section 6.14 and `BACKEND_REQUESTS.md`).
+11. **Seller reviews** (done) — shared stars, the rating in the details seller box and the seller header, the «التقييمات» tab with my review (create, edit, delete) and the list, the `NewReview` notification.
+12. **The rest** — as backend endpoints land (section 6.14 and `BACKEND_REQUESTS.md`).
 
 Every data screen keeps the four states (loading skeleton · empty · error with retry · success).
 
