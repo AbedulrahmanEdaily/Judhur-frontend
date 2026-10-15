@@ -3,7 +3,7 @@
 > Project context for Claude Code working in the **frontend repository**. Read this whole file before writing code.
 > The backend lives in a **separate repository** that you cannot see. Section 6 (API contract) is your only source of truth for the backend — never guess an endpoint, a field name, or a status code.
 >
-> Contract snapshot taken from the backend source on 2026-09-30 (backend `main` + the `feature/Favorite` branch); notifications, my profile and the public seller page added 2026-10-01; security hardening (error `code`, image moderation, limits, rate limits) added 2026-10-04; reports added 2026-10-14; conversations and the real-time hub added 2026-10-15; seller reviews added 2026-10-15; admin users, the admin dashboard, bans and the global rate limit added 2026-10-15 (from the backend source, `main` after `feature/admin-users`); the "final backend" changes added 2026-10-15 from Abdulrahman's change list (review `rowVersion`, admin notifications, change email, delete account, an unavailable chat participant) — not yet in the pushed backend source, so check them against Swagger once it is deployed.
+> Contract snapshot taken from the backend source on 2026-09-30 (backend `main` + the `feature/Favorite` branch); notifications, my profile and the public seller page added 2026-10-01; security hardening (error `code`, image moderation, limits, rate limits) added 2026-10-04; reports added 2026-10-14; conversations and the real-time hub added 2026-10-15; seller reviews added 2026-10-15; admin users, the admin dashboard, bans and the global rate limit added 2026-10-15 (from the backend source, `main` after `feature/admin-users`); the "final backend" changes added 2026-10-15 (review `rowVersion`, admin notifications, change email, delete account, an unavailable chat participant) and checked against the backend source after `feature/final-backend` was merged.
 >
 > **Read DESIGN.md before any UI work; for anything visual it overrides this file.**
 
@@ -828,7 +828,7 @@ Only `Pending` listings that pass the readiness checklist (6.8) appear here.
 { "newEmail": "string (valid email, ≤256)", "password": "string? (required when hasPassword)" }
 ```
 
-- `204` → «أرسلنا رابط تأكيد إلى بريدك الجديد». Nothing changes until the link is opened; the current email keeps working.
+- `204` → «أرسلنا رابط تأكيد إلى بريدك الجديد». Nothing changes until the link is opened; the current email keeps working. Rate limit: **3 / 15 min** → `429`.
 - `400` `Identity.EmailUnchanged` (→ the email field) · `400` `Identity.CurrentPasswordRequired` / `Identity.InvalidPassword` (→ the password field) · `409` `code: "Identity.DuplicateEmail"` (→ the email field) · `429`.
 - UI: «تغيير البريد» next to the read-only email on `/profile` opens a dialog (new email, and the password only when `hasPassword`).
 
@@ -839,7 +839,7 @@ Only `Pending` listings that pass the readiness checklist (6.8) appear here.
 ```
 
 - The email sends a link to the frontend page **`/confirm-email-change?userId=&email=&token=`** (public). The page posts once with `newEmail` = the `email` param (as read, like `/confirm-email`).
-- `204` → the session is ended here and the page goes to `/login` with «تم تغيير بريدك، سجّل الدخول بالبريد الجديد».
+- `204` → the session is ended here and the page goes to `/login` with «تم تغيير بريدك، سجّل الدخول بالبريد الجديد». The server ends every session of the account, marks the new email confirmed and emails the old address.
 - `400` `Identity.InvalidConfirmationToken` → «الرابط غير صالح أو منتهي» with a way back to «حسابي» to ask again · `409` `Identity.DuplicateEmail` → its message.
 
 #### `DELETE /me` — delete my account
@@ -850,8 +850,12 @@ Only `Pending` listings that pass the readiness checklist (6.8) appear here.
 
 - `204` → the session is ended, the whole API cache reset, home with «تم حذف حسابك».
 - Effects (listed in the confirm dialog): the listings, favorites, notifications and photos are deleted; conversations and reviews stay, shown as «مستخدم محذوف» (no photo — the default avatar).
-- `400` `Identity.CurrentPasswordRequired` / `Identity.InvalidPassword` (→ the password field) · `409` `Users.AdminCannotDeleteAccount` · `429`.
+- `400` `Identity.CurrentPasswordRequired` / `Identity.InvalidPassword` (→ the password field) · `404` the account is already gone · `409` `Users.AdminCannotDeleteAccount` · `429` after **5 / 15 min**. The email can be registered again afterwards.
 - UI: the danger zone at the bottom of `/profile` (Figma «منطقة الخطر» 79:1689), hidden for admins; a strong confirm (the password, or typing «حذف حسابي» for a Google-only account).
+
+#### Preferences — not in the API yet
+
+- «التفضيلات» (Figma 79:1665) on `/profile`: «الوضع الداكن» is a device setting (the `ui` slice, `judhur.theme`) and works now. «إشعارات البريد الإلكتروني» and «إظهار رقم الهاتف للمشترين» wait for `BACKEND_REQUESTS.md` #17: shown disabled with «قريباً», set to today's behaviour (no notification emails, the phone shown to signed-in users). Admins only see the theme.
 
 #### `PUT /me/password`
 
@@ -876,7 +880,7 @@ Only `Pending` listings that pass the readiness checklist (6.8) appear here.
 
 Nothing below exists — don't call it. Build nothing that depends on it without a `BACKEND_REQUESTS.md` entry.
 
-- Account preferences (email notifications, phone visibility)
+- Account preferences (email notifications, phone visibility) — requested as `BACKEND_REQUESTS.md` #17
 - Message attachments
 - AI price estimation
 - Currency on prices (still `DEFAULT_CURRENCY`)
@@ -1101,7 +1105,7 @@ src/
       profileApi.js            # getMe, update, photo upload/delete, password (6.12) — answers patch the getMe cache
       useMyProfile.js          # the signed-in profile (GET /me), skipped for guests
       components/              # ProfileDetailsForm, ProfilePhotoRow, PasswordForm, ProfilePasswordInput, ProfileSubmitButton,
-                               # ChangeEmailDialog, DeleteAccountSection, DeleteAccountDialog
+                               # ChangeEmailDialog, DeleteAccountSection, DeleteAccountDialog, PreferencesSection, PreferenceRow
       pages/ProfilePage.jsx
     sellers/
       sellersApi.js            # public seller profile (6.13)
@@ -1140,7 +1144,7 @@ src/
                                # StatCard, UserRow, UserStatusBadge (ban / unban use ConfirmDialog)
     ui/uiSlice.js              # theme (+ future UI-only state)
   components/
-    ui/                        # Button, Input, Select + SelectMenu (the one dropdown list), Textarea, Checkbox, Modal, ConfirmDialog, Badge, VerifiedBadge,
+    ui/                        # Button, Input, Select + SelectMenu (the one dropdown list), Textarea, Checkbox, Switch, Modal, ConfirmDialog, Badge, VerifiedBadge,
                                # Spinner, Skeleton, EmptyState, ErrorState, Pagination, Toast
     layout/                    # AppLayout, Header, Footer, MobileTopBar, MobileTabBar, AccountShell (sidebar), PageTopBar
     form/                      # FormField wrappers binding RHF + label + error text
@@ -1440,7 +1444,8 @@ When Abdulrahman confirms something is done: mark it `done`, update section 6 of
 | 9 | Currency | open |
 | 10 | CORS for deployment | partly done — only `http://localhost:5173` is allowed |
 | 11 | Image and document upload | done — section 6.7 |
-| 12 | Section 6.14 features | partly done — notifications, profile, seller page, reports, conversations, real time, reviews, admin users and the dashboard done; see 6.14 for the rest |
+| 12 | Section 6.14 features | partly done — notifications, profile, seller page, reports, conversations, real time, reviews, admin users, the dashboard, change email and delete account done; see 6.14 for the rest |
+| 17 | Account preferences | open — email notifications, phone visibility |
 | 13 | Register without a user name | done — the email is the login |
 | 14 | Password reset by link or code | open |
 | 15 | `requestId` on every ProblemDetails | done — with `instance`, on every error |
@@ -1474,7 +1479,8 @@ Each step ends in a working app, and each is its own branch + PR.
 11. **Seller reviews** (done) — shared stars, the rating in the details seller box and the seller header, the «التقييمات» tab with my review (create, edit, delete) and the list, the `NewReview` notification.
 12. **Admin users and dashboard** (done) — `/admin` stats, `/admin/users` + the user page with ban / unban, the global `429` toast, banned sessions ended (refresh `403`, the hub's `AccountBanned`).
 13. **Final backend** (done) — review `rowVersion` and `Properties.ChangedSinceReview`, admin notifications, change email + `/confirm-email-change`, delete account, a chat participant no longer available, a review for a seller who is gone.
-14. **The rest** — as backend endpoints land (section 6.14 and `BACKEND_REQUESTS.md`).
+14. **Preferences** (UI ready) — «التفضيلات» with the theme switch; the two account preferences wait for `BACKEND_REQUESTS.md` #17.
+15. **The rest** — as backend endpoints land (section 6.14 and `BACKEND_REQUESTS.md`).
 
 Every data screen keeps the four states (loading skeleton · empty · error with retry · success).
 

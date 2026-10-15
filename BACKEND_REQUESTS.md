@@ -88,7 +88,7 @@ Statuses last updated from the backend contract of 2026-09-30.
 
 - Status: partly done
 - Why the frontend needs it: profile, Google sign-in, notifications, messaging, reviews, reports, AI price estimate, admin statistics and user management.
-- Endpoint / change wanted: done — listing edit/deactivate/delete/sold/rented, admin moderation, favorites, notifications (`CLAUDE.md` 6.11), my profile (6.12), the public seller page (6.13). The rest is requested one feature at a time, as its own entry, when the UI reaches it.
+- Endpoint / change wanted: done — listing edit/deactivate/delete/sold/rented, admin moderation, favorites, notifications (`CLAUDE.md` 6.11), my profile (6.12), the public seller page (6.13), reports, conversations and the real-time hub, reviews, admin users and the dashboard, change email and delete account. The rest is requested one feature at a time, as its own entry, when the UI reaches it: account preferences (#17); AI price estimation, the AI assistant, the AI-usage screen and message attachments are not requested yet.
 - Current workaround in the UI: those screens are not built.
 
 ## 13. Register without a user name
@@ -118,3 +118,14 @@ Statuses last updated from the backend contract of 2026-09-30.
 - Why the frontend needs it: the search filters in Figma (52:865) are checkboxes, so a buyer can pick several property types, land classes, or document types at once (for example «أرض» and «شقة», or «منطقة أ» and «منطقة ب»).
 - Endpoint / change wanted: `GET /api/v1/User/Properties` accepting repeated values for `propertyType`, `landClassification`, and `legalStatus` (e.g. `?propertyType=Land&propertyType=Apartment&landClassification=A&landClassification=B`), matching any value inside one filter and all filters together (type IN (…) AND class IN (…) AND document IN (…)). No comma-separated form — each value is its own parameter.
 - Current workaround in the UI: none — the city, type, payment, land-class and document checkboxes send one repeated parameter per ticked value; the purpose stays one choice.
+
+## 17. Account preferences
+
+- Status: open
+- Why the frontend needs it: «التفضيلات» on the profile page (Figma 79:1665) has two switches the user owns: «إشعارات البريد الإلكتروني» (an email for a new message, an approved or rejected listing, a review) and «إظهار رقم الهاتف للمشترين» (off → buyers can only reach the seller through the chat).
+- Endpoint / change wanted:
+  - `GET /api/Identity/Account/me` gains `emailNotifications: boolean` and `showPhoneNumber: boolean` (defaults for existing accounts: `false` and `true`, i.e. today's behaviour).
+  - `PUT /api/Identity/Account/me/preferences` with `{ "emailNotifications": boolean, "showPhoneNumber": boolean }` → `200` with the updated `MyProfile` (the frontend writes it into its cache, like `PUT /me`) · `400` validation.
+  - With `showPhoneNumber: false`, `GET /api/v1/User/Properties/{id}` leaves out `user.phoneNumber` for everyone (the details cache keys stay as they are).
+  - With `emailNotifications: true`, the notifications above are also emailed (in Arabic, with a link to the page the notification opens).
+- Current workaround in the UI: the two switches are shown disabled with «قريباً», set to how the app works today (no notification emails, the phone shown to signed-in users). «الوضع الداكن» in the same card works now — it is a device setting, not saved on the server.
