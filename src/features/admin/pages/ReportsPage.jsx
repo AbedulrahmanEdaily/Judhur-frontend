@@ -148,11 +148,8 @@ export default function ReportsPage() {
   if (data && status === 'Pending') subtitle = text.subtitle(formatNumber(data.totalCount));
   if (data && status !== 'Pending') subtitle = text.subtitleClosed(formatNumber(data.totalCount));
 
-  let openReportsCount;
-  if (data && status === 'Pending') openReportsCount = data.totalCount;
-
   return (
-    <AdminShell openReportsCount={openReportsCount}>
+    <AdminShell>
       <div className="flex flex-col gap-0.5">
         <h1 className="text-[22px] leading-[1.72] font-bold text-text xl:text-[25px]">
           {text.title}

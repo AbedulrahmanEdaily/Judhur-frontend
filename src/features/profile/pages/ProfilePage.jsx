@@ -8,7 +8,6 @@ import { toProblem } from '../../../lib/http/problemDetails.js';
 import { ar } from '../../../locales/ar.js';
 import { AdminShell } from '../../admin/components/AdminShell.jsx';
 import { selectIsAdmin } from '../../auth/authSlice.js';
-import { useGetMyPropertiesQuery } from '../../properties/propertiesApi.js';
 import { DeleteAccountSection } from '../components/DeleteAccountSection.jsx';
 import { PasswordForm } from '../components/PasswordForm.jsx';
 import { PreferencesSection } from '../components/PreferencesSection.jsx';
@@ -27,7 +26,6 @@ const text = ar.profile;
 export default function ProfilePage() {
   const isAdmin = useSelector(selectIsAdmin);
   const { profile, isLoading, error, refetch } = useMyProfile();
-  const myProperties = useGetMyPropertiesQuery(undefined, { skip: isAdmin });
 
   let content;
   if (isLoading) {
@@ -89,7 +87,7 @@ export default function ProfilePage() {
   return (
     <>
       <PageTopBar title={text.title} backTo="/dashboard" />
-      <AccountShell listingsCount={myProperties.data?.length}>{body}</AccountShell>
+      <AccountShell>{body}</AccountShell>
     </>
   );
 }

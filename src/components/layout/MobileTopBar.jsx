@@ -1,6 +1,6 @@
 import { useSelector } from 'react-redux';
 import { Link } from 'react-router';
-import { IconBell } from '../icons/index.js';
+import { IconBell, IconInfo } from '../icons/index.js';
 import { Logo } from './Logo.jsx';
 import { selectIsAuthenticated } from '../../features/auth/authSlice.js';
 import { UnreadBadge } from '../../features/notifications/components/UnreadBadge.jsx';
@@ -11,7 +11,8 @@ import { ar } from '../../locales/ar.js';
  * Figma mobile "الشريط العلوي" (83:477): bg/canvas, 1px border/subtle, 18 side padding,
  * 10 top / 12 bottom, 12 gap; 32px logo + wordmark 20/1.72 bold brand/text at the start.
  * Signed in, the navbar bell (with the unread badge) sits at the end and opens /notifications
- * — not in the mobile Figma frame. Shown below 1280px.
+ * — not in the mobile Figma frame. An info button opens «عن جذور» (the footer is desktop only).
+ * Shown below 1280px.
  */
 export function MobileTopBar() {
   const isAuthenticated = useSelector(selectIsAuthenticated);
@@ -30,6 +31,13 @@ export function MobileTopBar() {
         <span className="text-[20px] leading-[1.72] font-bold text-brand-text">{ar.app.name}</span>
       </Link>
       <span className="flex-1" />
+      <Link
+        to="/about"
+        aria-label={ar.nav.about}
+        className="rounded-md bg-inset p-[9px] text-text-secondary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+      >
+        <IconInfo width={18} height={18} />
+      </Link>
       {isAuthenticated && (
         <Link
           to="/notifications"

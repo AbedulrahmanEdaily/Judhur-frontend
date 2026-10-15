@@ -13,7 +13,6 @@ import { actionErrorMessage, toProblem } from '../../../lib/http/problemDetails.
 import { ar } from '../../../locales/ar.js';
 import { AdminShell } from '../../admin/components/AdminShell.jsx';
 import { selectIsAdmin } from '../../auth/authSlice.js';
-import { useGetMyPropertiesQuery } from '../../properties/propertiesApi.js';
 import { NotificationItem } from '../components/NotificationItem.jsx';
 import {
   useGetNotificationsQuery,
@@ -74,7 +73,6 @@ export default function NotificationsPage() {
   });
   const unread = useUnreadCount();
   const [markAllAsRead, markAllState] = useMarkAllNotificationsAsReadMutation();
-  const myProperties = useGetMyPropertiesQuery(undefined, { skip: isAdmin });
 
   function changePage(nextPage) {
     const params = new URLSearchParams();
@@ -182,7 +180,7 @@ export default function NotificationsPage() {
   return (
     <>
       <PageTopBar title={text.title} backTo="/dashboard" />
-      <AccountShell listingsCount={myProperties.data?.length}>{body}</AccountShell>
+      <AccountShell>{body}</AccountShell>
     </>
   );
 }

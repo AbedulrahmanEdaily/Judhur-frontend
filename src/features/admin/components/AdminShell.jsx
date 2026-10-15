@@ -9,6 +9,7 @@ import {
 } from '../../../components/icons/index.js';
 import { formatNumber } from '../../../lib/format.js';
 import { ar } from '../../../locales/ar.js';
+import { useGetAdminStatsQuery } from '../usersApi.js';
 
 const text = ar.admin.nav;
 
@@ -52,16 +53,18 @@ function renderCount(count) {
 /**
  * The admin pages' frame — Figma "المحتوى" of «لوحة الإحصائيات» (80:602), «طابور الموافقات»
  * (80:836), «إدارة المستخدمين» (82:910) and «البلاغات» (82:1109): bg/surface with 70px sides
- * and, from 1280px up, the 268px admin sidebar (80:838) at the start. The open item is brand/subtle; the queue and the reports show their waiting
- * count in a danger pill when the page knows it.
+ * and, from 1280px up, the 268px admin sidebar (80:838) at the start. The open item is
+ * brand/subtle; the queue and the reports show their waiting count in a danger pill on every
+ * admin page — the sidebar reads them from `GET /Admin/Stats` itself (one cached request, asked
+ * again on focus and after every decision, ban or admin notification).
  *
- * @param {{
- *   pendingCount?: number,
- *   openReportsCount?: number,
- *   children: import('react').ReactNode,
- * }} props
+ * @param {{ children: import('react').ReactNode }} props
  */
-export function AdminShell({ pendingCount, openReportsCount, children }) {
+export function AdminShell({ children }) {
+  const stats = useGetAdminStatsQuery(undefined, { refetchOnFocus: true });
+  const pendingCount = stats.data?.properties.waitingForReview;
+  const openReportsCount = stats.data?.pendingReports;
+
   return (
     <div className="min-h-full bg-surface">
       <div className="flex items-start gap-6 px-4 pt-4 pb-5 xl:px-[70px] xl:pt-[26px] xl:pb-[60px]">

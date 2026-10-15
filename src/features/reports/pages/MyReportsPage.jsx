@@ -9,7 +9,6 @@ import { Skeleton } from '../../../components/ui/Skeleton.jsx';
 import { formatDate, formatNumber } from '../../../lib/format.js';
 import { toProblem } from '../../../lib/http/problemDetails.js';
 import { ar } from '../../../locales/ar.js';
-import { useGetMyPropertiesQuery } from '../../properties/propertiesApi.js';
 import {
   REPORT_REASON_LABELS,
   REPORT_REASON_TONES,
@@ -38,7 +37,6 @@ export default function MyReportsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const page = readPage(searchParams);
   const { data, isLoading, error, refetch } = useGetMyReportsQuery({ page, pageSize: PAGE_SIZE });
-  const myProperties = useGetMyPropertiesQuery();
 
   function changePage(nextPage) {
     const params = new URLSearchParams();
@@ -131,7 +129,7 @@ export default function MyReportsPage() {
   return (
     <>
       <PageTopBar title={text.myTitle} backTo="/dashboard" />
-      <AccountShell listingsCount={myProperties.data?.length}>
+      <AccountShell>
         <div className="flex flex-col gap-0.5">
           <h1 className="hidden text-[25px] leading-[1.72] font-bold text-text xl:block">
             {text.myTitle}

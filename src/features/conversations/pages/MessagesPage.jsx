@@ -10,7 +10,6 @@ import { Pagination } from '../../../components/ui/Pagination.jsx';
 import { Skeleton } from '../../../components/ui/Skeleton.jsx';
 import { toProblem } from '../../../lib/http/problemDetails.js';
 import { ar } from '../../../locales/ar.js';
-import { useGetMyPropertiesQuery } from '../../properties/propertiesApi.js';
 import { ConversationListItem } from '../components/ConversationListItem.jsx';
 import { useGetConversationQuery, useGetConversationsQuery } from '../conversationsApi.js';
 
@@ -39,7 +38,6 @@ export default function MessagesPage() {
     { refetchOnFocus: true },
   );
   const openConversation = useGetConversationQuery(openId, { skip: !openId });
-  const myProperties = useGetMyPropertiesQuery();
   const titleId = useId();
 
   function changePage(nextPage) {
@@ -116,7 +114,7 @@ export default function MessagesPage() {
   return (
     <>
       {topBar}
-      <AccountShell listingsCount={myProperties.data?.length}>
+      <AccountShell>
         <div
           className={clsx(
             'flex overflow-hidden rounded-lg border border-border bg-raised xl:h-[calc(100dvh-150px)] xl:min-h-[560px]',
