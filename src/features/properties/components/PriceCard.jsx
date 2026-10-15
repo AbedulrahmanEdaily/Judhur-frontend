@@ -1,8 +1,8 @@
 import { useSelector } from 'react-redux';
 import { Link } from 'react-router';
-import { IconFieldChevron } from '../../../components/icons/index.js';
 import { Avatar } from '../../../components/ui/Avatar.jsx';
-import { formatPrice } from '../../../lib/format.js';
+import { StarRating } from '../../../components/ui/StarRating.jsx';
+import { formatNumber, formatPrice, formatRating } from '../../../lib/format.js';
 import { ar } from '../../../locales/ar.js';
 import { selectCurrentUser, selectIsAuthenticated } from '../../auth/authSlice.js';
 import { ContactSellerButton } from '../../conversations/components/ContactSellerButton.jsx';
@@ -12,11 +12,23 @@ import { PhoneButton } from './PhoneButton.jsx';
 
 const text = ar.property;
 
+/** What the rating link says to a screen reader: the reviews of this seller, and the rating. */
+function sellerRatingLabel(property) {
+  const rating = property.sellerRating;
+  let summary = ar.reviews.noReviews;
+  if (rating?.reviewsCount > 0) {
+    summary = `${ar.reviews.ratingLabel(formatRating(rating.averageRating ?? 0))} ${ar.reviews.countLabel(formatNumber(rating.reviewsCount))}`;
+  }
+  return `${ar.reviews.sellerReviewsLink(property.user.fullName)}، ${summary}`;
+}
+
 /**
  * Figma price + seller card (67:1195): asking price 34 bold brand/text with the price per m² and
- * payment type, then the seller (Avatar 40 + name 15 bold), «تواصل مع البائع» (67:1214, not for
- * the owner or admins) and the phone button. The seller row links to the public seller page;
- * its «عرض صفحة البائع» line and arrow are not in Figma. The rating has no API.
+ * payment type, then the seller (Avatar 40 + name 15 bold, linking to the seller page) with the
+ * rating under the name (67:1205 — five 13px stars where Figma has one, the average 12.5
+ * semibold, «(N تقييم)» 11.5 muted; «لا توجد تقييمات بعد» without reviews), linking to the
+ * seller's reviews; then «تواصل مع البائع» (67:1214, not for the owner or admins) and the
+ * phone button. Figma's «عضو منذ» in that line is not in the details API.
  *
  * @param {{ property: import('../../../api/types.js').PropertyDetails }} props
  */
@@ -40,22 +52,29 @@ export function PriceCard({ property }) {
       {property.user && (
         <>
           <div className="h-px bg-border" />
-          <Link
-            to={`/sellers/${property.user.id}`}
-            aria-label={text.sellerPage(property.user.fullName)}
-            className="group flex items-center gap-3 rounded-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
-          >
+          <div className="flex items-center gap-3">
             <Avatar name={property.user.fullName} imageUrl={property.user.profileImageUrl} />
-            <span className="flex min-w-0 flex-1 flex-col">
-              <span className="text-[15px] leading-[1.78] font-bold text-text group-hover:text-brand-text">
+            <div className="flex min-w-0 flex-1 flex-col items-start">
+              <Link
+                to={`/sellers/${property.user.id}`}
+                aria-label={text.sellerPage(property.user.fullName)}
+                className="rounded-sm text-[15px] leading-[1.78] font-bold text-text hover:text-brand-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+              >
                 {property.user.fullName}
-              </span>
-              <span className="text-[12.5px] leading-[1.72] text-brand-text">
-                {text.viewSeller}
-              </span>
-            </span>
-            <IconFieldChevron className="shrink-0 rotate-90 text-muted" />
-          </Link>
+              </Link>
+              <Link
+                to={`/sellers/${property.user.id}#reviews`}
+                aria-label={sellerRatingLabel(property)}
+                className="rounded-sm hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+              >
+                <StarRating
+                  value={property.sellerRating?.averageRating}
+                  count={property.sellerRating?.reviewsCount ?? 0}
+                  showValue
+                />
+              </Link>
+            </div>
+          </div>
           {canContactSeller(isAuthenticated, user, property) && (
             <ContactSellerButton property={property} />
           )}

@@ -291,7 +291,6 @@ export const ar = {
     verified: 'موثّق',
     share: 'مشاركة',
     linkCopied: 'تم نسخ رابط العقار', // not in Figma
-    viewSeller: 'عرض صفحة البائع', // not in Figma
     sellerPage: (name) => `صفحة البائع ${name}`, // not in Figma (screen readers)
     area: 'المساحة',
     document: 'الوثيقة',
@@ -667,16 +666,52 @@ export const ar = {
   sellers: {
     // Figma "ملف البائع — زائر" (73:1373)
     memberSince: (date) => `عضو منذ ${date}`,
-    listingsCount: (count) => `${count} عقار معروض`,
     listingsTab: (count) => `عقاراته (${count})`,
     // not in Figma
-    listingsTitle: 'عقاراته',
+    tabsLabel: 'أقسام صفحة البائع',
     noListingsTitle: 'ما عنده عقارات معروضة حالياً',
     noListingsText: 'لما ينشر عقار جديد بيظهر هون.',
     notFoundTitle: 'البائع غير موجود',
     notFoundText: 'يمكن الرابط غلط أو الحساب انحذف.',
     backToSearch: 'تصفّح العقارات',
     previousPage: 'رجوع للصفحة السابقة',
+  },
+  reviews: {
+    // Figma "ملف البائع — زائر" (73:1373) and the details seller box (67:1205)
+    tab: (count) => `التقييمات (${count})`,
+    countLabel: (count) => `(${count} تقييم)`,
+    // not in Figma
+    noReviews: 'لا توجد تقييمات بعد',
+    ratingLabel: (value) => `التقييم ${value} من 5`,
+    sellerReviewsLink: (name) => `تقييمات البائع ${name}`,
+    emptyText: 'لما حدا يقيّم هذا البائع بعد التعامل معه، بيظهر تقييمه هون.',
+    previousPage: 'رجوع للصفحة السابقة',
+    edited: '(معدّل)',
+    deletedUser: 'مستخدم محذوف',
+    myReviewTitle: 'تقييمك',
+    formTitle: 'قيّم هذا البائع',
+    editTitle: 'عدّل تقييمك',
+    ratingField: 'تقييمك للبائع',
+    pickRating: 'اختر عدد النجوم',
+    ratingValue: (value) => `${value} من 5`,
+    commentLabel: 'تعليقك (اختياري)',
+    commentPlaceholder: 'كيف كان تعاملك مع البائع؟',
+    submit: 'أرسل التقييم',
+    save: 'احفظ التعديل',
+    edit: 'تعديل',
+    delete: 'حذف',
+    created: 'تم نشر تقييمك',
+    updated: 'تم تعديل تقييمك',
+    deleted: 'تم حذف تقييمك',
+    deleteTitle: 'حذف تقييمك؟',
+    deleteText: 'بينحذف تقييمك وتعليقك من صفحة البائع، وبتقدر تقيّمه من جديد بعدين.',
+    deleteConfirm: 'احذف التقييم',
+    notEligibleHint: 'يمكنك تقييم البائع بعد التواصل معه ورده على رسالتك',
+    loginToReview: 'سجّل الدخول لتقييم البائع',
+    validation: {
+      ratingRequired: 'اختر تقييمًا من نصف نجمة إلى 5 نجوم',
+      commentTooLong: 'التعليق لازم ما يزيد عن 500 حرف',
+    },
   },
   notifications: {
     // Figma "الإشعارات — مستخدم" (76:1172)
@@ -692,7 +727,7 @@ export const ar = {
     bell: (count) => `الإشعارات، ${count} غير مقروءة`,
     unreadMark: 'غير مقروء',
     emptyTitle: 'لا توجد إشعارات بعد',
-    emptyText: 'لما ينقبل أو ينرفض عقار إلك، أو تتم مراجعة بلاغك، بيوصلك إشعار هون.',
+    emptyText: 'لما ينقبل أو ينرفض عقار إلك، أو تتم مراجعة بلاغك، أو حدا يقيّمك، بيوصلك إشعار هون.',
     previousPage: 'رجوع للصفحة السابقة',
   },
   conversations: {

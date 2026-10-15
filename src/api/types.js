@@ -179,7 +179,14 @@
  * @property {LandClassification} landClassification
  * @property {LegalStatus} legalStatus
  * @property {UserInfo} [user]
+ * @property {SellerRating} sellerRating the seller's reviews (the seller box)
  * @property {PropertyImage[]} images
+ */
+
+/**
+ * @typedef {Object} SellerRating The seller's rating on the details page.
+ * @property {number} [averageRating] missing without reviews
+ * @property {number} reviewsCount
  */
 
 // ---------------------------------------------------------------------------
@@ -333,6 +340,35 @@
  * @property {string} [bio]
  * @property {string} memberSinceUtc ISO-8601 with offset
  * @property {number} activeListingsCount
+ * @property {number} [averageRating] missing without reviews
+ * @property {number} reviewsCount
+ */
+
+// ---------------------------------------------------------------------------
+// Reviews — /api/v1/User/Reviews (role User) and /User/Sellers/{id}/reviews (public)
+// ---------------------------------------------------------------------------
+
+/**
+ * @typedef {Object} SellerReview Item of `GET /User/Sellers/{sellerId}/reviews` (newest first).
+ * @property {string} id
+ * @property {number} rating 0.5–5 in steps of 0.5
+ * @property {string} [comment]
+ * @property {{ fullName: string, profileImageUrl?: string }} [reviewer] missing if the account
+ *   no longer exists
+ * @property {string} createdAtUtc
+ * @property {boolean} isEdited
+ *
+ * @typedef {Object} Review My own review — `POST /` and `PUT /{reviewId}`.
+ * @property {string} id
+ * @property {string} sellerId
+ * @property {number} rating
+ * @property {string} [comment]
+ * @property {string} createdAtUtc
+ * @property {string} lastModifiedUtc
+ *
+ * @typedef {Object} MyReviewStatus `GET /sellers/{sellerId}/mine`.
+ * @property {boolean} canReview
+ * @property {Review} [review]
  */
 
 // ---------------------------------------------------------------------------
@@ -340,7 +376,7 @@
 // ---------------------------------------------------------------------------
 
 /**
- * @typedef {'PropertyApproved'|'PropertyRejected'|'PropertySuspended'|'ReportResolved'} NotificationType
+ * @typedef {'PropertyApproved'|'PropertyRejected'|'PropertySuspended'|'ReportResolved'|'NewReview'} NotificationType
  *   more types may come later
  *
  * @typedef {Object} Notification Item of `GET /` (newest first).
@@ -349,7 +385,7 @@
  * @property {string} title Arabic, shown as sent
  * @property {string} body Arabic, shown as sent
  * @property {string} [referenceId] the listing id for the three property types, the report id
- *   for ReportResolved
+ *   for ReportResolved, my own (seller) id for NewReview
  * @property {boolean} isRead
  * @property {string} createdAtUtc ISO-8601 with offset
  *

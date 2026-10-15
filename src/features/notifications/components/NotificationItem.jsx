@@ -8,6 +8,7 @@ import {
   IconNotificationBell,
   IconNotificationRejected,
   IconPause,
+  IconStar,
 } from '../../../components/icons/index.js';
 import { useToast } from '../../../components/ui/useToast.js';
 import { formatRelativeTime } from '../../../lib/format.js';
@@ -19,26 +20,31 @@ const text = ar.notifications;
 
 // Figma icon circles: approved check on success-soft, rejected flag on danger-soft, and the bell
 // on warning-soft for any other (future) type. Not in Figma: the suspended pause on
-// danger-soft and the reviewed-report flag on info-soft (17px like the others).
+// danger-soft, the reviewed-report flag on info-soft and the new-review star (73:1615) on
+// warning-soft, 17px like the others.
 const typeIcons = {
   PropertyApproved: { Icon: IconNotificationApproved, classes: 'bg-success-soft text-success' },
   PropertyRejected: { Icon: IconNotificationRejected, classes: 'bg-danger-soft text-danger' },
   PropertySuspended: { Icon: IconPause, classes: 'bg-danger-soft text-danger' },
   ReportResolved: { Icon: IconNavReports, classes: 'bg-info-soft text-info' },
+  NewReview: { Icon: IconStar, classes: 'bg-warning-soft text-warning' },
 };
 const otherTypeIcon = { Icon: IconNotificationBell, classes: 'bg-warning-soft text-warning' };
 
 const PROPERTY_TYPES = ['PropertyApproved', 'PropertyRejected', 'PropertySuspended'];
 
 /**
- * The property notifications open the owner's listing, a reviewed report opens «بلاغاتي»;
- * other types have no page.
+ * The property notifications open the owner's listing, a reviewed report opens «بلاغاتي», a new
+ * review opens my seller page on «التقييمات»; other types have no page.
  */
 function notificationPath(notification) {
   if (PROPERTY_TYPES.includes(notification.type) && notification.referenceId) {
     return `/my-properties/${notification.referenceId}`;
   }
   if (notification.type === 'ReportResolved') return '/my-reports';
+  if (notification.type === 'NewReview' && notification.referenceId) {
+    return `/sellers/${notification.referenceId}#reviews`;
+  }
   return null;
 }
 
@@ -67,7 +73,7 @@ export function NotificationItem({ notification, onOpen }) {
 
   async function handleOpen() {
     if (onOpen) onOpen();
-    // The listing or the report changed on the server, so the cached copy is stale.
+    // The listing, the report or my reviews changed on the server, so the cached copy is stale.
     if (PROPERTY_TYPES.includes(notification.type)) {
       dispatch(
         baseApi.util.invalidateTags([
@@ -78,6 +84,14 @@ export function NotificationItem({ notification, onOpen }) {
     }
     if (notification.type === 'ReportResolved') {
       dispatch(baseApi.util.invalidateTags(['MyReports']));
+    }
+    if (notification.type === 'NewReview') {
+      dispatch(
+        baseApi.util.invalidateTags([
+          { type: 'SellerProfile', id: notification.referenceId },
+          { type: 'SellerReviews', id: notification.referenceId },
+        ]),
+      );
     }
     try {
       await markAsRead(notification.id).unwrap();

@@ -101,3 +101,4 @@ export { IconNotificationBell } from './IconNotificationBell.jsx';
 export { IconMinus17 } from './IconMinus17.jsx';
 export { IconFlag16 } from './IconFlag16.jsx';
 export { IconSend17 } from './IconSend17.jsx';
+export { IconStar } from './IconStar.jsx';

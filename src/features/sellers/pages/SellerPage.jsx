@@ -1,4 +1,4 @@
-import { useParams, useSearchParams } from 'react-router';
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
 import { EmptyState } from '../../../components/ui/EmptyState.jsx';
 import { ErrorState } from '../../../components/ui/ErrorState.jsx';
 import { Pagination } from '../../../components/ui/Pagination.jsx';
@@ -10,14 +10,17 @@ import { PropertyCard } from '../../properties/components/PropertyCard.jsx';
 import { PropertyCardSkeleton } from '../../properties/components/PropertyCardSkeleton.jsx';
 import { SEARCH_PAGE_SIZE } from '../../properties/constants.js';
 import { useGetPropertiesQuery } from '../../properties/propertiesApi.js';
+import { SellerReviewsTab } from '../../reviews/components/SellerReviewsTab.jsx';
 import { SellerHeader } from '../components/SellerHeader.jsx';
+import { SellerTab } from '../components/SellerTab.jsx';
 import { useGetSellerByIdQuery } from '../sellersApi.js';
 
 const text = ar.sellers;
+const REVIEWS_HASH = '#reviews';
 
-/** `?page=` as a whole number from 1. */
-function readPage(searchParams) {
-  const page = Math.floor(Number(searchParams.get('page')));
+/** `?page=` (listings) or `?reviewsPage=` as a whole number from 1. */
+function readPage(searchParams, name) {
+  const page = Math.floor(Number(searchParams.get(name)));
   if (!Number.isFinite(page) || page < 1) return 1;
   return page;
 }
@@ -40,24 +43,32 @@ function loadErrorState(error, onRetry) {
 }
 
 /**
- * Figma "ملف البائع — زائر" (73:1373), public: the seller (photo, name, city, «عضو منذ», the
- * listings count, bio), then «عقاراته» as Property Cards three per row with pagination. Never
- * the email or the phone. The stats box (reply time, reply rate, deals) and «التقييمات» have no
- * API and are left out, so the tabs row keeps only «عقاراته».
+ * Figma "ملف البائع — زائر" (73:1373), public: the seller (photo, name, rating, city, «عضو منذ»,
+ * bio), then two tabs: «عقاراته» — Property Cards three per row with pagination (`?page=`) — and
+ * «التقييمات» (`#reviews`, `?reviewsPage=`): my review and the reviews. Figma lists the latest
+ * reviews under the listings too; here they are only in their tab, paginated, so a link to
+ * `#reviews` (the details seller box, the new-review notification) opens them directly. Never
+ * the email or the phone. The stats box (reply time, reply rate, deals) has no API.
  */
 export default function SellerPage() {
   const { sellerId } = useParams();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const page = readPage(searchParams);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isReviewsTab = location.hash === REVIEWS_HASH;
+  const page = readPage(searchParams, 'page');
+  const reviewsPage = readPage(searchParams, 'reviewsPage');
   const seller = useGetSellerByIdQuery(sellerId);
   const listings = useGetPropertiesQuery(sellerListingsQuery(sellerId, page), {
-    skip: !seller.data,
+    skip: !seller.data || isReviewsTab,
   });
 
-  function changePage(nextPage) {
-    const params = new URLSearchParams();
-    if (nextPage > 1) params.set('page', String(nextPage));
-    setSearchParams(params);
+  /** One of the two page numbers in the URL changes; the other and the tab stay. */
+  function changePage(name, nextPage) {
+    const params = new URLSearchParams(searchParams);
+    params.delete(name);
+    if (nextPage > 1) params.set(name, String(nextPage));
+    navigate({ search: params.toString(), hash: location.hash });
     window.scrollTo({ top: 0 });
   }
 
@@ -95,11 +106,16 @@ export default function SellerPage() {
 
   if (!seller.data) return null;
 
-  let tabLabel = text.listingsTitle;
-  if (listings.data) tabLabel = text.listingsTab(formatNumber(listings.data.totalCount));
-
   let content;
-  if (listings.isLoading) {
+  if (isReviewsTab) {
+    content = (
+      <SellerReviewsTab
+        sellerId={sellerId}
+        page={reviewsPage}
+        onPageChange={(nextPage) => changePage('reviewsPage', nextPage)}
+      />
+    );
+  } else if (listings.isLoading) {
     content = (
       <div className="grid gap-3.5 xl:grid-cols-3 xl:gap-5">
         <PropertyCardSkeleton />
@@ -113,7 +129,7 @@ export default function SellerPage() {
     content = (
       <EmptyState
         title={text.noListingsTitle}
-        action={{ label: text.previousPage, onClick: () => changePage(page - 1) }}
+        action={{ label: text.previousPage, onClick: () => changePage('page', page - 1) }}
       />
     );
   } else if (listings.data.items.length === 0) {
@@ -131,7 +147,7 @@ export default function SellerPage() {
         <Pagination
           page={listings.data.pageNumber}
           totalPages={listings.data.totalPages}
-          onPageChange={changePage}
+          onPageChange={(nextPage) => changePage('page', nextPage)}
         />
       </>
     );
@@ -141,14 +157,19 @@ export default function SellerPage() {
     <div className="flex min-h-full flex-col bg-surface">
       <SellerHeader seller={seller.data} />
 
-      {/* Figma «تبويبات» (73:1485): the active «تبويب / Tab» — 18 sides, 12 top, 15 semibold
-          brand/text over a 3px brand line; then the 1px line under the row. */}
-      <div className="flex border-b border-border bg-bg px-4 xl:px-[100px]">
-        <h2 className="flex flex-col items-center gap-2.5 px-[18px] pt-3 text-[15px] leading-[1.65] font-semibold text-brand-text">
-          {tabLabel}
-          <span aria-hidden="true" className="h-[3px] w-full rounded-[3px] bg-brand" />
-        </h2>
-      </div>
+      {/* Figma «تبويبات» (73:1485): «عقاراته» then «التقييمات», 6 apart, on bg/canvas; then the
+          1px line under the row. */}
+      <nav
+        aria-label={text.tabsLabel}
+        className="flex gap-1.5 border-b border-border bg-bg px-4 xl:px-[100px]"
+      >
+        <SellerTab to={{ search: location.search, hash: '' }} isActive={!isReviewsTab}>
+          {text.listingsTab(formatNumber(seller.data.activeListingsCount))}
+        </SellerTab>
+        <SellerTab to={{ search: location.search, hash: REVIEWS_HASH }} isActive={isReviewsTab}>
+          {ar.reviews.tab(formatNumber(seller.data.reviewsCount))}
+        </SellerTab>
+      </nav>
 
       <section className="flex flex-col gap-5 px-4 pt-4 pb-5 xl:px-[100px] xl:pt-7 xl:pb-[60px]">
         {content}
