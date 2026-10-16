@@ -251,7 +251,7 @@ export default function DashboardPage() {
               <span className="text-[14.5px] leading-[1.72] text-text">{nav.myProperties}</span>
               <span className="flex-1" />
               {hasListings && (
-                <span className="rounded-full bg-inset px-2 py-0.5 text-[11px] leading-[1.72] font-semibold text-muted">
+                <span className="rounded-full bg-inset px-2 py-0.5 text-[11px] leading-[1.72] font-semibold text-text-secondary">
                   {formatNumber(myProperties.length)}
                 </span>
               )}
@@ -267,7 +267,7 @@ export default function DashboardPage() {
               <span className="text-[14.5px] leading-[1.72] text-text">{nav.favorites}</span>
               <span className="flex-1" />
               {favorites.isLoaded && (
-                <span className="rounded-full bg-inset px-2 py-0.5 text-[11px] leading-[1.72] font-semibold text-muted">
+                <span className="rounded-full bg-inset px-2 py-0.5 text-[11px] leading-[1.72] font-semibold text-text-secondary">
                   {formatNumber(favoritesCount)}
                 </span>
               )}
@@ -283,7 +283,7 @@ export default function DashboardPage() {
               <span className="text-[14.5px] leading-[1.72] text-text">{nav.chats}</span>
               <span className="flex-1" />
               {unreadMessages.count > 0 && (
-                <span className="rounded-full bg-inset px-2 py-0.5 text-[11px] leading-[1.72] font-semibold text-muted">
+                <span className="rounded-full bg-inset px-2 py-0.5 text-[11px] leading-[1.72] font-semibold text-text-secondary">
                   {formatNumber(unreadMessages.count)}
                 </span>
               )}
@@ -300,7 +300,7 @@ export default function DashboardPage() {
               <span className="text-[14.5px] leading-[1.72] text-text">{nav.notifications}</span>
               <span className="flex-1" />
               {unread.count > 0 && (
-                <span className="rounded-full bg-inset px-2 py-0.5 text-[11px] leading-[1.72] font-semibold text-muted">
+                <span className="rounded-full bg-inset px-2 py-0.5 text-[11px] leading-[1.72] font-semibold text-text-secondary">
                   {formatNumber(unread.count)}
                 </span>
               )}

@@ -19,11 +19,11 @@ import { ar } from '../../../locales/ar.js';
 export function AuthSplitLayout({ mobileTitle, mobileSubtitle, children }) {
   return (
     <div className="flex min-h-dvh flex-col bg-bg xl:flex-row">
-      <div className="flex flex-col items-center gap-3 bg-auth-hero px-6 pt-10 pb-[34px] text-center xl:hidden">
+      <header className="flex flex-col items-center gap-3 bg-auth-hero px-6 pt-10 pb-[34px] text-center xl:hidden">
         <Logo size={72} decorative />
         <h1 className="text-[22px] leading-[1.68] font-bold text-white">{mobileTitle}</h1>
         <p className="text-[13px] leading-[1.68] text-white/75">{mobileSubtitle}</p>
-      </div>
+      </header>
 
       <main className="flex flex-1 flex-col bg-bg px-6 py-7 xl:justify-center xl:px-[110px] xl:py-[60px]">
         <div className="mx-auto flex w-full max-w-[560px] flex-col gap-4 xl:max-w-none xl:gap-[18px]">

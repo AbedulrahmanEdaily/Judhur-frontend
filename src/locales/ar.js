@@ -400,7 +400,10 @@ export const ar = {
       'لا تدفع عربون قبل ما تشوف الأرض والوثيقة على الطبيعة.',
       'تأكّد من مطابقة رقم القطعة والحوض في الطابو.',
     ],
-    moreImages: (count) => `+${count} صور أخرى`,
+    // \u2066…\u2069 keeps «+3» left to right inside the Arabic line (it would read «3+»).
+    moreImages: (count) => `\u2066+${count}\u2069 صور أخرى`,
+    // not in Figma — the name of the swipeable photo strip on phones (screen readers)
+    photoStrip: (title) => `صور ${title}`,
     showImage: (number) => `عرض الصورة ${number}`, // not in Figma (screen readers)
     back: 'رجوع',
     // not in Figma
@@ -946,7 +949,7 @@ export const ar = {
       queueTitle: 'بانتظار الموافقة',
       wholeQueue: 'الطابور كامل',
       // not in Figma
-      newThisWeek: (count) => `+${count} هالأسبوع`,
+      newThisWeek: (count) => `\u2066+${count}\u2069 هالأسبوع`, // «+9», like moreImages
       queueEmpty: 'ما في عقارات بانتظار المراجعة.',
       inspect: 'افحص',
       weekTitle: 'آخر 7 أيام',
@@ -1071,6 +1074,7 @@ export const ar = {
     },
     // not in Figma, or changed from it (see DESIGN.md)
     banner: 'إنت بوضع الإدارة — قراراتك بتوصل لأصحاب العقارات',
+    bannerLabel: 'وضع الإدارة',
     queueSubtitle: (count) => `${count} عقار بانتظار المراجعة — الأقدم أولاً.`,
     queueEmptyTitle: 'الطابور فاضي',
     queueEmptyText: 'ما في عقارات بانتظار المراجعة هلأ.',

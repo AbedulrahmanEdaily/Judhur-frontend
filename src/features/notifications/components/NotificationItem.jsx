@@ -139,7 +139,7 @@ export function NotificationItem({ notification, onOpen }) {
           )}
           <time
             dateTime={notification.createdAtUtc}
-            className="shrink-0 text-[11.5px] leading-[1.72] text-muted"
+            className="shrink-0 text-[11.5px] leading-[1.72] text-text-secondary"
           >
             {formatRelativeTime(notification.createdAtUtc)}
           </time>

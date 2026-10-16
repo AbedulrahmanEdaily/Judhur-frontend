@@ -929,7 +929,7 @@ A conversation is one buyer and one seller about one listing.
 
 - **One connection** (`src/lib/realtime/chatHub.js`) to `${API_BASE_URL}/hubs/chat`, built with `HubConnectionBuilder().withUrl(url, { accessTokenFactory }).withAutomaticReconnect()`. `accessTokenFactory` is `freshAccessToken(store)` from `baseQuery.js`: the existing refresh (mutex + cross-tab lock) runs first when the token has expired or is about to. In development the Vite proxy forwards `/hubs` with `ws: true`.
 - SignalR sends the token as `access_token` in the WebSocket URL (browsers can't set headers there) — the one place a token is in a URL, required by the protocol; never log that URL.
-- **Lifecycle:** started on app start when a session exists and on `sessionStarted` / `sessionRefreshed` (a session that arrives from another tab); stopped on `sessionEnded`. The server closes the connection when the token expires: `onclose` starts it again with a fresh token while still signed in (retry after 2 s, then up to 30 s). Admins connect too (notifications).
+- **Lifecycle:** started on app start when a session exists and on `sessionStarted` / `sessionRefreshed` (a session that arrives from another tab); stopped on `sessionEnded`. The `@microsoft/signalr` library is imported dynamically the first time a session exists, so guests never download it. The server closes the connection when the token expires: `onclose` starts it again with a fresh token while still signed in (retry after 2 s, then up to 30 s). Admins connect too (notifications).
 - `ui.isRealtimeConnected` (ui slice) says whether the hub is connected; the two unread counts poll only while it is `false`.
 - **Events from the server:**
 

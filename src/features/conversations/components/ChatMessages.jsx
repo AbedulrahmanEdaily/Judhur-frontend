@@ -87,7 +87,7 @@ export function ChatMessages({ messages, hasOlder, isLoadingOlder, onLoadOlder }
     if (day !== previousDay) {
       rows.push(
         <li key={`day-${day}`} className="flex justify-center">
-          <span className="rounded-full bg-inset px-3 py-[5px] text-[11.5px] leading-[1.72] font-semibold text-muted">
+          <span className="rounded-full bg-inset px-3 py-[5px] text-[11.5px] leading-[1.72] font-semibold text-text-secondary">
             {dayLabel(date)}
           </span>
         </li>,

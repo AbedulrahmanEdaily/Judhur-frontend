@@ -3,6 +3,8 @@ import { useSelector } from 'react-redux';
 import { Link, useLocation } from 'react-router';
 import clsx from 'clsx';
 import {
+  IconNavReports,
+  IconNavStats,
   IconTabAccount,
   IconTabChat,
   IconTabHome,
@@ -26,7 +28,7 @@ const activeClasses = 'font-semibold text-brand-text';
 /**
  * Figma mobile "شريط التبويب" (83:577): bg/raised, 1px border/subtle, 12 side padding,
  * 10 top / 20 bottom; five items (21px icons, labels 10.5/1.72) with the "أضف" brand circle
- * in the middle. Items whose page is not built yet are visible but not clickable.
+ * in the middle. Admins get «لوحة الإدارة» in the circle and «البلاغات» instead of the chats.
  * Shown below 1280px.
  */
 export function MobileTabBar() {
@@ -40,6 +42,8 @@ export function MobileTabBar() {
   const isMessages = pathname.startsWith('/messages');
   const isHome = pathname === '/';
   const isSearch = pathname === '/properties';
+  const isAdminArea = pathname === '/admin' || pathname.startsWith('/admin/properties');
+  const isAdminReports = pathname.startsWith('/admin/reports');
   const isAccount =
     pathname === '/dashboard' ||
     pathname === '/favorites' ||
@@ -80,13 +84,18 @@ export function MobileTabBar() {
           {ar.nav.tabAdd}
         </Link>
       )}
+      {/* Not in the mobile Figma bar: for admins the middle circle opens the admin dashboard. */}
       {isAdmin && (
-        <span aria-disabled="true" className={clsx(itemClasses, inactiveClasses)}>
+        <Link
+          to="/admin"
+          aria-current={isAdminArea ? 'page' : undefined}
+          className={clsx(itemClasses, isAdminArea ? activeClasses : inactiveClasses)}
+        >
           <span className="rounded-full bg-brand p-[9px] text-inverse">
-            <IconTabPlus />
+            <IconNavStats width={21} height={21} />
           </span>
-          {ar.nav.tabAdd}
-        </span>
+          {ar.nav.adminPanel}
+        </Link>
       )}
 
       {/* Admins have no conversations; guests reach login through the page's guard. */}
@@ -103,11 +112,16 @@ export function MobileTabBar() {
           {ar.nav.messages}
         </Link>
       )}
+      {/* Admins have no conversations: that slot opens the reports instead. */}
       {isAdmin && (
-        <span aria-disabled="true" className={clsx(itemClasses, inactiveClasses)}>
-          <IconTabChat />
-          {ar.nav.messages}
-        </span>
+        <Link
+          to="/admin/reports"
+          aria-current={isAdminReports ? 'page' : undefined}
+          className={clsx(itemClasses, isAdminReports ? activeClasses : inactiveClasses)}
+        >
+          <IconNavReports width={21} height={21} />
+          {ar.nav.reports}
+        </Link>
       )}
 
       {!isAuthenticated && (
@@ -117,8 +131,8 @@ export function MobileTabBar() {
         </Link>
       )}
 
-      {/* «حسابي» opens «لوحتي» (84:575), which has the logout. Admins have no account pages yet,
-          so they get a small email + logout panel. */}
+      {/* «حسابي» opens «لوحتي» (84:575), which has the logout. Admins get a small panel: the
+          email, their profile, the admin pages and the logout. */}
       {isAuthenticated && !isAdmin && (
         <Link
           to="/dashboard"

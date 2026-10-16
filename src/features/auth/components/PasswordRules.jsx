@@ -16,7 +16,7 @@ export function PasswordRules({ password = '' }) {
             key={rule.key}
             className={clsx(
               'rounded-full px-[9px] py-1 text-[11.5px] leading-[1.75] font-semibold',
-              isMet ? 'bg-success-soft text-success' : 'bg-inset text-muted',
+              isMet ? 'bg-success-soft text-success' : 'bg-inset text-text-secondary',
             )}
           >
             {ar.auth.passwordRules[rule.key]}
