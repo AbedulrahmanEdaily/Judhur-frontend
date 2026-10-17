@@ -2,10 +2,12 @@ import { useEffect } from 'react';
 import { Provider, useDispatch, useSelector } from 'react-redux';
 import { store } from './store.js';
 import {
-  noticeDismissed,
-  selectNotice,
+  noticesShown,
+  selectNotices,
   selectTheme,
   selectThemeIsExplicit,
+  systemThemeChanged,
+  themeChosenElsewhere,
   THEME_STORAGE_KEY,
 } from '../features/ui/uiSlice.js';
 import { setItem } from '../lib/storage.js';
@@ -17,6 +19,26 @@ import { useToast } from '../components/ui/useToast.js';
 function ThemeSync() {
   const theme = useSelector(selectTheme);
   const isExplicit = useSelector(selectThemeIsExplicit);
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    function handleStorage(event) {
+      if (event.key !== THEME_STORAGE_KEY) return;
+      if (event.newValue === 'light' || event.newValue === 'dark') {
+        dispatch(themeChosenElsewhere(event.newValue));
+      }
+    }
+    const media = window.matchMedia?.('(prefers-color-scheme: dark)');
+    function handleSystemChange(event) {
+      dispatch(systemThemeChanged(event.matches ? 'dark' : 'light'));
+    }
+    window.addEventListener('storage', handleStorage);
+    media?.addEventListener('change', handleSystemChange);
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      media?.removeEventListener('change', handleSystemChange);
+    };
+  }, [dispatch]);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -30,15 +52,15 @@ function ThemeSync() {
 
 /** Shows notices raised outside React (e.g. "session expired") as toasts. */
 function NoticeToasts() {
-  const notice = useSelector(selectNotice);
+  const notices = useSelector(selectNotices);
   const dispatch = useDispatch();
   const toast = useToast();
 
   useEffect(() => {
-    if (!notice) return;
-    toast.show(notice);
-    dispatch(noticeDismissed());
-  }, [notice, toast, dispatch]);
+    if (notices.length === 0) return;
+    for (const notice of notices) toast.show(notice);
+    dispatch(noticesShown(notices.length));
+  }, [notices, toast, dispatch]);
 
   return null;
 }
