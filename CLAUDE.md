@@ -3,7 +3,7 @@
 > Project context for Claude Code working in the **frontend repository**. Read this whole file before writing code.
 > The backend lives in a **separate repository** that you cannot see. Section 6 (API contract) is your only source of truth for the backend — never guess an endpoint, a field name, or a status code.
 >
-> Contract snapshot taken from the backend source on 2026-09-30 (backend `main` + the `feature/Favorite` branch); notifications, my profile and the public seller page added 2026-10-01; security hardening (error `code`, image moderation, limits, rate limits) added 2026-10-04; reports added 2026-10-14; conversations and the real-time hub added 2026-10-15; seller reviews added 2026-10-15; admin users, the admin dashboard, bans and the global rate limit added 2026-10-15 (from the backend source, `main` after `feature/admin-users`); the "final backend" changes added 2026-10-15 (review `rowVersion`, admin notifications, change email, delete account, an unavailable chat participant) and checked against the backend source after `feature/final-backend` was merged.
+> Contract snapshot taken from the backend source on 2026-09-30 (backend `main` + the `feature/Favorite` branch); notifications, my profile and the public seller page added 2026-10-01; security hardening (error `code`, image moderation, limits, rate limits) added 2026-10-04; reports added 2026-10-14; conversations and the real-time hub added 2026-10-15; seller reviews added 2026-10-15; admin users, the admin dashboard, bans and the global rate limit added 2026-10-15 (from the backend source, `main` after `feature/admin-users`); the "final backend" changes added 2026-10-15 (review `rowVersion`, admin notifications, change email, delete account, an unavailable chat participant) and checked against the backend source after `feature/final-backend` was merged; the 2026-10-16 changes (the password change returns tokens, Google re-confirmation, `upTo` on chat reads, reactivation in any state, two decimals, search validation, `413`) added 2026-10-17 from backend `main`.
 >
 > **Read DESIGN.md before any UI work; for anything visual it overrides this file.**
 
@@ -158,7 +158,9 @@ Define colors as CSS variables and expose them to Tailwind with `@theme`. Pull e
 
 Components use the semantic names (`bg-surface`, `text-brand`, `text-muted`), never raw hex values.
 
-**Theme switching:** the `dark` class on `<html>`. Initial value: saved preference in `localStorage` (`judhur.theme` = `light` | `dark`), else `prefers-color-scheme`. Keep the current theme in the `ui` slice and sync it to `<html>` in one effect. Wrap `localStorage` access in `try/catch`.
+**Theme switching:** the `dark` class on `<html>`. Initial value: saved preference in `localStorage` (`judhur.theme` = `light` | `dark`), else `prefers-color-scheme`. Keep the current theme in the `ui` slice and sync it to `<html>` in one effect. Wrap `localStorage` access in `try/catch`. A choice made in another tab is followed (`storage` event), and while the user has not chosen, a change of the system theme is followed too.
+
+**Toasts** raised outside React (`noticeShown`) are queued in the ui slice and all shown, never replacing one another.
 
 ---
 
@@ -209,7 +211,9 @@ VITE_HERE_API_KEY=          # HERE platform API key
 VITE_GOOGLE_CLIENT_ID=      # Google OAuth Web client ID (public); empty → the Google button is hidden
 ```
 
-Real values go in `.env.local` (git-ignored). Read them only in `src/config/env.js` and import from there.
+Real values go in `.env.local` or `.env.development.local` (both git-ignored). The HERE key is **never committed**: the tracked `.env.development` keeps `VITE_HERE_API_KEY=` empty, and the real key lives in `.env.development.local`. Read them only in `src/config/env.js` and import from there.
+
+Production builds take `VITE_API_BASE_URL` and `VITE_HERE_API_KEY` from the build environment (CI variables), never from a committed file. Use separate HERE keys for development and production, each restricted to its own origins. Deployment notes (SPA fallback, the `/hubs/*` WebSocket proxy, cache headers) are in `README.md`.
 
 Exception: the Google OAuth Web client ID is public (it ships in the page anyway), so it is committed in `.env.development` and `.env.production` and works without any local setup. `.env.local` still overrides it.
 
@@ -333,7 +337,9 @@ Keys under `errors` are one of two kinds:
   ```
   Show `title` and `detail`, then refetch.
 - Unhandled server errors: `500` with a generic `title` and a `detail`. Show a generic Arabic "حدث خطأ غير متوقع" plus the `requestId` (small, selectable text) so it can be reported. Every body carries it (backend request #15 is done); still treat it as optional, because a `429` or a middleware `401`/`403` may have no body at all.
-- `429 Too Many Requests` may have an empty body — always handle it by status. **Every endpoint is rate limited** (a fixed one-minute window: **300 requests per signed-in user**, **200 per IP for guests**; the hub is not limited), on top of the tighter per-endpoint limits listed in each section. A `429` carries a `Retry-After` header in whole seconds when the limiter knows it. `baseQueryWithReauth` shows one toast «طلبات كثيرة، حاول بعد قليل» (with the seconds when the header is there), never retries on its own, and a `429` never ends the session (a refresh answered with `429` keeps it).
+- `413 Payload Too Large` — a body over the server limit (1 MB by default, 6 MB on image uploads, 11 MB on the document) answers `413` with the title «حجم الطلب أكبر من المسموح»; `problemDetails.js` shows its own message (`ar.errors.payloadTooLarge`). The uploaders check the file size first, so it is a fallback.
+- `Identity.GoogleUnavailable` — a `500` with that top-level `code` when Google can't be reached; shown as «تسجيل الدخول عبر جوجل غير متاح حاليا».
+- `429 Too Many Requests` may have an empty body — always handle it by status. **Every endpoint is rate limited** (a fixed one-minute window: **300 requests per signed-in user**, **200 per IP for guests**; the hub is not limited), on top of the tighter per-endpoint limits listed in each section. A `429` carries a `Retry-After` header in whole seconds when the limiter knows it. With the header, `baseQueryWithReauth` stores the end time in the ui slice (`rateLimitStarted`) and `RateLimitNotice` shows a countdown banner while every submit button (`Button type="submit"`, `AuthSubmitButton`, `ProfileSubmitButton`, `WizardActions`, the chat composer) stays disabled; without it, one toast «طلبات كثيرة، حاول بعد قليل». It never retries on its own, and a `429` never ends the session (a refresh answered with `429` keeps it).
 - **Banned accounts** (6.19): `login`, `google` and `refresh-token` answer `403` with `code: "Identity.AccountBanned"` and the title «تم حظر حسابك. للاستفسار تواصل مع إدارة جذور.»; any other request with a banned user's token is a `401` (the token is rejected), whose refresh then gets that `403`. A ban also deletes every refresh token of the user.
 - `401`/`403` produced by the auth middleware itself (missing/expired token, wrong role) may have an empty body or a bare ProblemDetails without a meaningful `title`.
 
@@ -514,6 +520,8 @@ Query parameters (all optional; **omit** empty ones instead of sending `=`):
 | `sortDirection` | string | `desc` | `asc` · `desc` |
 | `sellerId` | guid | — | only that seller's listings — the public seller page (6.13) |
 
+- Validation: `page` 1–10000, `maxPrice` ≥ `minPrice` when both are sent, `searchTerm` ≤ 100 characters. `readSearchFilters` swaps an inverted price range and cuts the term to 100 (the search inputs have `maxLength`), so a shared URL still works; a `400` shows its message with «مسح الفلاتر» instead of a retry. There is **no area filter**.
+
 - `200` → `PaginatedList<PropertySummary>`.
 - Returns approved **and** active listings only. Without a `propertyStatus` filter this **includes `Sold` and `Rented`** — show a "تم البيع" / "تم التأجير" ribbon on those cards.
 - **Several values:** a repeatable param is sent once per value (`?city=نابلس&city=جنين&paymentType=Cash`), never comma-joined. Values of one filter are **OR**, different filters are **AND**. A single value still works.
@@ -590,7 +598,7 @@ Used for the owner's listing page and to pre-fill the edit form. Works in every 
 }
 ```
 
-- Rules: `0 < price ≤ 1,000,000,000,000` (`400` `PropertyErrors.PriceTooHigh`), `0 < area ≤ 10,000,000` (`400` `PropertyErrors.AreaTooHigh`), `propertyStatus` **must be `ForSale` or `ForRent`**, latitude −90…90, longitude −180…180, all enums must be valid names. The same limits apply to `PUT /details`; the forms check them too and put the two codes on the price / area fields.
+- Rules: `0 < price ≤ 1,000,000,000,000` (`400` `PropertyErrors.PriceTooHigh`), `0 < area ≤ 10,000,000` (`400` `PropertyErrors.AreaTooHigh`), `propertyStatus` **must be `ForSale` or `ForRent`**, latitude −90…90, longitude −180…180, all enums must be valid names. Price and area take **at most two decimals** (`400` `PropertyErrors.PriceTooPrecise` / `PropertyErrors.AreaTooPrecise`). The same limits apply to `PUT /details`; the forms check them too (Arabic digits and «٫» are read as Latin) and put the four codes on the price / area fields. Prices are shown with up to two decimals.
 - There is **no** `ownershipDocumentUrl` — the document and the images are uploaded after creation (6.7).
 - `201` → the details shape with `images: []` and **no** `user`, plus a `Location` header pointing to `GET /User/Properties/mine/{id}`. The listing starts `Pending`.
 - After `201`, continue to the media step (images + document) with the returned `id`. Don't navigate to `/properties/{id}` (it would 404 until approved).
@@ -660,14 +668,14 @@ All are `POST` with **no body** and return `204`.
 | Route | Allowed when | Otherwise |
 |---|---|---|
 | `/{id}/deactivate` | listing is active (any moderation state) | `409` already inactive |
-| `/{id}/reactivate` | approved **and** inactive | `409` |
+| `/{id}/reactivate` | inactive (any moderation state) | `409` already active |
 | `/{id}/resubmit` | `Rejected` | `409` |
 | `/{id}/mark-sold` | approved **and** `ForSale` | `409` |
 | `/{id}/mark-rented` | approved **and** `ForRent` | `409` |
 
 - `mark-sold` / `mark-rented` are **irreversible** → confirm dialog.
 - `resubmit` clears the rejection reason and puts the listing back in the admin queue. Deleting an image does not reset moderation, so after such a fix the owner resubmits. The button stays disabled until the readiness checklist is complete.
-- `reactivate` is offered for any approved, inactive listing — a sold or rented one included.
+- `reactivate` is offered for every inactive listing (`canReactivateListing = !isActive`), pending, rejected, sold or rented included. A paused listing shows «موقوف» next to its state badge (`OwnerStateBadges`).
 
 #### `DELETE /{propertyId}`
 
@@ -756,8 +764,9 @@ Only `Pending` listings that pass the readiness checklist (6.8) appear here.
 
 - `204` → back to the queue with a success toast.
 - `400` with one of `PropertyErrors.MinImagesRequired`, `PropertyErrors.MainImageRequired`, `PropertyErrors.OwnershipDocumentRequired`.
-- `409` `code: "Properties.ChangedSinceReview"` — the owner changed the listing after the review page was loaded → «تم تعديل العقار بعد فتحك للصفحة، راجعه من جديد» and the review page is fetched again (a new `rowVersion`). Any other `409` (already approved) · `404`.
-- The queue's quick «موافقة» / «رفض» have no `rowVersion` in the list: they fetch `GET /{propertyId}` first and send its `rowVersion`.
+- `409` `code: "Properties.ChangedSinceReview"` — the owner changed the listing after the review page was loaded → «تم تعديل العقار بعد فتحك للصفحة، راجعه من جديد» and the review page is fetched again (a new `rowVersion`). `409` `PropertyErrors.CannotApproveRejectedProperty` (a rejected listing must be resubmitted by its owner first) · any other `409` (already approved) · `404`.
+- While the listing has changed since the page was opened, approve and reject stay disabled under «تم تعديل العقار، راجع التغييرات» until the admin presses «راجعت التغييرات».
+- The queue's quick «موافقة» / «رفض» have no `rowVersion` in the list: they fetch `GET /{propertyId}` first and send its `rowVersion`. The quick «موافقة» asks first (a `ConfirmDialog`); a `409` refetches the queue.
 
 #### `POST /{propertyId}/reject`
 
@@ -825,7 +834,7 @@ Only `Pending` listings that pass the readiness checklist (6.8) appear here.
 #### `POST /me/email` — change the email
 
 ```json
-{ "newEmail": "string (valid email, ≤256)", "password": "string? (required when hasPassword)" }
+{ "newEmail": "string (valid email, ≤256)", "password": "string? (required when hasPassword)", "googleIdToken": "string? (required when !hasPassword)" }
 ```
 
 - `204` → «أرسلنا رابط تأكيد إلى بريدك الجديد». Nothing changes until the link is opened; the current email keeps working. Rate limit: **3 / 15 min** → `429`.
@@ -845,13 +854,13 @@ Only `Pending` listings that pass the readiness checklist (6.8) appear here.
 #### `DELETE /me` — delete my account
 
 ```json
-{ "password": "string (only when hasPassword; Google-only accounts send no body)" }
+{ "password": "string (when hasPassword)", "googleIdToken": "string (when !hasPassword)" }
 ```
 
 - `204` → the session is ended, the whole API cache reset, home with «تم حذف حسابك».
 - Effects (listed in the confirm dialog): the listings, favorites, notifications and photos are deleted; conversations and reviews stay, shown as «مستخدم محذوف» (no photo — the default avatar).
 - `400` `Identity.CurrentPasswordRequired` / `Identity.InvalidPassword` (→ the password field) · `404` the account is already gone · `409` `Users.AdminCannotDeleteAccount` · `429` after **5 / 15 min**. The email can be registered again afterwards.
-- UI: the danger zone at the bottom of `/profile` (Figma «منطقة الخطر» 79:1689), hidden for admins; a strong confirm (the password, or typing «حذف حسابي» for a Google-only account).
+- UI: the danger zone at the bottom of `/profile` (Figma «منطقة الخطر» 79:1689), hidden for admins; a strong confirm (the password, or for a Google-only account the Google re-confirmation and then typing «حذف حسابي»).
 
 #### Preferences — not in the API yet
 
@@ -860,12 +869,17 @@ Only `Pending` listings that pass the readiness checklist (6.8) appear here.
 #### `PUT /me/password`
 
 ```json
-{ "currentPassword": "string? (required when hasPassword)", "newPassword": "string (register rules, different from the current one)" }
+{ "currentPassword": "string? (required when hasPassword)", "newPassword": "string (register rules, different from the current one)", "googleIdToken": "string? (required when !hasPassword)" }
 ```
 
-- `204`; the session stays valid. Success toast.
+- `200` → a new `TokenResponse`. Every **other** session of the account is ended; this one continues with the returned tokens (`sessionRefreshed`, no cache reset). Success toast «تم تغيير كلمة المرور وتسجيل الخروج من الأجهزة الأخرى».
 - `hasPassword: true` → «تغيير كلمة المرور»: current, new, confirm. `400` `Identity.CurrentPasswordRequired` / `Identity.PasswordMismatch` → under the current password field.
 - `hasPassword: false` (a Google account) → «تعيين كلمة مرور»: new and confirm only; after success set `hasPassword` to `true` in the cache.
+
+#### Google re-confirmation (Google-only accounts)
+
+- Setting a password, changing the email and deleting the account send a fresh `googleIdToken` when `hasPassword` is `false`. Without one: `400` `Identity.GoogleReauthenticationRequired`; a bad or other-account token: `400` `Identity.GoogleReauthenticationFailed` (both under `errors`); Google down: `500` `Identity.GoogleUnavailable`.
+- UI: the form or dialog shows `GoogleReauthPrompt` («أكّد هويتك عبر Google») instead of the password field. It calls `startGoogleReauth(action)` (`purpose: 'reauth'`, `action`: `setPassword` / `changeEmail` / `deleteAccount`, `returnTo: '/profile'`), the same redirect as sign-in (8.6). `/auth/google` keeps the token in memory only (`keepGoogleReauth`, never storage), makes **no** `POST /google`, and goes back to `/profile`, which reopens that form or dialog (`peekGoogleReauth`). The token is dropped after a success, a `GoogleReauthentication*` error, or a page reload.
 - `429` after 5 tries in 15 minutes → the rate-limit message.
 
 ### 6.13 Public seller page — `/api/v1/User/Sellers` (public)
@@ -916,20 +930,21 @@ A conversation is one buyer and one seller about one listing.
 | `GET` | `/{id}` | `200` `ConversationDetails` | `404` missing or not yours |
 | `GET` | `/{id}/messages?before=&limit=` | `200` `{ items: Message[] (newest first), hasMore }` | `400` `ConversationErrors.InvalidCursor` |
 | `POST` | `/{id}/messages` `{ content }` | `201` `Message` | `400` (content 1–2000 after trim) · `409` `code: "Conversations.ParticipantUnavailable"` (the other side was banned or deleted) → the composer is disabled with «لم يعد بإمكانك مراسلة هذا المستخدم» · `429` → «أرسلت رسائل كثيرة، انتظر قليلًا» |
-| `POST` | `/{id}/read` | `204` | `404` |
+| `POST` | `/{id}/read?upTo=<message id>` | `204` (also when nothing was unread) | `404` missing, not yours, or `upTo` not a message of it |
 
 - **Messages paging:** the first page has no `before`; an older page sends `before` = the id of the oldest message shown. `limit` defaults to 30 (max 100). RTK Query `getMessages` is an **infinite query** (`useGetMessagesInfiniteQuery`): `getNextPageParam` returns the oldest id while `hasMore`. New messages (sent, or pushed by the hub) are added to the cached first page (`addMessageToChat`, deduped by id) — never by refetching every page.
 - **Contact the seller:** «تواصل مع البائع» on the public details page (the price card from 1280px up, the mobile action bar below) for a signed-in `User` who is not the owner; guests get a login link that comes back; admins and the owner see the phone button only. It opens a dialog with the message prefilled «مرحبًا، هل العقار ما زال متاحًا؟». Success → `/messages/{conversationId}`; invalidates `Conversations` and `UnreadMessages`.
 - **Inbox `/messages`:** per conversation the other party (avatar + name, «مستخدم محذوف» when missing), the listing thumbnail + title, «الإعلان لم يعد متاحًا» when `!property.isAvailable`, the preview prefixed «أنت: » when `lastMessageIsMine`, the relative time, the unread count and a role chip (`myRole`: مشترٍ / بائع). 20 per page (`?page=`). From 1280px up the list and the open chat sit side by side (Figma 76:968); on phones the list and the chat are separate pages (84:530).
 - **Chat `/messages/:conversationId`:** header from `GET /{id}` (the other party, a property card linking to `/properties/{property.id}` or the unavailable note); the messages reversed for display (oldest at the top), mine at the end in brand, theirs at the start (Figma Chat Bubble 47:799), the time, ✓ / ✓✓ on mine (`readAtUtc`), a day pill when the day changes. Scrolling to the top (or «تحميل رسائل أقدم») loads the older page and keeps the scroll position. Composer: Enter sends, Shift+Enter adds a line, disabled while sending, counter from 1800 to 2000; the answer is added to the chat.
-- **Read:** when the chat is open and visible and has unread messages from the other party (on open and on every new one), `POST /{id}/read`; the cache marks them read at once, then `UnreadMessages` and `Conversations` are invalidated.
+- **Read:** when the chat is open and visible and has unread messages from the other party (on open and on every new one), `POST /{id}/read?upTo=` the id of the newest message from them that is shown, so a message arriving at the same moment stays unread; the cache marks only the messages sent up to it at once (undone on failure), then `UnreadMessages` and `Conversations` are invalidated. The same `upTo` is never sent twice.
 - **Unread badge:** `useUnreadMessages()` (`GET /unread-count`) on the navbar chat icon, the account sidebar «المحادثات», the mobile tab bar and the mobile dashboard row; refetched on focus, polled every 60 s only while the hub is disconnected.
 
 ### 6.17 Real time — SignalR hub `/hubs/chat`
 
 - **One connection** (`src/lib/realtime/chatHub.js`) to `${API_BASE_URL}/hubs/chat`, built with `HubConnectionBuilder().withUrl(url, { accessTokenFactory }).withAutomaticReconnect()`. `accessTokenFactory` is `freshAccessToken(store)` from `baseQuery.js`: the existing refresh (mutex + cross-tab lock) runs first when the token has expired or is about to. In development the Vite proxy forwards `/hubs` with `ws: true`.
 - SignalR sends the token as `access_token` in the WebSocket URL (browsers can't set headers there) — the one place a token is in a URL, required by the protocol; never log that URL.
-- **Lifecycle:** started on app start when a session exists and on `sessionStarted` / `sessionRefreshed` (a session that arrives from another tab); stopped on `sessionEnded`. The `@microsoft/signalr` library is imported dynamically the first time a session exists, so guests never download it. The server closes the connection when the token expires: `onclose` starts it again with a fresh token while still signed in (retry after 2 s, then up to 30 s). Admins connect too (notifications).
+- **Lifecycle:** started on app start when a session exists and on `sessionStarted` / `sessionRefreshed` (a session that arrives from another tab); stopped on `sessionEnded`. The `@microsoft/signalr` library is imported dynamically the first time a session exists, so guests never download it. The server closes the connection when the token expires: `onclose` starts it again with a fresh token while still signed in (retry after 2 s, then up to 30 s). If the hub refuses the token (`401`, also when it only shows in the negotiate error text), the client forces **one** refresh and connects again; a second `401` stops the hub until the next session change. Admins connect too (notifications).
+- Payloads omit null fields, like the REST answers. A `messageReceived` for the open chat that arrives before its first page is loaded is held and added once the page is in the cache.
 - `ui.isRealtimeConnected` (ui slice) says whether the hub is connected; the two unread counts poll only while it is `false`.
 - **Events from the server:**
 
@@ -1095,7 +1110,8 @@ src/
       listingState.js          # owner state (published/paused/pending/rejected/sold/rented) + readiness checklist
       pages/                   # HomePage, SearchPage, PropertyDetailsPage, CreatePropertyPage, MyPropertiesPage,
                                # MyPropertyPage, EditPropertyPage
-      components/              # PropertyCard, PropertyFilters, PropertyGallery, SellerCard, ModerationBadge, ...
+      components/              # PropertyCard, PropertyFilters, PropertyGallery, SellerCard, ModerationBadge, OwnerStateBadges,
+                               # ListingInput, ListingSelect, ListingTextarea (the form fields), ...
     favorites/
       favoritesApi.js          # favorites list, ids, add, remove (6.9) — optimistic on the ids cache
       useFavoriteIds.js        # the ids as a Set (createSelector + selectFromResult), skipped for guests/admins
@@ -1105,7 +1121,8 @@ src/
       profileApi.js            # getMe, update, photo upload/delete, password (6.12) — answers patch the getMe cache
       useMyProfile.js          # the signed-in profile (GET /me), skipped for guests
       components/              # ProfileDetailsForm, ProfilePhotoRow, PasswordForm, ProfilePasswordInput, ProfileSubmitButton,
-                               # ChangeEmailDialog, DeleteAccountSection, DeleteAccountDialog, PreferencesSection, PreferenceRow
+                               # ChangeEmailDialog, DeleteAccountSection, DeleteAccountDialog, PreferencesSection, PreferenceRow,
+                               # GoogleReauthPrompt
       pages/ProfilePage.jsx
     sellers/
       sellersApi.js            # public seller profile (6.13)
@@ -1145,8 +1162,9 @@ src/
                                # StatCard, UserRow, UserStatusBadge (ban / unban use ConfirmDialog)
     ui/uiSlice.js              # theme (+ future UI-only state)
   components/
-    ui/                        # Button, Input, Select + SelectMenu (the one dropdown list), Textarea, Checkbox, Switch, Modal, ConfirmDialog, Badge, VerifiedBadge,
-                               # Spinner, Skeleton, EmptyState, ErrorState, Pagination, Toast
+    ui/                        # Button, SelectMenu (the one dropdown list), Checkbox, Switch, Modal, ConfirmDialog, Badge, VerifiedBadge,
+                               # Spinner, Skeleton, EmptyState, ErrorState, Pagination, Toast, RetryBanner (refetch failed, old data kept),
+                               # RateLimitNotice (the Retry-After countdown)
     layout/                    # AppLayout, Header, Footer, MobileTopBar, MobileTabBar, AccountShell (sidebar, reads the listings count), PageTopBar
     form/                      # FormField wrappers binding RHF + label + error text
   routes/
@@ -1270,12 +1288,13 @@ Call `POST /logout` with the refresh token read at click time (`getState`), then
 - Before leaving, `{ state, returnTo, startPath }` is kept in `sessionStorage` (no token). `returnTo` is the login page's `?redirect=` (or `/`); `startPath` is the page to go back to.
 - Google returns to `/auth/google` (`GoogleCallbackPage`, outside `RequireGuest`). `readGoogleCallback` reads `id_token` from the URL fragment, checks the `state`, removes the fragment from the address bar at once, and clears the stored attempt. A cancel on Google (`error=access_denied`) or a wrong/missing state shows a message and «رجوع لتسجيل الدخول», with no API call.
 - The idToken goes to `googleSignIn({ idToken })` as is (never decoded). Success → `sessionStarted` → on to `returnTo`. `Identity.GoogleRegistrationIncomplete` → `GoogleProfileStep` (phone + city, `googleProfileSchema`) on the same page, with the token in `useState` only.
+- The same redirect re-confirms a Google-only account on `/profile` (`purpose: 'reauth'`, 6.12): the callback keeps the token in memory, skips `POST /google`, and goes back to `/profile`; a signed-in user who lands on `/auth/google` without a reauth attempt is not signed in again.
 - Without `VITE_GOOGLE_CLIENT_ID` the button and the divider are hidden.
 - Google Cloud console, OAuth Web client: add `<origin>/auth/google` under **Authorized redirect URIs** for each frontend origin (`http://localhost:5173/auth/google` in development). Without it Google answers `redirect_uri_mismatch`.
 
 ### 8.7 Route guards
 
-- `RequireAuth` → redirect to `/login?redirect=<current path>`; after login, return there.
+- `RequireAuth` → redirect to `/login?redirect=<current path>`; after login, return there. `safeRedirectPath` drops control characters and accepts only a path inside the app (it must start with `/`, never `//` or `/\`).
 - `RequireGuest` → logged-in users skip `/login` and `/register`.
 - `RequireRole role="Admin"` → admin area. Also hide seller actions ("أضف عقاراً") and the favorite heart from admins — admins never post, own, or favorite listings.
 
@@ -1287,7 +1306,7 @@ Call `POST /logout` with the refresh token read at click time (`getState`), then
 - Schemas **mirror the backend rules in section 6 exactly** (lengths, regexes, required fields), with Arabic messages. The client check is for UX; the server stays the authority.
 - On submit error, run the error through `problemDetails.js`: `fieldErrors` → `setError(field, { message })`; anything else → a form-level alert above the submit button.
 - Disable the submit button and show a spinner while submitting. Never allow double submit.
-- Enum fields are dropdowns fed from `constants.js` (`ListingSelect` / `Select`, both on the shared `SelectMenu` listbox, bound with `useController`): Arabic label shown, API value submitted. No native `<select>` — its browser-drawn list is unreadable in dark mode.
+- Enum fields are dropdowns fed from `constants.js` (`ListingSelect`, on the shared `SelectMenu` listbox, bound with `useController`): Arabic label shown, API value submitted. No native `<select>` — its browser-drawn list is unreadable in dark mode.
 - Numbers (`price`, `area`) with `valueAsNumber` or a zod `coerce`; send numbers, not strings.
 - Optional text fields: send `null` (not `""`) when empty.
 - Password fields: show/hide toggle and a live checklist of the four rules.
@@ -1431,7 +1450,7 @@ The contract gap list between this repo and the backend, at the repo root. Forma
 
 When Abdulrahman confirms something is done: mark it `done`, update section 6 of this file, then remove the workaround.
 
-### Status on 2026-10-01
+### Status on 2026-10-17
 
 | # | Title | Status |
 |---|---|---|
@@ -1449,9 +1468,12 @@ When Abdulrahman confirms something is done: mark it `done`, update section 6 of
 | 12 | Section 6.14 features | partly done — notifications, profile, seller page, reports, conversations, real time, reviews, admin users, the dashboard, change email and delete account done; see 6.14 for the rest |
 | 17 | Account preferences | open — email notifications, phone visibility |
 | 13 | Register without a user name | done — the email is the login |
-| 14 | Password reset by link or code | open |
+| 14 | Password reset by link or code | done — kept as a code, the copy says code |
 | 15 | `requestId` on every ProblemDetails | done — with `instance`, on every error |
 | 16 | Several values per search filter | done — city, type, status, payment, land class, document; ≤ 20 cities |
+| 18 | Chat participant availability | open — a banned party is only known after a `409` |
+| 19 | Area range in search | open |
+| 20 | 2026-10-16 contract notes | done — `upTo` is a message id, `PropertyErrors.*` decimal codes, no `isDeleted` |
 
 ---
 
