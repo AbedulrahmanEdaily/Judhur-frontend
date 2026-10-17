@@ -25,14 +25,18 @@ const PARTICIPANT_UNAVAILABLE = 'Conversations.ParticipantUnavailable';
  * the box grows with the text. The sent message comes back from the server into the chat.
  * When the other side can no longer be messaged (409 Conversations.ParticipantUnavailable),
  * the box and the button are disabled with «لم يعد بإمكانك مراسلة هذا المستخدم» (the chat
- * page mounts a new composer per conversation).
+ * page mounts a new composer per conversation). A deleted account (no `otherParty`) closes it
+ * from the first render.
  *
- * @param {{ conversationId: string }} props
+ * @param {{ conversationId: string, isParticipantGone?: boolean }} props
  */
-export function ChatComposer({ conversationId }) {
+export function ChatComposer({ conversationId, isParticipantGone = false }) {
   const [sendMessage] = useSendMessageMutation();
-  const [failure, setFailure] = useState(null);
-  const [isClosed, setIsClosed] = useState(false);
+  const [sendFailure, setFailure] = useState(null);
+  const [wasRefused, setWasRefused] = useState(false);
+  const isClosed = isParticipantGone || wasRefused;
+  let failure = sendFailure;
+  if (!failure && isParticipantGone) failure = text.participantUnavailable;
   const inputId = useId();
   const errorId = useId();
 
@@ -60,7 +64,7 @@ export function ChatComposer({ conversationId }) {
     } catch (error) {
       const problem = toProblem(error);
       if (problem.code === PARTICIPANT_UNAVAILABLE) {
-        setIsClosed(true);
+        setWasRefused(true);
         setFailure(text.participantUnavailable);
       } else if (problem.status === 429) {
         setFailure(text.tooMany);

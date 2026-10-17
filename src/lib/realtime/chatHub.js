@@ -31,6 +31,7 @@ let retryDelay = FIRST_RETRY_MS;
 let retryTimer = null;
 // The chat the user has open, if any — its new messages go straight into the page.
 let activeConversationId = null;
+let bufferedMessages = [];
 
 /** The chat page tells the hub which conversation is on screen. */
 export function setActiveConversation(conversationId) {
@@ -39,13 +40,33 @@ export function setActiveConversation(conversationId) {
 
 export function clearActiveConversation(conversationId) {
   if (activeConversationId === conversationId) activeConversationId = null;
+  bufferedMessages = bufferedMessages.filter(
+    (message) => message.conversationId !== conversationId,
+  );
+}
+
+export function takeBufferedMessages(conversationId) {
+  const taken = bufferedMessages.filter((message) => message.conversationId === conversationId);
+  bufferedMessages = bufferedMessages.filter(
+    (message) => message.conversationId !== conversationId,
+  );
+  return taken;
+}
+
+function isChatLoaded(conversationId) {
+  const chat = conversationsApi.endpoints.getMessages.select(conversationId)(store.getState());
+  return Boolean(chat?.data);
 }
 
 /** @param {import('../../api/types.js').Message} message */
 function handleMessageReceived(message) {
   if (message.conversationId === activeConversationId) {
     // The chat page sees the unread message and marks it read while visible.
-    store.dispatch(addMessageToChat(message.conversationId, message));
+    if (isChatLoaded(message.conversationId)) {
+      store.dispatch(addMessageToChat(message.conversationId, message));
+    } else {
+      bufferedMessages.push(message);
+    }
   } else if (!message.isMine) {
     store.dispatch(
       conversationsApi.util.updateQueryData('getUnreadMessagesCount', undefined, (unread) => {
