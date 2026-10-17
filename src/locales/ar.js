@@ -220,8 +220,8 @@ export const ar = {
     },
     forgot: {
       title: 'نسيت كلمة المرور؟',
-      subtitle: 'اكتب بريدك وبنبعتلك رابط آمن تعيّن منه كلمة مرور جديدة.',
-      submit: 'أرسل رابط الاستعادة',
+      subtitle: 'اكتب بريدك وبنبعتلك رمز من 6 أرقام تعيّن فيه كلمة مرور جديدة.',
+      submit: 'أرسل رمز الاستعادة',
       backToLogin: 'رجوع لتسجيل الدخول',
     },
     // not in Figma — the code + new password step.
@@ -786,7 +786,6 @@ export const ar = {
       confirm: 'أكّد هويتك عبر Google',
       confirmed: 'تم تأكيد هويتك عبر Google، كمّل الآن.',
     },
-    loadError: 'ما قدرنا نجيب بياناتك',
   },
   sellers: {
     // Figma "ملف البائع — زائر" (73:1373)

@@ -15,7 +15,6 @@ export { IconToastUndo } from './IconToastUndo.jsx';
 export { IconTrash } from './IconTrash.jsx';
 export { IconPause } from './IconPause.jsx';
 export { IconWarning20 } from './IconWarning20.jsx';
-export { IconShield20 } from './IconShield20.jsx';
 export { IconCheckSmall13 } from './IconCheckSmall13.jsx';
 export { IconBackArrow } from './IconBackArrow.jsx';
 export { IconEye } from './IconEye.jsx';
