@@ -893,6 +893,7 @@ export const ar = {
     loadingOlder: 'جاري تحميل الرسائل الأقدم…',
     chatStart: 'بداية المحادثة',
     messagesLabel: 'الرسائل',
+    newMessage: (content) => `رسالة جديدة: ${content}`,
     inputLabel: 'نص الرسالة',
     sendMessage: 'إرسال الرسالة',
     sentMark: 'أُرسلت',
@@ -1030,6 +1031,8 @@ export const ar = {
       adminNote: 'هذا حساب مشرف — ما بينحظر.',
       ban: 'حظر الحساب',
       unban: 'إلغاء الحظر',
+      banFor: (name) => `حظر حساب ${name}`,
+      unbanFor: (name) => `إلغاء حظر ${name}`,
       banDialog: {
         title: (name) => `حظر ${name}؟`,
         description:

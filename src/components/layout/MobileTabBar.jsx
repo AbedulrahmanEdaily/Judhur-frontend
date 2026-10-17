@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { Link, useLocation } from 'react-router';
 import clsx from 'clsx';
@@ -38,6 +38,27 @@ export function MobileTabBar() {
   const user = useSelector(selectCurrentUser);
   const { logout, isLoggingOut } = useLogout();
   const [isAccountOpen, setIsAccountOpen] = useState(false);
+  const accountRef = useRef(null);
+  const accountTriggerRef = useRef(null);
+  const accountPanelId = useId();
+
+  useEffect(() => {
+    if (!isAccountOpen) return undefined;
+    function handlePointerDown(event) {
+      if (!accountRef.current.contains(event.target)) setIsAccountOpen(false);
+    }
+    function handleKeyDown(event) {
+      if (event.key !== 'Escape') return;
+      setIsAccountOpen(false);
+      accountTriggerRef.current?.focus();
+    }
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isAccountOpen]);
   const unreadMessages = useUnreadMessages();
   const isMessages = pathname.startsWith('/messages');
   const isHome = pathname === '/';
@@ -145,18 +166,23 @@ export function MobileTabBar() {
       )}
 
       {isAuthenticated && isAdmin && (
-        <div className="relative flex flex-1">
+        <div ref={accountRef} className="relative flex flex-1">
           <button
+            ref={accountTriggerRef}
             type="button"
             onClick={() => setIsAccountOpen(!isAccountOpen)}
             aria-expanded={isAccountOpen}
+            aria-controls={accountPanelId}
             className={clsx(itemClasses, inactiveClasses)}
           >
             <IconTabAccount />
             {ar.nav.tabAccount}
           </button>
           {isAccountOpen && (
-            <div className="absolute end-0 bottom-full mb-3 w-64 rounded-md border border-border bg-raised p-2 shadow-menu">
+            <div
+              id={accountPanelId}
+              className="absolute end-0 bottom-full mb-3 w-64 rounded-md border border-border bg-raised p-2 shadow-menu"
+            >
               <div className="px-3 py-2">
                 <p className="text-caption text-muted">{ar.auth.account.signedInAs}</p>
                 <p className="truncate text-body-sm text-text">{user?.email}</p>
