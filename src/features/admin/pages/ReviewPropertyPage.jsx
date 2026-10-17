@@ -5,6 +5,7 @@ import { IconCheckSmall13, IconReject17, IconStepCheck } from '../../../componen
 import { Avatar } from '../../../components/ui/Avatar.jsx';
 import { EmptyState } from '../../../components/ui/EmptyState.jsx';
 import { ErrorState } from '../../../components/ui/ErrorState.jsx';
+import { RetryBanner } from '../../../components/ui/RetryBanner.jsx';
 import { Skeleton } from '../../../components/ui/Skeleton.jsx';
 import { useToast } from '../../../components/ui/useToast.js';
 import { formatArea, formatPrice, formatRelativeTime } from '../../../lib/format.js';
@@ -59,6 +60,18 @@ export default function ReviewPropertyPage() {
   const [approveProperty, { isLoading: isApproving }] = useApprovePropertyMutation();
   const [checks, setChecks] = useState(NO_CHECKS);
   const [propertyToReject, setPropertyToReject] = useState(null);
+  const [reviewed, setReviewed] = useState(null);
+  if (property && reviewed?.id !== property.id) {
+    setReviewed({ id: property.id, rowVersion: property.rowVersion });
+  }
+  const hasChangedSinceReview = Boolean(
+    property && reviewed?.id === property.id && reviewed.rowVersion !== property.rowVersion,
+  );
+
+  function acknowledgeChanges() {
+    setReviewed({ id: property.id, rowVersion: property.rowVersion });
+    setChecks(NO_CHECKS);
+  }
 
   // The document link must never be used after it expires: fetch a new one just before.
   const hasDocumentLink = Boolean(property?.ownershipDocumentUrl);
@@ -95,7 +108,7 @@ export default function ReviewPropertyPage() {
     );
   }
 
-  if (error) {
+  if (error && !property) {
     const problem = toProblem(error);
     let content;
     if (problem.status === 404) {
@@ -140,6 +153,22 @@ export default function ReviewPropertyPage() {
 
   return (
     <div className="min-h-full bg-surface">
+      {error && <RetryBanner onRetry={refetch} />}
+      {hasChangedSinceReview && (
+        <div
+          role="alert"
+          className="flex flex-wrap items-center gap-x-3 gap-y-1.5 bg-warning-soft px-4 py-3 text-[13.5px] leading-[1.72] font-semibold text-text xl:px-[70px]"
+        >
+          <span className="flex-1">{text.changedSinceOpened}</span>
+          <button
+            type="button"
+            onClick={acknowledgeChanges}
+            className="rounded-md border border-border-strong bg-raised px-3.5 py-1.5 text-[13px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+          >
+            {text.changesReviewed}
+          </button>
+        </div>
+      )}
       {/* Header (81:834). */}
       <div className="flex flex-wrap items-center gap-3 bg-bg px-4 pt-6 pb-[18px] xl:px-[70px]">
         <div className="flex min-w-0 flex-1 flex-col gap-[3px]">
@@ -186,7 +215,7 @@ export default function ReviewPropertyPage() {
                   <button
                     type="button"
                     onClick={handleApprove}
-                    disabled={isApproving}
+                    disabled={isApproving || hasChangedSinceReview}
                     aria-busy={isApproving || undefined}
                     className="flex items-center justify-center gap-[9px] rounded-md bg-brand py-3.5 text-[14.5px] leading-[1.74] font-semibold text-inverse transition-colors hover:bg-brand-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:opacity-60"
                   >
@@ -196,7 +225,7 @@ export default function ReviewPropertyPage() {
                   <button
                     type="button"
                     onClick={() => setPropertyToReject(property)}
-                    disabled={isApproving}
+                    disabled={isApproving || hasChangedSinceReview}
                     className="flex items-center justify-center gap-[9px] rounded-md bg-danger-soft py-3.5 text-[14.5px] leading-[1.74] font-semibold text-danger focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:opacity-60"
                   >
                     {text.rejectWithReason}
