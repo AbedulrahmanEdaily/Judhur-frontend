@@ -1,5 +1,5 @@
 import { baseApi } from '../../api/baseApi.js';
-import { freshAccessToken } from '../../api/baseQuery.js';
+import { forceRefresh, freshAccessToken } from '../../api/baseQuery.js';
 import { API_BASE_URL } from '../../config/env.js';
 import { selectAuth, selectIsAuthenticated, sessionEnded } from '../../features/auth/authSlice.js';
 import {
@@ -29,6 +29,7 @@ let connectedUserId = null;
 let hasConnectedBefore = false;
 let retryDelay = FIRST_RETRY_MS;
 let retryTimer = null;
+let hasRetriedUnauthorized = false;
 // The chat the user has open, if any — its new messages go straight into the page.
 let activeConversationId = null;
 let bufferedMessages = [];
@@ -146,16 +147,35 @@ function scheduleStart() {
   }, retryDelay);
 }
 
+function isUnauthorized(error) {
+  if (error?.statusCode === 401) return true;
+  return String(error?.message ?? '').includes("Status code '401'");
+}
+
+async function retryWithNewToken(current) {
+  if (hasRetriedUnauthorized) {
+    stopRealtime();
+    return;
+  }
+  hasRetriedUnauthorized = true;
+  await forceRefresh(store);
+  if (current !== connection || !selectIsAuthenticated(store.getState())) return;
+  connect();
+}
+
 async function connect() {
   const current = connection;
   if (!current) return;
   try {
     await current.start();
-  } catch {
-    if (current === connection) scheduleStart();
+  } catch (error) {
+    if (current !== connection) return;
+    if (isUnauthorized(error)) retryWithNewToken(current);
+    else scheduleStart();
     return;
   }
   if (current !== connection) return; // stopped while starting
+  hasRetriedUnauthorized = false;
   retryDelay = FIRST_RETRY_MS;
   setConnected(true);
   if (hasConnectedBefore) catchUp();
@@ -165,7 +185,7 @@ async function connect() {
 function createConnection() {
   const created = new signalr.HubConnectionBuilder()
     // The access token goes in the WebSocket URL, so nothing about the connection is logged.
-    .withUrl(HUB_URL, { accessTokenFactory: () => freshAccessToken(store) })
+    .withUrl(HUB_URL, { accessTokenFactory: () => freshAccessToken(store), withCredentials: false })
     .withAutomaticReconnect()
     .configureLogging(signalr.LogLevel.None)
     .build();
@@ -195,6 +215,7 @@ export function stopRealtime() {
   connection = null;
   connectedUserId = null;
   hasConnectedBefore = false;
+  hasRetriedUnauthorized = false;
   retryDelay = FIRST_RETRY_MS;
   clearTimeout(retryTimer);
   retryTimer = null;

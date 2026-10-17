@@ -182,23 +182,31 @@ async function refreshUnlessReplaced(api, extraOptions, staleToken) {
  *
  * @param {{ getState: () => any, dispatch: (action: any) => any }} store
  */
+function refreshApiFor(store) {
+  return {
+    getState: store.getState,
+    dispatch: store.dispatch,
+    signal: new AbortController().signal,
+    abort: () => {},
+    extra: undefined,
+    endpoint: 'refreshToken',
+    type: 'mutation',
+  };
+}
+
 export async function freshAccessToken(store) {
   await refreshMutex.waitForUnlock();
   const { accessToken, expiresOnUtc } = selectAuth(store.getState());
   if (accessToken && expiresSoon(expiresOnUtc)) {
-    // The BaseQueryApi fields fetchBaseQuery reads, for the refresh request.
-    const api = {
-      getState: store.getState,
-      dispatch: store.dispatch,
-      signal: new AbortController().signal,
-      abort: () => {},
-      extra: undefined,
-      endpoint: 'refreshToken',
-      type: 'mutation',
-    };
-    await refreshUnlessReplaced(api, {}, accessToken);
+    await refreshUnlessReplaced(refreshApiFor(store), {}, accessToken);
   }
   return selectAuth(store.getState()).accessToken;
+}
+
+export async function forceRefresh(store) {
+  await refreshMutex.waitForUnlock();
+  const { accessToken } = selectAuth(store.getState());
+  if (accessToken) await refreshUnlessReplaced(refreshApiFor(store), {}, accessToken);
 }
 
 /**
