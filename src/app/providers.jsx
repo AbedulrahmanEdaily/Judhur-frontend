@@ -10,6 +10,7 @@ import {
 } from '../features/ui/uiSlice.js';
 import { setItem } from '../lib/storage.js';
 import { ToastProvider } from '../components/ui/ToastProvider.jsx';
+import { RateLimitNotice } from '../components/ui/RateLimitNotice.jsx';
 import { useToast } from '../components/ui/useToast.js';
 
 /** Keeps `<html class="dark">` in sync with the ui slice. Only a user choice is persisted. */
@@ -49,6 +50,7 @@ export function AppProviders({ children }) {
       <ThemeSync />
       <ToastProvider>
         <NoticeToasts />
+        <RateLimitNotice />
         {children}
       </ToastProvider>
     </Provider>

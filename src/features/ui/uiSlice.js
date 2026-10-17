@@ -22,6 +22,7 @@ const uiSlice = createSlice({
     notice: /** @type {Notice | null} */ (null),
     // The real-time hub (the project guide 6.17): while connected, nothing needs polling.
     isRealtimeConnected: false,
+    rateLimitedUntil: /** @type {number | null} */ (null),
   }),
   reducers: {
     themeToggled(state) {
@@ -39,11 +40,24 @@ const uiSlice = createSlice({
     realtimeConnectionChanged(state, action) {
       state.isRealtimeConnected = action.payload;
     },
+    /** @param {{ payload: number }} action */
+    rateLimitStarted(state, action) {
+      state.rateLimitedUntil = action.payload;
+    },
+    rateLimitEnded(state) {
+      state.rateLimitedUntil = null;
+    },
   },
 });
 
-export const { themeToggled, noticeShown, noticeDismissed, realtimeConnectionChanged } =
-  uiSlice.actions;
+export const {
+  themeToggled,
+  noticeShown,
+  noticeDismissed,
+  realtimeConnectionChanged,
+  rateLimitStarted,
+  rateLimitEnded,
+} = uiSlice.actions;
 export const uiReducer = uiSlice.reducer;
 
 /** @param {{ ui: { theme: Theme } }} state */
@@ -54,3 +68,7 @@ export const selectThemeIsExplicit = (state) => state.ui.themeIsExplicit;
 export const selectNotice = (state) => state.ui.notice;
 /** @param {{ ui: { isRealtimeConnected: boolean } }} state */
 export const selectIsRealtimeConnected = (state) => state.ui.isRealtimeConnected;
+/** @param {{ ui: { rateLimitedUntil: number | null } }} state */
+export const selectRateLimitedUntil = (state) => state.ui.rateLimitedUntil;
+/** @param {{ ui: { rateLimitedUntil: number | null } }} state */
+export const selectIsRateLimited = (state) => state.ui.rateLimitedUntil !== null;

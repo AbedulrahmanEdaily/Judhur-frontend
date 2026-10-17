@@ -1201,6 +1201,7 @@ export const ar = {
     tooManyRequests: 'محاولات كثيرة. الرجاء الانتظار قليلاً ثم المحاولة مجدداً.',
     // The global rate limit (300 a minute per user, 200 per IP): one toast from baseQuery.
     rateLimited: 'طلبات كثيرة، حاول بعد قليل',
+    payloadTooLarge: 'حجم الملف أو الطلب أكبر من المسموح.',
     rateLimitedFor: (seconds) => `طلبات كثيرة، حاول بعد ${seconds} ثانية`,
   },
   // not in Figma

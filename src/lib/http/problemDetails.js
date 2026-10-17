@@ -39,6 +39,8 @@ function fallbackMessage(status) {
       return ar.errors.notFound;
     case 409:
       return ar.errors.conflict;
+    case 413:
+      return ar.errors.payloadTooLarge;
     case 429:
       return ar.errors.tooManyRequests;
     default:

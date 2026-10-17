@@ -1,4 +1,6 @@
 import clsx from 'clsx';
+import { useSelector } from 'react-redux';
+import { selectIsRateLimited } from '../../features/ui/uiSlice.js';
 import { Spinner } from './Spinner.jsx';
 
 // Figma "زر / Button" (27:18): النوع أساسي / ثانوي / شبح / خطر.
@@ -38,10 +40,13 @@ export function Button({
   children,
   ...rest
 }) {
+  const isRateLimited = useSelector(selectIsRateLimited);
+  const isWaiting = type === 'submit' && isRateLimited;
+
   return (
     <button
       type={type}
-      disabled={disabled || loading}
+      disabled={disabled || loading || isWaiting}
       aria-busy={loading || undefined}
       className={clsx(
         'inline-flex items-center justify-center gap-2 rounded-md border leading-[1.6] font-semibold whitespace-nowrap transition-colors',

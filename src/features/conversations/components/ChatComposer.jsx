@@ -1,10 +1,12 @@
 import { useId, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
+import { useSelector } from 'react-redux';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { IconSend17 } from '../../../components/icons/index.js';
 import { formatNumber } from '../../../lib/format.js';
 import { actionErrorMessage, toProblem } from '../../../lib/http/problemDetails.js';
 import { ar } from '../../../locales/ar.js';
+import { selectIsRateLimited } from '../../ui/uiSlice.js';
 import { useSendMessageMutation } from '../conversationsApi.js';
 import { MAX_MESSAGE_LENGTH, messageSchema } from '../schemas.js';
 
@@ -46,7 +48,8 @@ export function ChatComposer({ conversationId }) {
     defaultValues: { content: '' },
   });
   const content = useWatch({ control, name: 'content' });
-  const canSend = content.trim() !== '' && !isSubmitting && !isClosed;
+  const isRateLimited = useSelector(selectIsRateLimited);
+  const canSend = content.trim() !== '' && !isSubmitting && !isClosed && !isRateLimited;
 
   async function onSubmit(values) {
     setFailure(null);

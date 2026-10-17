@@ -3,8 +3,7 @@ import { fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { API_BASE_URL } from '../config/env.js';
 import { selectAuth, sessionEnded, sessionRefreshed } from '../features/auth/authSlice.js';
 import { loadStoredTokens } from '../features/auth/authStorage.js';
-import { noticeShown } from '../features/ui/uiSlice.js';
-import { formatNumber } from '../lib/format.js';
+import { noticeShown, rateLimitStarted } from '../features/ui/uiSlice.js';
 import { toProblem } from '../lib/http/problemDetails.js';
 import { ar } from '../locales/ar.js';
 
@@ -94,20 +93,22 @@ function isSessionRejected(error) {
 }
 
 /**
- * Every endpoint is rate limited (the project guide 6.2): on a 429, one toast — with the wait
- * from `Retry-After` (seconds) when the server sends it. The request is never retried here.
+ * Every endpoint is rate limited (the project guide 6.2). With `Retry-After` (seconds) the wait
+ * starts a countdown (`RateLimitNotice`) and the submit buttons stay disabled until it ends;
+ * without it, one toast. The request is never retried here.
  */
 function noticeIfRateLimited(result, api) {
   if (result.error?.status !== 429) return;
-  if (Date.now() - lastRateLimitNoticeAt < RATE_LIMIT_NOTICE_GAP_MS) return;
-  lastRateLimitNoticeAt = Date.now();
 
   const seconds = Number(result.meta?.response?.headers.get('Retry-After'));
-  let message = ar.errors.rateLimited;
   if (Number.isInteger(seconds) && seconds > 0) {
-    message = ar.errors.rateLimitedFor(formatNumber(seconds));
+    api.dispatch(rateLimitStarted(Date.now() + seconds * 1000));
+    return;
   }
-  api.dispatch(noticeShown({ tone: 'warning', message }));
+
+  if (Date.now() - lastRateLimitNoticeAt < RATE_LIMIT_NOTICE_GAP_MS) return;
+  lastRateLimitNoticeAt = Date.now();
+  api.dispatch(noticeShown({ tone: 'warning', message: ar.errors.rateLimited }));
 }
 
 /** Tokens another tab stored after rotating the session, if they differ from ours. */
