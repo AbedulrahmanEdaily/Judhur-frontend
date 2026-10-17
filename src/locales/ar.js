@@ -163,6 +163,7 @@ export const ar = {
     google: 'المتابعة باستخدام Google',
     // not in Figma: Google sign-in states and the first-time step
     googleFailed: 'تعذّر التحقق من حساب Google',
+    googleUnavailable: 'تسجيل الدخول عبر جوجل غير متاح حاليا',
     googleCancelled: 'ألغيت الدخول بحساب Google.',
     googleExpired: 'انتهت محاولة الدخول بحساب Google. جرّب مرة ثانية.',
     googleBack: 'رجوع لتسجيل الدخول',
@@ -776,8 +777,13 @@ export const ar = {
     confirmPassword: 'تأكيد كلمة المرور الجديدة',
     changePassword: 'تغيير كلمة المرور',
     setPassword: 'تعيين كلمة مرور',
-    passwordChanged: 'تغيّرت كلمة المرور',
-    passwordSet: 'صار عندك كلمة مرور، وبتقدر تدخل فيها بالبريد',
+    passwordChanged: 'تم تغيير كلمة المرور وتسجيل الخروج من الأجهزة الأخرى',
+    passwordSet: 'صار عندك كلمة مرور وبتقدر تدخل فيها بالبريد، وسجّلنا خروجك من الأجهزة الأخرى',
+    reauth: {
+      prompt: 'حسابك مرتبط بـ Google: أكّد هويتك عبر Google قبل ما تكمّل.',
+      confirm: 'أكّد هويتك عبر Google',
+      confirmed: 'تم تأكيد هويتك عبر Google، كمّل الآن.',
+    },
     loadError: 'ما قدرنا نجيب بياناتك',
   },
   sellers: {

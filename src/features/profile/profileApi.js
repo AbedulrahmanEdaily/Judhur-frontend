@@ -1,5 +1,6 @@
 import { baseApi } from '../../api/baseApi.js';
 import { ACCOUNT_PATH } from '../../api/baseQuery.js';
+import { sessionRefreshed } from '../auth/authSlice.js';
 
 const ME_PATH = `${ACCOUNT_PATH}/me`;
 
@@ -72,42 +73,44 @@ export const profileApi = baseApi.injectEndpoints({
     }),
 
     /**
-     * 204; the session stays valid. 400 `Identity.CurrentPasswordRequired` /
-     * `Identity.PasswordMismatch` · 429 after 5 tries in 15 minutes. An account without a
-     * password (Google) sets its first one, and `hasPassword` becomes true.
-     */
-    /**
-     * Body: { newEmail, password? } (the password when the account has one). 204: a link is
-     * sent to the new email; nothing changes before it is opened. 400 Identity.EmailUnchanged /
-     * CurrentPasswordRequired / InvalidPassword · 409 Identity.DuplicateEmail · 429.
+     * Body: { newEmail, password? } or { newEmail, googleIdToken } for a Google-only account. 204:
+     * a link is sent to the new email; nothing changes before it is opened. 400
+     * Identity.EmailUnchanged / CurrentPasswordRequired / InvalidPassword /
+     * GoogleReauthenticationRequired / GoogleReauthenticationFailed · 409 Identity.DuplicateEmail
+     * · 429.
      */
     changeMyEmail: builder.mutation({
       query: (body) => ({ url: `${ME_PATH}/email`, method: 'POST', body }),
     }),
 
     /**
-     * Body: { password } when the account has one, none for a Google-only account. 204: the
-     * account is gone (the caller ends the session). 400 CurrentPasswordRequired /
-     * InvalidPassword · 409 Users.AdminCannotDeleteAccount · 429.
+     * Body: { password } when the account has one, { googleIdToken } for a Google-only account.
+     * 204: the account is gone (the caller ends the session). 400 CurrentPasswordRequired /
+     * InvalidPassword / GoogleReauthenticationRequired / GoogleReauthenticationFailed · 409
+     * Users.AdminCannotDeleteAccount · 429.
      */
     deleteMyAccount: builder.mutation({
-      query: (password) => {
-        const request = { url: ME_PATH, method: 'DELETE' };
-        if (password) request.body = { password };
-        return request;
-      },
+      query: (body) => ({ url: ME_PATH, method: 'DELETE', body }),
     }),
 
+    /**
+     * Body: { currentPassword, newPassword } or { newPassword, googleIdToken } for a Google-only
+     * account. 200 → a new TokenResponse: every other session ends, and this tab keeps working
+     * with the new pair. 400 CurrentPasswordRequired / PasswordMismatch /
+     * GoogleReauthenticationRequired / GoogleReauthenticationFailed · 429 after 5 tries in 15
+     * minutes. A Google-only account sets its first password, and `hasPassword` becomes true.
+     */
     changeMyPassword: builder.mutation({
       query: (body) => ({ url: `${ME_PATH}/password`, method: 'PUT', body }),
       async onQueryStarted(body, { dispatch, queryFulfilled }) {
         try {
-          await queryFulfilled;
+          const { data } = await queryFulfilled;
+          dispatch(sessionRefreshed(data));
           patchMyProfile(dispatch, (profile) => {
             profile.hasPassword = true;
           });
         } catch {
-          // The form shows the error.
+          return;
         }
       },
     }),

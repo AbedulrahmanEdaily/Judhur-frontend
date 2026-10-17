@@ -16,7 +16,20 @@ const PENDING_KEY = 'judhur.googleSignIn';
 /** 400 error code of `POST /google` for a first-time Google user without phone and city. */
 export const GOOGLE_REGISTRATION_INCOMPLETE = 'Identity.GoogleRegistrationIncomplete';
 
+export const GOOGLE_REAUTH_REQUIRED = 'Identity.GoogleReauthenticationRequired';
+export const GOOGLE_REAUTH_FAILED = 'Identity.GoogleReauthenticationFailed';
+export const GOOGLE_UNAVAILABLE = 'Identity.GoogleUnavailable';
+
+export const REAUTH_ACTIONS = {
+  setPassword: 'setPassword',
+  changeEmail: 'changeEmail',
+  deleteAccount: 'deleteAccount',
+};
+
+const REAUTH_PATH = '/profile';
+
 let readResult = null;
+let reauthToken = null;
 
 /** True when a client ID is configured (VITE_GOOGLE_CLIENT_ID). */
 export function hasGoogleClientId() {
@@ -44,13 +57,14 @@ function takePending() {
 
 /**
  * Goes to Google's sign-in page. `returnTo` is where a signed-in user lands afterwards;
- * `startPath` is the page to go back to (cancel, error, «رجوع»).
+ * `startPath` is the page to go back to (cancel, error, «رجوع»). With `purpose: 'reauth'` the
+ * returned token is not used to sign in: it confirms the signed-in user for `action`.
  *
- * @param {{ returnTo: string, startPath: string }} paths
+ * @param {{ returnTo: string, startPath: string, purpose?: 'signIn' | 'reauth', action?: string | null }} options
  */
-export function startGoogleSignIn({ returnTo, startPath }) {
+export function startGoogleSignIn({ returnTo, startPath, purpose = 'signIn', action = null }) {
   const state = crypto.randomUUID();
-  writePending({ state, returnTo, startPath });
+  writePending({ state, returnTo, startPath, purpose, action });
   const params = new URLSearchParams({
     client_id: GOOGLE_CLIENT_ID,
     redirect_uri: `${window.location.origin}${GOOGLE_CALLBACK_PATH}`,
@@ -63,12 +77,29 @@ export function startGoogleSignIn({ returnTo, startPath }) {
   window.location.assign(`${GOOGLE_AUTH_URL}?${params}`);
 }
 
+export function startGoogleReauth(action) {
+  startGoogleSignIn({ returnTo: REAUTH_PATH, startPath: REAUTH_PATH, purpose: 'reauth', action });
+}
+
+export function keepGoogleReauth(action, idToken) {
+  reauthToken = { action, idToken };
+}
+
+export function peekGoogleReauth(action) {
+  if (!reauthToken || reauthToken.action !== action) return null;
+  return reauthToken.idToken;
+}
+
+export function clearGoogleReauth() {
+  reauthToken = null;
+}
+
 /**
  * Reads Google's answer from the URL fragment, checks the `state`, and removes the fragment from
  * the address bar so the token doesn't stay in the URL or the history. Read once per return:
  * later calls give the same result.
  *
- * @returns {{ idToken: string | null, error: string | null, returnTo: string, startPath: string }}
+ * @returns {{ idToken: string | null, error: string | null, returnTo: string, startPath: string, purpose: string, action: string | null }}
  */
 export function readGoogleCallback() {
   if (readResult) return readResult;
@@ -84,9 +115,13 @@ export function readGoogleCallback() {
 
   let returnTo = '/';
   let startPath = '/login';
+  let purpose = 'signIn';
+  let action = null;
   if (pending) {
     returnTo = pending.returnTo;
     startPath = pending.startPath;
+    if (pending.purpose === 'reauth') purpose = 'reauth';
+    if (typeof pending.action === 'string') action = pending.action;
   }
 
   let error = null;
@@ -98,7 +133,7 @@ export function readGoogleCallback() {
   }
   if (error) idToken = null;
 
-  readResult = { idToken, error, returnTo, startPath };
+  readResult = { idToken, error, returnTo, startPath, purpose, action };
   return readResult;
 }
 
@@ -109,6 +144,7 @@ export function readGoogleCallback() {
  * @param {import('../../lib/http/problemDetails.js').Problem} problem
  */
 export function googleFailureMessage(problem) {
+  if (problem.code === GOOGLE_UNAVAILABLE) return ar.auth.googleUnavailable;
   if (problem.status === 401) return ar.auth.googleFailed;
   return problem.message;
 }

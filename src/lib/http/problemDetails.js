@@ -131,6 +131,7 @@ export function toProblem(error) {
 
   let code = null;
   if (typeof body.code === 'string' && body.code !== '') code = body.code;
+  if (code === 'Identity.GoogleUnavailable') message = ar.auth.googleUnavailable;
 
   const { fieldErrors, errorCodes } = readErrors(body.errors);
   return { status, message, fieldErrors, errorCodes, code, requestId };

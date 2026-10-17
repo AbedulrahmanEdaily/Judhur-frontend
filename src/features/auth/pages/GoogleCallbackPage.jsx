@@ -13,6 +13,7 @@ import { GoogleProfileStep } from '../components/GoogleProfileStep.jsx';
 import {
   GOOGLE_REGISTRATION_INCOMPLETE,
   googleFailureMessage,
+  keepGoogleReauth,
   readGoogleCallback,
 } from '../googleSignIn.js';
 
@@ -22,12 +23,22 @@ const text = ar.auth;
  * `/auth/google` — Google sends the browser back here with the idToken (not in Figma). The
  * token goes to `POST /google`: a signed-in user goes on to where they started; a first-time
  * Google user adds phone and city (the token stays in this page's state only); anything else
- * shows the message and a way back.
+ * shows the message and a way back. A return that confirms the signed-in user (`purpose: 'reauth'`)
+ * keeps the token in memory and goes back without `POST /google`; a user who is already signed in
+ * never posts it either.
  */
 export default function GoogleCallbackPage() {
   const navigate = useNavigate();
   const isAuthenticated = useSelector(selectIsAuthenticated);
-  const [callback] = useState(() => readGoogleCallback());
+  const [callback] = useState(() => {
+    const result = readGoogleCallback();
+    if (result.purpose === 'reauth' && result.idToken) {
+      keepGoogleReauth(result.action, result.idToken);
+    }
+    return result;
+  });
+  const [wasSignedIn] = useState(isAuthenticated);
+  const isReauth = callback.purpose === 'reauth';
   const [googleSignIn] = useGoogleSignInMutation();
   const [needsProfile, setNeedsProfile] = useState(false);
   const [failure, setFailure] = useState(null);
@@ -35,7 +46,7 @@ export default function GoogleCallbackPage() {
 
   useEffect(() => {
     // Send the token once (development mode runs effects twice).
-    if (!callback.idToken || hasSentRef.current) return;
+    if (!callback.idToken || hasSentRef.current || isReauth || wasSignedIn) return;
     hasSentRef.current = true;
 
     async function signIn() {
@@ -53,10 +64,19 @@ export default function GoogleCallbackPage() {
       }
     }
     signIn();
-  }, [callback, googleSignIn]);
+  }, [callback, googleSignIn, isReauth, wasSignedIn]);
+
+  if (isReauth && !isAuthenticated) {
+    const back = encodeURIComponent(safeRedirectPath(callback.returnTo));
+    return <Navigate to={`/login?redirect=${back}`} replace />;
+  }
+  if (isReauth && callback.idToken) {
+    return <Navigate to={safeRedirectPath(callback.returnTo)} replace />;
+  }
 
   // Signed in (right away, or after the phone and city step): on to where the user started.
-  if (isAuthenticated) return <Navigate to={safeRedirectPath(callback.returnTo)} replace />;
+  if (isAuthenticated && !isReauth)
+    return <Navigate to={safeRedirectPath(callback.returnTo)} replace />;
 
   if (needsProfile) {
     return (
