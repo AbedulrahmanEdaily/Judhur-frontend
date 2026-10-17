@@ -4,7 +4,6 @@ import clsx from 'clsx';
 import { AccountShell } from '../../../components/layout/AccountShell.jsx';
 import { PageTopBar } from '../../../components/layout/PageTopBar.jsx';
 import { IconPlus17 } from '../../../components/icons/index.js';
-import { Badge } from '../../../components/ui/Badge.jsx';
 import { EmptyState } from '../../../components/ui/EmptyState.jsx';
 import { ErrorState } from '../../../components/ui/ErrorState.jsx';
 import { Skeleton } from '../../../components/ui/Skeleton.jsx';
@@ -13,7 +12,8 @@ import { toProblem } from '../../../lib/http/problemDetails.js';
 import { ar } from '../../../locales/ar.js';
 import { PropertyPhoto } from '../components/PropertyPhoto.jsx';
 import { RowActionsMenu } from '../components/RowActionsMenu.jsx';
-import { OWNER_STATE_LABELS, OWNER_STATE_TONES, ownerStateOf } from '../listingState.js';
+import { ownerStateOf } from '../listingState.js';
+import { OwnerStateBadges } from '../components/OwnerStateBadges.jsx';
 import { useGetMyPropertiesQuery } from '../propertiesApi.js';
 
 const text = ar.myProperties;
@@ -154,7 +154,7 @@ export default function MyPropertiesPage() {
                         {formatDate(property.createdAtUtc)}
                       </td>
                       <td className="px-2">
-                        <Badge tone={OWNER_STATE_TONES[state]}>{OWNER_STATE_LABELS[state]}</Badge>
+                        <OwnerStateBadges property={property} />
                       </td>
                       <td className="pe-[18px]">
                         <RowActionsMenu
@@ -169,7 +169,7 @@ export default function MyPropertiesPage() {
             </div>
 
             <ul className="flex flex-col gap-3 xl:hidden">
-              {rows.map(({ property, state }) => (
+              {rows.map(({ property }) => (
                 <li key={property.id}>
                   <Link
                     to={`/my-properties/${property.id}`}
@@ -190,7 +190,7 @@ export default function MyPropertiesPage() {
                         >
                           {formatPrice(property.price)}
                         </span>
-                        <Badge tone={OWNER_STATE_TONES[state]}>{OWNER_STATE_LABELS[state]}</Badge>
+                        <OwnerStateBadges property={property} />
                       </div>
                     </div>
                   </Link>

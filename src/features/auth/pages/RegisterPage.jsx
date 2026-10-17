@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useNavigate } from 'react-router';
@@ -30,6 +30,7 @@ const SERVER_KEY_FIELDS = {
 
 /** Figma "إنشاء حساب — زائر" (69:1262). The mobile layout follows the mobile login frame. */
 export default function RegisterPage() {
+  const termsErrorId = useId();
   const text = ar.auth.register;
   const fields = ar.auth.fields;
   const navigate = useNavigate();
@@ -141,9 +142,16 @@ export default function RegisterPage() {
         <PasswordRules password={password} />
 
         <div className="flex flex-col gap-1">
-          <Checkbox label={text.terms} {...register('acceptTerms')} />
+          <Checkbox
+            label={text.terms}
+            aria-invalid={errors.acceptTerms ? true : undefined}
+            aria-describedby={errors.acceptTerms ? termsErrorId : undefined}
+            {...register('acceptTerms')}
+          />
           {errors.acceptTerms && (
-            <p className="text-caption text-danger">{errors.acceptTerms.message}</p>
+            <p id={termsErrorId} className="text-caption text-danger">
+              {errors.acceptTerms.message}
+            </p>
           )}
         </div>
 

@@ -13,9 +13,9 @@ const text = ar.conversations;
  * open. Not in Figma: the listing line (photo 22 + title, or «الإعلان لم يعد متاحًا»), the role
  * chip, «أنت: » before my own last message, and the unread count pill in place of the dot.
  *
- * @param {{ conversation: import('../../../api/types.js').ConversationSummary }} props
+ * @param {{ conversation: import('../../../api/types.js').ConversationSummary, search?: string }} props
  */
-export function ConversationListItem({ conversation }) {
+export function ConversationListItem({ conversation, search = '' }) {
   const { property, otherParty } = conversation;
   const isUnread = conversation.unreadCount > 0;
   const role = text.roles[conversation.myRole];
@@ -31,7 +31,7 @@ export function ConversationListItem({ conversation }) {
 
   return (
     <NavLink
-      to={`/messages/${conversation.id}`}
+      to={{ pathname: `/messages/${conversation.id}`, search }}
       className={({ isActive }) =>
         clsx(
           'flex items-start gap-[11px] px-[18px] py-[13px] transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand',

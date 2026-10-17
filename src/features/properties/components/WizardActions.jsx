@@ -1,6 +1,8 @@
+import { useSelector } from 'react-redux';
 import { IconNextArrow } from '../../../components/icons/index.js';
 import { Spinner } from '../../../components/ui/Spinner.jsx';
 import { ar } from '../../../locales/ar.js';
+import { selectIsRateLimited } from '../../ui/uiSlice.js';
 
 const text = ar.listing;
 
@@ -20,6 +22,8 @@ const text = ar.listing;
  * }} props
  */
 export function WizardActions({ formId, step, primaryLabel, isBusy, onSaveDraft }) {
+  const isRateLimited = useSelector(selectIsRateLimited);
+
   return (
     <>
       <div className="hidden items-center gap-3 xl:flex">
@@ -37,7 +41,7 @@ export function WizardActions({ formId, step, primaryLabel, isBusy, onSaveDraft 
         <button
           type="submit"
           form={formId}
-          disabled={isBusy}
+          disabled={isBusy || isRateLimited}
           aria-busy={isBusy || undefined}
           className="flex items-center gap-2 rounded-md bg-brand px-7 py-3.5 text-[15px] leading-[1.72] font-semibold text-inverse transition-colors hover:bg-brand-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:opacity-60"
         >
@@ -51,7 +55,7 @@ export function WizardActions({ formId, step, primaryLabel, isBusy, onSaveDraft 
         <button
           type="submit"
           form={formId}
-          disabled={isBusy}
+          disabled={isBusy || isRateLimited}
           aria-busy={isBusy || undefined}
           className="flex w-full items-center justify-center gap-2 rounded-md bg-brand py-3.5 text-[15px] leading-[1.72] font-semibold text-inverse focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:opacity-60"
         >

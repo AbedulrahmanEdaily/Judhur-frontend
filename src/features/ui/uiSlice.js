@@ -19,38 +19,68 @@ const uiSlice = createSlice({
   name: 'ui',
   initialState: () => ({
     ...readInitialTheme(),
-    notice: /** @type {Notice | null} */ (null),
+    notices: /** @type {Notice[]} */ ([]),
     // The real-time hub (the project guide 6.17): while connected, nothing needs polling.
     isRealtimeConnected: false,
+    rateLimitedUntil: /** @type {number | null} */ (null),
   }),
   reducers: {
     themeToggled(state) {
       state.theme = state.theme === 'dark' ? 'light' : 'dark';
       state.themeIsExplicit = true;
     },
+    /** @param {{ payload: Theme }} action */
+    themeChosenElsewhere(state, action) {
+      state.theme = action.payload;
+      state.themeIsExplicit = true;
+    },
+    /** @param {{ payload: Theme }} action */
+    systemThemeChanged(state, action) {
+      if (!state.themeIsExplicit) state.theme = action.payload;
+    },
     /** A toast raised from outside React (e.g. by a listener); shown by `<NoticeToasts>`. */
     noticeShown(state, action) {
-      state.notice = action.payload;
+      state.notices.push(action.payload);
     },
-    noticeDismissed(state) {
-      state.notice = null;
+    /** @param {{ payload: number }} action */
+    noticesShown(state, action) {
+      state.notices.splice(0, action.payload);
     },
     /** @param {{ payload: boolean }} action */
     realtimeConnectionChanged(state, action) {
       state.isRealtimeConnected = action.payload;
     },
+    /** @param {{ payload: number }} action */
+    rateLimitStarted(state, action) {
+      state.rateLimitedUntil = action.payload;
+    },
+    rateLimitEnded(state) {
+      state.rateLimitedUntil = null;
+    },
   },
 });
 
-export const { themeToggled, noticeShown, noticeDismissed, realtimeConnectionChanged } =
-  uiSlice.actions;
+export const {
+  themeToggled,
+  themeChosenElsewhere,
+  systemThemeChanged,
+  noticeShown,
+  noticesShown,
+  realtimeConnectionChanged,
+  rateLimitStarted,
+  rateLimitEnded,
+} = uiSlice.actions;
 export const uiReducer = uiSlice.reducer;
 
 /** @param {{ ui: { theme: Theme } }} state */
 export const selectTheme = (state) => state.ui.theme;
 /** @param {{ ui: { themeIsExplicit: boolean } }} state */
 export const selectThemeIsExplicit = (state) => state.ui.themeIsExplicit;
-/** @param {{ ui: { notice: Notice | null } }} state */
-export const selectNotice = (state) => state.ui.notice;
+/** @param {{ ui: { notices: Notice[] } }} state */
+export const selectNotices = (state) => state.ui.notices;
 /** @param {{ ui: { isRealtimeConnected: boolean } }} state */
 export const selectIsRealtimeConnected = (state) => state.ui.isRealtimeConnected;
+/** @param {{ ui: { rateLimitedUntil: number | null } }} state */
+export const selectRateLimitedUntil = (state) => state.ui.rateLimitedUntil;
+/** @param {{ ui: { rateLimitedUntil: number | null } }} state */
+export const selectIsRateLimited = (state) => state.ui.rateLimitedUntil !== null;

@@ -19,6 +19,7 @@ export function AccountMenu() {
   const { profile } = useMyProfile();
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
+  const triggerRef = useRef(null);
   const menuId = useId();
 
   // Close on a click outside the menu or on Escape.
@@ -29,7 +30,9 @@ export function AccountMenu() {
       if (!containerRef.current.contains(event.target)) setIsOpen(false);
     }
     function handleKeyDown(event) {
-      if (event.key === 'Escape') setIsOpen(false);
+      if (event.key !== 'Escape') return;
+      setIsOpen(false);
+      triggerRef.current?.focus();
     }
 
     document.addEventListener('pointerdown', handlePointerDown);
@@ -47,6 +50,7 @@ export function AccountMenu() {
   return (
     <div ref={containerRef} className="relative">
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         aria-expanded={isOpen}

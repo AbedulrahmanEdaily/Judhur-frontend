@@ -1,6 +1,5 @@
-import { HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
 import { baseApi } from '../../api/baseApi.js';
-import { freshAccessToken } from '../../api/baseQuery.js';
+import { forceRefresh, freshAccessToken } from '../../api/baseQuery.js';
 import { API_BASE_URL } from '../../config/env.js';
 import { selectAuth, selectIsAuthenticated, sessionEnded } from '../../features/auth/authSlice.js';
 import {
@@ -13,7 +12,8 @@ import { notificationsApi } from '../../features/notifications/notificationsApi.
 import { noticeShown, realtimeConnectionChanged } from '../../features/ui/uiSlice.js';
 
 // The one SignalR connection of the app (the project guide 6.17): new messages, read marks and
-// notifications pushed by the server.
+// notifications pushed by the server. The SignalR library is loaded the first time someone is
+// signed in, so guests never download it.
 
 const HUB_URL = `${API_BASE_URL}/hubs/chat`;
 const FIRST_RETRY_MS = 2000;
@@ -21,14 +21,18 @@ const MAX_RETRY_MS = 30000;
 
 /** @type {{ getState: () => any, dispatch: (action: any) => any } | null} */
 let store = null;
+/** @type {typeof import('@microsoft/signalr') | null} */
+let signalr = null;
 /** @type {import('@microsoft/signalr').HubConnection | null} */
 let connection = null;
 let connectedUserId = null;
 let hasConnectedBefore = false;
 let retryDelay = FIRST_RETRY_MS;
 let retryTimer = null;
+let hasRetriedUnauthorized = false;
 // The chat the user has open, if any — its new messages go straight into the page.
 let activeConversationId = null;
+let bufferedMessages = [];
 
 /** The chat page tells the hub which conversation is on screen. */
 export function setActiveConversation(conversationId) {
@@ -37,13 +41,33 @@ export function setActiveConversation(conversationId) {
 
 export function clearActiveConversation(conversationId) {
   if (activeConversationId === conversationId) activeConversationId = null;
+  bufferedMessages = bufferedMessages.filter(
+    (message) => message.conversationId !== conversationId,
+  );
+}
+
+export function takeBufferedMessages(conversationId) {
+  const taken = bufferedMessages.filter((message) => message.conversationId === conversationId);
+  bufferedMessages = bufferedMessages.filter(
+    (message) => message.conversationId !== conversationId,
+  );
+  return taken;
+}
+
+function isChatLoaded(conversationId) {
+  const chat = conversationsApi.endpoints.getMessages.select(conversationId)(store.getState());
+  return Boolean(chat?.data);
 }
 
 /** @param {import('../../api/types.js').Message} message */
 function handleMessageReceived(message) {
   if (message.conversationId === activeConversationId) {
     // The chat page sees the unread message and marks it read while visible.
-    store.dispatch(addMessageToChat(message.conversationId, message));
+    if (isChatLoaded(message.conversationId)) {
+      store.dispatch(addMessageToChat(message.conversationId, message));
+    } else {
+      bufferedMessages.push(message);
+    }
   } else if (!message.isMine) {
     store.dispatch(
       conversationsApi.util.updateQueryData('getUnreadMessagesCount', undefined, (unread) => {
@@ -123,16 +147,35 @@ function scheduleStart() {
   }, retryDelay);
 }
 
+function isUnauthorized(error) {
+  if (error?.statusCode === 401) return true;
+  return String(error?.message ?? '').includes("Status code '401'");
+}
+
+async function retryWithNewToken(current) {
+  if (hasRetriedUnauthorized) {
+    stopRealtime();
+    return;
+  }
+  hasRetriedUnauthorized = true;
+  await forceRefresh(store);
+  if (current !== connection || !selectIsAuthenticated(store.getState())) return;
+  connect();
+}
+
 async function connect() {
   const current = connection;
   if (!current) return;
   try {
     await current.start();
-  } catch {
-    if (current === connection) scheduleStart();
+  } catch (error) {
+    if (current !== connection) return;
+    if (isUnauthorized(error)) retryWithNewToken(current);
+    else scheduleStart();
     return;
   }
   if (current !== connection) return; // stopped while starting
+  hasRetriedUnauthorized = false;
   retryDelay = FIRST_RETRY_MS;
   setConnected(true);
   if (hasConnectedBefore) catchUp();
@@ -140,11 +183,11 @@ async function connect() {
 }
 
 function createConnection() {
-  const created = new HubConnectionBuilder()
+  const created = new signalr.HubConnectionBuilder()
     // The access token goes in the WebSocket URL, so nothing about the connection is logged.
-    .withUrl(HUB_URL, { accessTokenFactory: () => freshAccessToken(store) })
+    .withUrl(HUB_URL, { accessTokenFactory: () => freshAccessToken(store), withCredentials: false })
     .withAutomaticReconnect()
-    .configureLogging(LogLevel.None)
+    .configureLogging(signalr.LogLevel.None)
     .build();
 
   created.on('messageReceived', handleMessageReceived);
@@ -172,6 +215,7 @@ export function stopRealtime() {
   connection = null;
   connectedUserId = null;
   hasConnectedBefore = false;
+  hasRetriedUnauthorized = false;
   retryDelay = FIRST_RETRY_MS;
   clearTimeout(retryTimer);
   retryTimer = null;
@@ -192,9 +236,26 @@ export function syncRealtime(appStore) {
     stopRealtime();
     return;
   }
-  if (connection && connectedUserId === user.id) return;
+  // Already connected (or loading the library) for this user: nothing to do.
+  if (connectedUserId === user.id) return;
   stopRealtime();
-  connection = createConnection();
   connectedUserId = user.id;
+  startFor(user.id);
+}
+
+async function startFor(userId) {
+  if (!signalr) {
+    try {
+      signalr = await import('@microsoft/signalr');
+    } catch {
+      // The library could not load (offline): the unread counts keep polling, and the next
+      // session change tries again.
+      if (connectedUserId === userId) connectedUserId = null;
+      return;
+    }
+  }
+  // Signed out, or another account signed in, while the library was loading.
+  if (connectedUserId !== userId || connection) return;
+  connection = createConnection();
   connect();
 }

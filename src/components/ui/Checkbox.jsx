@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import clsx from 'clsx';
 import { IconCheckboxCheck } from '../icons/index.js';
 
@@ -12,9 +13,13 @@ import { IconCheckboxCheck } from '../icons/index.js';
  *   ref?: import('react').Ref<HTMLInputElement>,
  * }} props
  */
-export function Checkbox({ label, className, disabled, ...rest }) {
+export function Checkbox({ label, className, disabled, id, ...rest }) {
+  const generatedId = useId();
+  const inputId = id ?? generatedId;
+
   return (
     <label
+      htmlFor={inputId}
       className={clsx(
         'inline-flex cursor-pointer items-center gap-2.5',
         disabled && 'cursor-not-allowed opacity-60',
@@ -23,6 +28,7 @@ export function Checkbox({ label, className, disabled, ...rest }) {
     >
       <span className="relative inline-flex size-[18px] shrink-0">
         <input
+          id={inputId}
           type="checkbox"
           disabled={disabled}
           className="peer absolute inset-0 m-0 size-full cursor-[inherit] appearance-none rounded-[6px] border border-border-strong bg-bg checked:border-brand checked:bg-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"

@@ -51,9 +51,9 @@ export function SearchHeader({ filters, totalCount, onOpenFilters, mapPath }) {
 
       {/* Mobile tools (83:611): count, then the filters button. */}
       <div className="flex items-center gap-2 px-4 py-3 xl:hidden">
-        <p className="flex-1 text-[13.5px] leading-[1.72] font-bold text-text">
+        <h2 className="flex-1 text-[13.5px] leading-[1.72] font-bold text-text">
           {totalCount !== undefined && text.mobileCount(formatNumber(totalCount))}
-        </p>
+        </h2>
         {/* Not in the mobile Figma frame: the same search on the map. */}
         <Link
           to={mapPath}

@@ -87,7 +87,7 @@ export function ChatMessages({ messages, hasOlder, isLoadingOlder, onLoadOlder }
     if (day !== previousDay) {
       rows.push(
         <li key={`day-${day}`} className="flex justify-center">
-          <span className="rounded-full bg-inset px-3 py-[5px] text-[11.5px] leading-[1.72] font-semibold text-muted">
+          <span className="rounded-full bg-inset px-3 py-[5px] text-[11.5px] leading-[1.72] font-semibold text-text-secondary">
             {dayLabel(date)}
           </span>
         </li>,
@@ -95,6 +95,11 @@ export function ChatMessages({ messages, hasOlder, isLoadingOlder, onLoadOlder }
       previousDay = day;
     }
     rows.push(<ChatBubble key={message.id} message={message} />);
+  }
+
+  let newestFromThem = null;
+  for (const message of messages) {
+    if (!message.isMine) newestFromThem = message;
   }
 
   return (
@@ -123,9 +128,12 @@ export function ChatMessages({ messages, hasOlder, isLoadingOlder, onLoadOlder }
           <span className="text-[11.5px] leading-[1.72] text-muted">{text.chatStart}</span>
         )}
       </div>
-      <ol aria-label={text.messagesLabel} aria-live="polite" className="flex flex-col gap-3.5">
+      <ol aria-label={text.messagesLabel} className="flex flex-col gap-3.5">
         {rows}
       </ol>
+      <p aria-live="polite" className="sr-only">
+        {newestFromThem && text.newMessage(newestFromThem.content)}
+      </p>
     </div>
   );
 }

@@ -7,9 +7,13 @@ import { ar } from '../../locales/ar.js';
  */
 export function AdminBanner() {
   return (
-    <div className="flex items-center gap-2 bg-accent px-4 py-[7px] text-[12.5px] leading-[1.72] font-semibold text-white/90 xl:px-[70px]">
+    // A named region, so the strip is inside a landmark like the rest of the page.
+    <section
+      aria-label={ar.admin.bannerLabel}
+      className="flex items-center gap-2 bg-accent px-4 py-[7px] text-[12.5px] leading-[1.72] font-semibold text-white/90 xl:px-[70px]"
+    >
       <IconAdminShield14 className="shrink-0" />
       {ar.admin.banner}
-    </div>
+    </section>
   );
 }

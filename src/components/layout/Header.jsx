@@ -132,16 +132,6 @@ export function Header() {
                 {unreadMessages.count > 0 && <UnreadBadge count={unreadMessages.count} />}
               </Link>
             )}
-            {isAdmin && (
-              <button
-                type="button"
-                aria-disabled="true"
-                aria-label={ar.nav.messages}
-                className={iconButtonClasses}
-              >
-                <IconChat />
-              </button>
-            )}
             <ThemeToggle />
           </div>
         )}

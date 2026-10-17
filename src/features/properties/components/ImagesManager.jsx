@@ -44,7 +44,7 @@ export function ImagesManager({ propertyId, images, message, moderationStatus })
   const inputId = useId();
   const [uploadImage] = useUploadPropertyImageMutation();
   const [deleteImage, { isLoading: isDeleting }] = useDeletePropertyImageMutation();
-  const [setMainImage] = useSetMainPropertyImageMutation();
+  const [setMainImage, { isLoading: isSettingCover }] = useSetMainPropertyImageMutation();
   const [progress, setProgress] = useState(null);
   const [problems, setProblems] = useState([]);
   const [imageToDelete, setImageToDelete] = useState(null);
@@ -53,6 +53,7 @@ export function ImagesManager({ propertyId, images, message, moderationStatus })
   const [reviewChange, setReviewChange] = useState(null);
 
   const isUploading = progress !== null;
+  const isMediaBusy = isUploading || isDeleting || isSettingCover;
   const isFull = images.length >= MAX_IMAGES;
   const isApproved = moderationStatus === 'Approved';
   const isRejected = moderationStatus === 'Rejected';
@@ -79,6 +80,7 @@ export function ImagesManager({ propertyId, images, message, moderationStatus })
   }
 
   function chooseFiles(fileList) {
+    if (isMediaBusy) return;
     const { accepted, found } = checkFiles(fileList);
     if (isApproved && accepted.length > 0) {
       setProblems(found);
@@ -117,11 +119,12 @@ export function ImagesManager({ propertyId, images, message, moderationStatus })
   function handleDrop(event) {
     event.preventDefault();
     setIsDragging(false);
-    if (isUploading || isFull) return;
+    if (isMediaBusy || isFull) return;
     chooseFiles(event.dataTransfer.files);
   }
 
   function handleMakeCover(image) {
+    if (isMediaBusy) return;
     if (isApproved) {
       setReviewChange({ type: 'cover', image });
       return;
@@ -192,7 +195,7 @@ export function ImagesManager({ propertyId, images, message, moderationStatus })
           'flex cursor-pointer flex-col items-center gap-2.5 rounded-md border border-dashed border-brand bg-brand-subtle px-4 py-[21px] text-center transition-colors',
           'has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-brand',
           isDragging && 'bg-brand/15',
-          (isUploading || isFull) && 'cursor-not-allowed opacity-60',
+          (isMediaBusy || isFull) && 'cursor-not-allowed opacity-60',
         )}
       >
         <span className="rounded-full bg-raised p-[13px] text-brand">
@@ -209,7 +212,7 @@ export function ImagesManager({ propertyId, images, message, moderationStatus })
           type="file"
           multiple
           accept={IMAGE_FILE_TYPES.join(',')}
-          disabled={isUploading || isFull}
+          disabled={isMediaBusy || isFull}
           onChange={handleInputChange}
           className="sr-only"
         />
@@ -254,7 +257,8 @@ export function ImagesManager({ propertyId, images, message, moderationStatus })
                 <button
                   type="button"
                   onClick={() => handleMakeCover(image)}
-                  className="absolute start-2.5 bottom-2.5 rounded-full bg-black/55 px-3 py-1 text-[12px] leading-[1.75] font-semibold text-white transition-colors hover:bg-black/70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                  disabled={isMediaBusy}
+                  className="absolute start-2.5 bottom-2.5 rounded-full bg-black/55 px-3 py-1 text-[12px] leading-[1.75] font-semibold text-white transition-colors hover:bg-black/70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {text.makeCover}
                 </button>
@@ -262,7 +266,7 @@ export function ImagesManager({ propertyId, images, message, moderationStatus })
               <button
                 type="button"
                 onClick={() => setImageToDelete(image)}
-                disabled={image.isMainImage || keepsMinimum}
+                disabled={image.isMainImage || keepsMinimum || isMediaBusy}
                 aria-label={text.removeImage}
                 title={removeTitle(image)}
                 className="absolute end-2.5 top-2.5 flex size-[30px] items-center justify-center rounded-full bg-raised text-danger focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:cursor-not-allowed disabled:text-muted disabled:opacity-70"

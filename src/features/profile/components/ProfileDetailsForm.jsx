@@ -5,6 +5,7 @@ import { FormAlert } from '../../../components/form/FormAlert.jsx';
 import { applyServerErrors } from '../../../components/form/applyServerErrors.js';
 import { useToast } from '../../../components/ui/useToast.js';
 import { ar } from '../../../locales/ar.js';
+import { REAUTH_ACTIONS, peekGoogleReauth } from '../../auth/googleSignIn.js';
 import { profileSchema } from '../../auth/schemas.js';
 import { ListingInput } from '../../properties/components/ListingInput.jsx';
 import { ListingTextarea } from '../../properties/components/ListingTextarea.jsx';
@@ -40,7 +41,9 @@ export function ProfileDetailsForm({ profile }) {
   const toast = useToast();
   const [updateProfile] = useUpdateMyProfileMutation();
   const [failure, setFailure] = useState(null);
-  const [isChangingEmail, setIsChangingEmail] = useState(false);
+  const [isChangingEmail, setIsChangingEmail] = useState(
+    () => peekGoogleReauth(REAUTH_ACTIONS.changeEmail) !== null,
+  );
   const formId = useId();
 
   const {

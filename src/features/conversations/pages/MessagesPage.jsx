@@ -7,6 +7,7 @@ import { IconNavChats } from '../../../components/icons/index.js';
 import { EmptyState } from '../../../components/ui/EmptyState.jsx';
 import { ErrorState } from '../../../components/ui/ErrorState.jsx';
 import { Pagination } from '../../../components/ui/Pagination.jsx';
+import { RetryBanner } from '../../../components/ui/RetryBanner.jsx';
 import { Skeleton } from '../../../components/ui/Skeleton.jsx';
 import { toProblem } from '../../../lib/http/problemDetails.js';
 import { ar } from '../../../locales/ar.js';
@@ -33,6 +34,8 @@ export default function MessagesPage() {
   const openId = chatMatch?.params.conversationId ?? null;
   const [searchParams, setSearchParams] = useSearchParams();
   const page = readPage(searchParams);
+  let pageSearch = '';
+  if (page > 1) pageSearch = `?page=${page}`;
   const { data, isLoading, error, refetch } = useGetConversationsQuery(
     { page, pageSize: PAGE_SIZE },
     { refetchOnFocus: true },
@@ -55,7 +58,7 @@ export default function MessagesPage() {
         <Skeleton className="h-[86px] rounded-none" />
       </div>
     );
-  } else if (error) {
+  } else if (error && !data) {
     const problem = toProblem(error);
     let requestId;
     if (problem.status >= 500) requestId = problem.requestId;
@@ -86,10 +89,11 @@ export default function MessagesPage() {
   } else {
     list = (
       <>
+        {error && <RetryBanner onRetry={refetch} />}
         <ul className="divide-y divide-border border-b border-border">
           {data.items.map((conversation) => (
             <li key={conversation.id}>
-              <ConversationListItem conversation={conversation} />
+              <ConversationListItem conversation={conversation} search={pageSearch} />
             </li>
           ))}
         </ul>
@@ -108,7 +112,7 @@ export default function MessagesPage() {
     let name = text.title;
     if (openConversation.data?.otherParty) name = openConversation.data.otherParty.fullName;
     if (openConversation.data && !openConversation.data.otherParty) name = text.deletedUser;
-    topBar = <PageTopBar title={name} backTo="/messages" />;
+    topBar = <PageTopBar title={name} backTo={`/messages${pageSearch}`} />;
   }
 
   return (

@@ -93,23 +93,35 @@ export const conversationsApi = baseApi.injectEndpoints({
       invalidatesTags: ['Conversations'],
     }),
 
-    /** 204. The other party's messages in the open chat count as read at once. */
+    /**
+     * `?upTo=` the id of the newest message from the other party on screen: a message arriving
+     * at the same moment stays unread. 204. Those messages count as read at once; undone if the
+     * request fails.
+     */
     markConversationRead: builder.mutation({
-      query: (conversationId) => ({
+      query: ({ conversationId, upTo }) => ({
         url: `${conversationPath(conversationId)}/read`,
         method: 'POST',
+        params: { upTo },
       }),
-      onQueryStarted: (conversationId, { dispatch }) => {
+      onQueryStarted: async ({ conversationId, upToSentAtUtc }, { dispatch, queryFulfilled }) => {
         const now = new Date().toISOString();
-        dispatch(
+        const seenUntil = Date.parse(upToSentAtUtc);
+        const patch = dispatch(
           conversationsApi.util.updateQueryData('getMessages', conversationId, (chat) => {
             for (const page of chat.pages) {
               for (const message of page.items) {
-                if (!message.isMine && !message.readAtUtc) message.readAtUtc = now;
+                const isSeen = Date.parse(message.sentAtUtc) <= seenUntil;
+                if (!message.isMine && !message.readAtUtc && isSeen) message.readAtUtc = now;
               }
             }
           }),
         );
+        try {
+          await queryFulfilled;
+        } catch {
+          patch.undo();
+        }
       },
       invalidatesTags: ['UnreadMessages', 'Conversations'],
     }),
@@ -139,10 +151,12 @@ export function addMessageToChat(conversationId, message) {
  * @param {string} readAtUtc
  */
 export function markMyMessagesRead(conversationId, readAtUtc) {
+  const readUntil = Date.parse(readAtUtc);
   return conversationsApi.util.updateQueryData('getMessages', conversationId, (chat) => {
     for (const page of chat.pages) {
       for (const message of page.items) {
-        if (message.isMine && !message.readAtUtc) message.readAtUtc = readAtUtc;
+        const wasSentBefore = Date.parse(message.sentAtUtc) <= readUntil;
+        if (message.isMine && !message.readAtUtc && wasSentBefore) message.readAtUtc = readAtUtc;
       }
     }
   });

@@ -9,6 +9,7 @@ import {
   PROPERTY_STATUS_LABELS,
   PROPERTY_TYPE_LABELS,
   PROPERTY_TYPES,
+  MAX_SEARCH_TERM_LENGTH,
 } from '../constants.js';
 import { formatPriceRange, searchPath } from '../searchFilters.js';
 import heroPhoto from '../../../assets/photos/home-hero.jpg';
@@ -165,6 +166,7 @@ export function HomeHero() {
           <input
             id={searchInputId}
             type="search"
+            maxLength={MAX_SEARCH_TERM_LENGTH}
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
             placeholder={ar.nav.searchPlaceholder}

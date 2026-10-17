@@ -28,12 +28,17 @@ export function LocationPicker({ latitude, longitude, onPick }) {
     if (marker) return { center: marker, zoom: POINT_ZOOM };
     return { center: DEFAULT_CENTER, zoom: DEFAULT_ZOOM };
   });
+  const [hasPointView, setHasPointView] = useState(marker !== null);
+  if (marker && !hasPointView) {
+    setHasPointView(true);
+    setView({ center: marker, zoom: POINT_ZOOM });
+  }
   const [query, setQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [notFound, setNotFound] = useState(false);
 
   const unavailable = (
-    <div className="flex h-[200px] items-center justify-center rounded-[14px] bg-inset px-6 text-center text-[13.5px] leading-[1.72] font-semibold text-muted">
+    <div className="flex h-[200px] items-center justify-center rounded-[14px] bg-inset px-6 text-center text-[13.5px] leading-[1.72] font-semibold text-text-secondary">
       {text.mapUnavailable}
     </div>
   );

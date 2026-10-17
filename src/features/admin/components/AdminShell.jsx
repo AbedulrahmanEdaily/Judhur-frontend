@@ -33,7 +33,7 @@ function renderUpcomingItem({ label, Icon }) {
       <Icon className="shrink-0 text-muted" />
       {label}
       <span className="flex-1" />
-      <span className="rounded-full bg-inset px-2 py-0.5 text-[11px] leading-[1.72] font-semibold text-muted">
+      <span className="rounded-full bg-inset px-2 py-0.5 text-[11px] leading-[1.72] font-semibold text-text-secondary">
         {ar.accountNav.soon}
       </span>
     </span>

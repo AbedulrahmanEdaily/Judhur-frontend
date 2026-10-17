@@ -153,6 +153,11 @@ export default function SellerPage() {
     );
   }
 
+  const listingsTabLabel = text.listingsTab(formatNumber(seller.data.activeListingsCount));
+  const reviewsTabLabel = ar.reviews.tab(formatNumber(seller.data.reviewsCount));
+  let openTabLabel = listingsTabLabel;
+  if (isReviewsTab) openTabLabel = reviewsTabLabel;
+
   return (
     <div className="flex min-h-full flex-col bg-surface">
       <SellerHeader seller={seller.data} />
@@ -164,14 +169,16 @@ export default function SellerPage() {
         className="flex gap-1.5 border-b border-border bg-bg px-4 xl:px-[100px]"
       >
         <SellerTab to={{ search: location.search, hash: '' }} isActive={!isReviewsTab}>
-          {text.listingsTab(formatNumber(seller.data.activeListingsCount))}
+          {listingsTabLabel}
         </SellerTab>
         <SellerTab to={{ search: location.search, hash: REVIEWS_HASH }} isActive={isReviewsTab}>
-          {ar.reviews.tab(formatNumber(seller.data.reviewsCount))}
+          {reviewsTabLabel}
         </SellerTab>
       </nav>
 
       <section className="flex flex-col gap-5 px-4 pt-4 pb-5 xl:px-[100px] xl:pt-7 xl:pb-[60px]">
+        {/* Keeps the heading order (h1 → h2 → the cards' h3) for screen readers. */}
+        <h2 className="sr-only">{openTabLabel}</h2>
         {content}
       </section>
     </div>

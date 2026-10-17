@@ -8,10 +8,18 @@ import { applyServerErrors } from '../../../components/form/applyServerErrors.js
 import { Button } from '../../../components/ui/Button.jsx';
 import { Modal } from '../../../components/ui/Modal.jsx';
 import { ar } from '../../../locales/ar.js';
+import {
+  GOOGLE_REAUTH_FAILED,
+  GOOGLE_REAUTH_REQUIRED,
+  REAUTH_ACTIONS,
+  clearGoogleReauth,
+  peekGoogleReauth,
+} from '../../auth/googleSignIn.js';
 import { deleteAccountSchema } from '../../auth/schemas.js';
 import { ListingInput } from '../../properties/components/ListingInput.jsx';
 import { noticeShown } from '../../ui/uiSlice.js';
 import { useDeleteMyAccountMutation } from '../profileApi.js';
+import { GoogleReauthPrompt } from './GoogleReauthPrompt.jsx';
 import { ProfilePasswordInput } from './ProfilePasswordInput.jsx';
 
 const text = ar.profile.deleteAccount;
@@ -23,7 +31,8 @@ const SERVER_KEY_FIELDS = {
 
 /**
  * «حذف حسابك نهائياً؟» (not in Figma — the Modal 45:741 in the danger tone): what a deletion
- * does, then the password (or, for a Google-only account, typing «حذف حسابي»). On 204 home opens
+ * does, then the password (or, for a Google-only account, a Google confirmation and typing
+ * «حذف حسابي»). On 204 home opens
  * and the session ends there, as on logout (the session listener resets the whole API cache).
  * 409 Users.AdminCannotDeleteAccount and 429 show above the buttons.
  *
@@ -34,6 +43,11 @@ export function DeleteAccountDialog({ hasPassword, onClose }) {
   const navigate = useNavigate();
   const [deleteAccount] = useDeleteMyAccountMutation();
   const [failure, setFailure] = useState(null);
+  const [googleIdToken, setGoogleIdToken] = useState(() => {
+    if (hasPassword) return null;
+    return peekGoogleReauth(REAUTH_ACTIONS.deleteAccount);
+  });
+  const needsReauth = !hasPassword && !googleIdToken;
 
   const {
     register,
@@ -48,10 +62,11 @@ export function DeleteAccountDialog({ hasPassword, onClose }) {
 
   async function onSubmit(values) {
     setFailure(null);
-    let password = null;
-    if (hasPassword) password = values.password;
+    let body = { googleIdToken };
+    if (hasPassword) body = { password: values.password };
     try {
-      await deleteAccount(password).unwrap();
+      await deleteAccount(body).unwrap();
+      clearGoogleReauth();
       // Like a logout: home first, and AppLayout ends the session once home is on screen
       // (ending it here would send this signed-in-only page to login).
       navigate('/', { replace: true, state: { endSession: true } });
@@ -63,6 +78,10 @@ export function DeleteAccountDialog({ hasPassword, onClose }) {
         FIELD_NAMES,
         SERVER_KEY_FIELDS,
       );
+      if (problem.errorCodes[GOOGLE_REAUTH_REQUIRED] || problem.errorCodes[GOOGLE_REAUTH_FAILED]) {
+        clearGoogleReauth();
+        setGoogleIdToken(null);
+      }
       let requestId = null;
       if (problem.status >= 500) requestId = problem.requestId;
       setFailure({ message: formMessage, requestId });
@@ -70,7 +89,9 @@ export function DeleteAccountDialog({ hasPassword, onClose }) {
   }
 
   function close() {
-    if (!isSubmitting) onClose();
+    if (isSubmitting) return;
+    clearGoogleReauth();
+    onClose();
   }
 
   return (
@@ -92,7 +113,8 @@ export function DeleteAccountDialog({ hasPassword, onClose }) {
             {...register('password')}
           />
         )}
-        {!hasPassword && (
+        {needsReauth && <GoogleReauthPrompt action={REAUTH_ACTIONS.deleteAccount} />}
+        {!hasPassword && !needsReauth && (
           <ListingInput
             label={text.typePhrase(text.confirmPhrase)}
             autoComplete="off"
@@ -105,7 +127,13 @@ export function DeleteAccountDialog({ hasPassword, onClose }) {
           <Button variant="secondary" onClick={close} disabled={isSubmitting}>
             {ar.common.cancel}
           </Button>
-          <Button type="submit" variant="danger" loading={isSubmitting} className="flex-1">
+          <Button
+            type="submit"
+            variant="danger"
+            loading={isSubmitting}
+            disabled={needsReauth}
+            className="flex-1"
+          >
             {text.confirm}
           </Button>
         </div>
