@@ -13,6 +13,7 @@ import { ar } from '../../locales/ar.js';
  *   message?: string,
  *   requestId?: string,
  *   onRetry?: () => void,
+ *   action?: { label: string, onClick: () => void },
  *   className?: string,
  * }} props
  */
@@ -21,6 +22,7 @@ export function ErrorState({
   message,
   requestId,
   onRetry,
+  action,
   className,
 }) {
   return (
@@ -44,10 +46,19 @@ export function ErrorState({
           </span>
         </p>
       )}
-      {onRetry && (
-        <Button variant="secondary" size="sm" onClick={onRetry}>
-          {ar.common.retry}
-        </Button>
+      {(onRetry || action) && (
+        <div className="flex flex-wrap justify-center gap-2.5">
+          {onRetry && (
+            <Button variant="secondary" size="sm" onClick={onRetry}>
+              {ar.common.retry}
+            </Button>
+          )}
+          {action && (
+            <Button variant="secondary" size="sm" onClick={action.onClick}>
+              {action.label}
+            </Button>
+          )}
+        </div>
       )}
     </div>
   );

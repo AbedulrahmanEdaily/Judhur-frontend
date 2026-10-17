@@ -21,6 +21,8 @@ function sellerChangeTags(propertyId) {
   ];
 }
 
+const MAX_PARALLEL_LOCATIONS = 3;
+
 export const propertiesApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     /**
@@ -44,13 +46,29 @@ export const propertiesApi = baseApi.injectEndpoints({
     /**
      * The map page: where each listing is. Search results carry no coordinates yet
      * (BACKEND_REQUESTS #7), so they come from each listing's public details (server-cached for
-     * 10 minutes). → [{ id, latitude, longitude, landClassification }] for the ids that load.
+     * 10 minutes), three at a time. → [{ id, latitude, longitude, landClassification }] for the
+     * ids that load.
      */
     getPropertyLocations: builder.query({
       async queryFn(propertyIds, api, extraOptions, baseQuery) {
-        const results = await Promise.all(
-          propertyIds.map((propertyId) => baseQuery(propertyPath(propertyId))),
-        );
+        const results = new Array(propertyIds.length);
+        let nextIndex = 0;
+        async function loadNext() {
+          while (nextIndex < propertyIds.length) {
+            const index = nextIndex;
+            nextIndex += 1;
+            results[index] = await baseQuery(propertyPath(propertyIds[index]));
+          }
+        }
+        const workers = [];
+        for (
+          let count = 0;
+          count < Math.min(MAX_PARALLEL_LOCATIONS, propertyIds.length);
+          count += 1
+        ) {
+          workers.push(loadNext());
+        }
+        await Promise.all(workers);
         const locations = [];
         for (const result of results) {
           if (!result.data) continue;

@@ -17,7 +17,6 @@ import {
   IconStatViews,
 } from '../../../components/icons/index.js';
 import { Avatar } from '../../../components/ui/Avatar.jsx';
-import { Badge } from '../../../components/ui/Badge.jsx';
 import { ErrorState } from '../../../components/ui/ErrorState.jsx';
 import { Skeleton } from '../../../components/ui/Skeleton.jsx';
 import { selectCurrentUser } from '../../auth/authSlice.js';
@@ -27,11 +26,8 @@ import { useFavoriteIds } from '../../favorites/useFavoriteIds.js';
 import { useMyProfile } from '../../profile/useMyProfile.js';
 import { useUnreadCount } from '../../notifications/useUnreadCount.js';
 import { PropertyPhoto } from '../../properties/components/PropertyPhoto.jsx';
-import {
-  OWNER_STATE_LABELS,
-  OWNER_STATE_TONES,
-  ownerStateOf,
-} from '../../properties/listingState.js';
+import { ownerStateOf } from '../../properties/listingState.js';
+import { OwnerStateBadges } from '../../properties/components/OwnerStateBadges.jsx';
 import { useGetMyPropertiesQuery, useGetPropertiesQuery } from '../../properties/propertiesApi.js';
 import { formatNumber, formatPrice } from '../../../lib/format.js';
 import { toProblem } from '../../../lib/http/problemDetails.js';
@@ -386,7 +382,6 @@ export default function DashboardPage() {
               </div>
               <ul>
                 {myProperties.slice(0, 3).map((property) => {
-                  const state = ownerStateOf(property);
                   return (
                     <li key={property.id}>
                       <Link
@@ -399,7 +394,7 @@ export default function DashboardPage() {
                         <span className="min-w-0 flex-1 truncate text-[13.5px] leading-[1.72] font-semibold text-text">
                           {property.title}
                         </span>
-                        <Badge tone={OWNER_STATE_TONES[state]}>{OWNER_STATE_LABELS[state]}</Badge>
+                        <OwnerStateBadges property={property} />
                       </Link>
                     </li>
                   );

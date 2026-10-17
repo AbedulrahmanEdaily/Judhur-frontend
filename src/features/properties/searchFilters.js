@@ -7,6 +7,7 @@ import {
   LEGAL_STATUSES,
   LISTING_STATUSES,
   MAX_SEARCH_CITIES,
+  MAX_SEARCH_TERM_LENGTH,
   PAYMENT_TYPES,
   PROPERTY_TYPES,
   SEARCH_PAGE_SIZE,
@@ -79,11 +80,19 @@ export function readSearchFilters(searchParams) {
   let page = Math.floor(Number(searchParams.get('page')));
   if (!Number.isFinite(page) || page < 1) page = 1;
 
+  let minPrice = readPositiveNumber(searchParams.get('minPrice'));
+  let maxPrice = readPositiveNumber(searchParams.get('maxPrice'));
+  if (minPrice && maxPrice && minPrice > maxPrice) {
+    const lower = maxPrice;
+    maxPrice = minPrice;
+    minPrice = lower;
+  }
+
   return {
-    searchTerm: (searchParams.get('searchTerm') ?? '').trim(),
+    searchTerm: (searchParams.get('searchTerm') ?? '').trim().slice(0, MAX_SEARCH_TERM_LENGTH),
     city: pickAllowedList(searchParams.getAll('city'), CITIES).slice(0, MAX_SEARCH_CITIES),
-    minPrice: readPositiveNumber(searchParams.get('minPrice')),
-    maxPrice: readPositiveNumber(searchParams.get('maxPrice')),
+    minPrice,
+    maxPrice,
     propertyType: pickAllowedList(searchParams.getAll('propertyType'), PROPERTY_TYPES),
     propertyStatus: pickAllowed(searchParams.get('propertyStatus'), LISTING_STATUSES),
     paymentType: pickAllowedList(searchParams.getAll('paymentType'), PAYMENT_TYPES),

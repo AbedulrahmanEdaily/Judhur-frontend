@@ -313,6 +313,7 @@ export const ar = {
     removeFilter: (label) => `إزالة ${label}`, // not in Figma (screen readers)
     filters: 'الفلاتر',
     clearAll: 'مسح الكل',
+    clearFilters: 'مسح الفلاتر',
     purpose: 'الغرض',
     propertyType: 'نوع العقار',
     priceRange: 'نطاق السعر',
@@ -543,6 +544,7 @@ export const ar = {
       number: 'أدخل رقماً صحيحاً',
       positive: 'لازم يكون أكبر من صفر',
       tooHigh: (max) => `لازم ما يزيد عن ${max}`,
+      tooPrecise: 'خانتين عشريتين كحد أقصى',
       location: 'حدّد موقع العقار على الخريطة أو أدخل الإحداثيات',
     },
     // The edit page (not in Figma)

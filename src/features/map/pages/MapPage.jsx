@@ -8,7 +8,7 @@ import { Skeleton } from '../../../components/ui/Skeleton.jsx';
 import { MarkersMap } from '../../../lib/maps/MarkersMap.jsx';
 import { hasMapKey } from '../../../lib/maps/platform.js';
 import { formatNumber, formatPrice } from '../../../lib/format.js';
-import { toProblem } from '../../../lib/http/problemDetails.js';
+import { actionErrorMessage, toProblem } from '../../../lib/http/problemDetails.js';
 import { ar } from '../../../locales/ar.js';
 import { FiltersDrawer } from '../../properties/components/FiltersDrawer.jsx';
 import { SearchFiltersPanel } from '../../properties/components/SearchFiltersPanel.jsx';
@@ -17,7 +17,12 @@ import {
   useGetPropertiesQuery,
   useGetPropertyLocationsQuery,
 } from '../../properties/propertiesApi.js';
-import { readSearchFilters, toApiQuery, toSearchParams } from '../../properties/searchFilters.js';
+import {
+  EMPTY_FILTERS,
+  readSearchFilters,
+  toApiQuery,
+  toSearchParams,
+} from '../../properties/searchFilters.js';
 import { MapFiltersBar } from '../components/MapFiltersBar.jsx';
 import { MapListingRow } from '../components/MapListingRow.jsx';
 
@@ -87,9 +92,20 @@ export default function MapPage() {
     const problem = toProblem(listings.error);
     let requestId;
     if (problem.status >= 500) requestId = problem.requestId;
+    let onRetry = listings.refetch;
+    let action;
+    if (problem.status === 400) {
+      onRetry = undefined;
+      action = { label: ar.search.clearFilters, onClick: () => applyFilters(EMPTY_FILTERS) };
+    }
     list = (
       <div className="p-4">
-        <ErrorState message={problem.message} requestId={requestId} onRetry={listings.refetch} />
+        <ErrorState
+          message={actionErrorMessage(listings.error)}
+          requestId={requestId}
+          onRetry={onRetry}
+          action={action}
+        />
       </div>
     );
   } else if (!listings.data || listings.data.items.length === 0) {
