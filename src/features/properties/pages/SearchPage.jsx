@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router';
 import { EmptyState } from '../../../components/ui/EmptyState.jsx';
 import { ErrorState } from '../../../components/ui/ErrorState.jsx';
 import { Pagination } from '../../../components/ui/Pagination.jsx';
-import { toProblem } from '../../../lib/http/problemDetails.js';
+import { actionErrorMessage, toProblem } from '../../../lib/http/problemDetails.js';
 import { ar } from '../../../locales/ar.js';
 import { ActiveFilterChips } from '../components/ActiveFilterChips.jsx';
 import { FiltersDrawer } from '../components/FiltersDrawer.jsx';
@@ -66,11 +66,19 @@ export default function SearchPage() {
     );
   } else if (error) {
     const problem = toProblem(error);
-    let message = problem.message;
+    let message = actionErrorMessage(error);
     if (problem.errorCodes[TOO_MANY_CITIES]) message = problem.errorCodes[TOO_MANY_CITIES];
     let requestId;
     if (problem.status >= 500) requestId = problem.requestId;
-    results = <ErrorState message={message} requestId={requestId} onRetry={refetch} />;
+    let onRetry = refetch;
+    let action;
+    if (problem.status === 400) {
+      onRetry = undefined;
+      action = { label: text.clearFilters, onClick: () => applyFilters(EMPTY_FILTERS) };
+    }
+    results = (
+      <ErrorState message={message} requestId={requestId} onRetry={onRetry} action={action} />
+    );
   } else if (
     data &&
     data.items.length === 0 &&

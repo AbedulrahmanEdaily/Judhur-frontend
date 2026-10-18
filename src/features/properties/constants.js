@@ -106,6 +106,7 @@ export const CITIES = [
 
 // The API takes at most 20 cities in one search (PropertyErrors.TooManyCitiesInFilter).
 export const MAX_SEARCH_CITIES = 20;
+export const MAX_SEARCH_TERM_LENGTH = 100;
 
 export const SEARCH_PAGE_SIZE = 12;
 

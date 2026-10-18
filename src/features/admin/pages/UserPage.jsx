@@ -122,14 +122,24 @@ export default function UserPage() {
               </p>
             )}
           </div>
-          <Button variant="secondary" onClick={() => setOpenDialog('unban')} className="self-start">
+          <Button
+            variant="secondary"
+            onClick={() => setOpenDialog('unban')}
+            aria-label={text.unbanFor(user.fullName)}
+            className="self-start"
+          >
             {text.unban}
           </Button>
         </>
       );
     } else {
       banSection = (
-        <Button variant="danger" onClick={() => setOpenDialog('ban')} className="self-start">
+        <Button
+          variant="danger"
+          onClick={() => setOpenDialog('ban')}
+          aria-label={text.banFor(user.fullName)}
+          className="self-start"
+        >
           {text.ban}
         </Button>
       );

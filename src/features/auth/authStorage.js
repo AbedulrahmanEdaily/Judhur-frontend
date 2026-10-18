@@ -29,10 +29,18 @@ export function isSessionOnly() {
   return readSessionStorage(SESSION_ONLY_FLAG) === '1';
 }
 
-/** Called right before a new session starts. @param {boolean} remember */
+/**
+ * Called right before a new session starts. A session without "تذكّرني" also drops a remembered
+ * one: logging in again ends the older session on the server anyway.
+ * @param {boolean} remember
+ */
 export function setRememberSession(remember) {
-  if (remember) writeSessionStorage(SESSION_ONLY_FLAG, null);
-  else writeSessionStorage(SESSION_ONLY_FLAG, '1');
+  if (remember) {
+    writeSessionStorage(SESSION_ONLY_FLAG, null);
+    return;
+  }
+  writeSessionStorage(SESSION_ONLY_FLAG, '1');
+  removeItem(AUTH_STORAGE_KEY);
 }
 
 /** @returns {import('../../api/types.js').TokenResponse | null} */
@@ -65,7 +73,6 @@ export function storeTokens({ accessToken, refreshToken, expiresOnUtc }) {
   const json = JSON.stringify({ accessToken, refreshToken, expiresOnUtc });
   if (isSessionOnly()) {
     writeSessionStorage(AUTH_STORAGE_KEY, json);
-    removeItem(AUTH_STORAGE_KEY);
   } else {
     setItem(AUTH_STORAGE_KEY, json);
   }

@@ -20,6 +20,7 @@ import {
 } from '../adminApi.js';
 import { decisionErrorMessage } from '../decisionError.js';
 import { AdminShell } from '../components/AdminShell.jsx';
+import { ConfirmDialog } from '../../../components/ui/ConfirmDialog.jsx';
 import { RejectPropertyDialog } from '../components/RejectPropertyDialog.jsx';
 
 const text = ar.admin;
@@ -49,6 +50,7 @@ export default function PendingPropertiesPage() {
   const dispatch = useDispatch();
   const [approveProperty] = useApprovePropertyMutation();
   const [approvingId, setApprovingId] = useState(null);
+  const [propertyToApprove, setPropertyToApprove] = useState(null);
   const [propertyToReject, setPropertyToReject] = useState(null);
 
   function changePage(nextPage) {
@@ -58,7 +60,9 @@ export default function PendingPropertiesPage() {
     window.scrollTo({ top: 0 });
   }
 
-  async function handleApprove(property) {
+  async function handleApprove() {
+    const property = propertyToApprove;
+    setPropertyToApprove(null);
     setApprovingId(property.id);
     try {
       const rowVersion = await fetchRowVersion(dispatch, property.id);
@@ -66,6 +70,7 @@ export default function PendingPropertiesPage() {
       toast.show({ tone: 'success', message: text.approved(property.title) });
     } catch (approveError) {
       toast.show({ tone: 'error', message: decisionErrorMessage(approveError) });
+      if (toProblem(approveError).status === 409) refetch();
     } finally {
       setApprovingId(null);
     }
@@ -134,7 +139,7 @@ export default function PendingPropertiesPage() {
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => handleApprove(property)}
+                    onClick={() => setPropertyToApprove(property)}
                     disabled={approvingId !== null}
                     aria-busy={approvingId === property.id || undefined}
                     className="rounded-[10px] bg-brand px-3.5 py-[7px] text-[12.5px] leading-[1.75] font-semibold text-inverse transition-colors hover:bg-brand-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:opacity-60"
@@ -176,6 +181,15 @@ export default function PendingPropertiesPage() {
         )}
       </div>
       {content}
+      <ConfirmDialog
+        open={propertyToApprove !== null}
+        onClose={() => setPropertyToApprove(null)}
+        onConfirm={handleApprove}
+        tone="warning"
+        title={text.quickApprove.title(propertyToApprove?.title ?? '')}
+        description={text.quickApprove.text}
+        confirmLabel={text.quickApprove.confirm}
+      />
       <RejectPropertyDialog
         property={propertyToReject}
         onClose={() => setPropertyToReject(null)}

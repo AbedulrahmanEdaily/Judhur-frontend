@@ -25,7 +25,7 @@ const itemClasses =
 function countClasses(isActive) {
   return clsx(
     'rounded-full px-2 py-0.5 text-[11px] leading-[1.72] font-semibold',
-    isActive ? 'bg-brand text-inverse' : 'bg-inset text-muted',
+    isActive ? 'bg-brand text-inverse' : 'bg-inset text-text-secondary',
   );
 }
 

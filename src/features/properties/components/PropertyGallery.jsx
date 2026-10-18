@@ -67,7 +67,13 @@ export function PropertyGallery({ images, title, onBack, favoriteButton }) {
       </section>
 
       <section className="relative order-first h-[250px] xl:hidden">
-        <div className="flex h-full snap-x snap-mandatory overflow-x-auto">
+        {/* Focusable, so the strip can also be scrolled with the keyboard arrows. */}
+        <div
+          role="region"
+          aria-label={ar.property.photoStrip(title)}
+          tabIndex={0}
+          className="flex h-full snap-x snap-mandatory overflow-x-auto focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand"
+        >
           {photos.length === 0 && <PropertyPhoto className="shrink-0" />}
           {photos.map((photo) => (
             <div key={photo.id} className="h-full w-full shrink-0 snap-center">

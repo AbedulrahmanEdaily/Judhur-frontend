@@ -1,6 +1,7 @@
 import { useId } from 'react';
 import { useNavigate } from 'react-router';
 import { IconSearch } from '../icons/index.js';
+import { MAX_SEARCH_TERM_LENGTH } from '../../features/properties/constants.js';
 import { searchPath } from '../../features/properties/searchFilters.js';
 import { ar } from '../../locales/ar.js';
 
@@ -32,6 +33,7 @@ export function HeaderSearch() {
         id={inputId}
         name="searchTerm"
         type="search"
+        maxLength={MAX_SEARCH_TERM_LENGTH}
         placeholder={ar.nav.searchPlaceholder}
         className="w-full min-w-0 bg-transparent text-[13px] leading-[1.65] text-text outline-none placeholder:text-muted"
       />

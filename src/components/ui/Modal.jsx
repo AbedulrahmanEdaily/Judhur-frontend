@@ -25,9 +25,13 @@ export function Modal({ open, onClose, title, children, footer, className }) {
 
   useEffect(() => {
     const dialog = dialogRef.current;
-    if (!dialog) return;
-    if (open && !dialog.open) dialog.showModal();
-    if (!open && dialog.open) dialog.close();
+    if (!dialog || !open) return undefined;
+    const opener = document.activeElement;
+    if (!dialog.open) dialog.showModal();
+    return () => {
+      if (dialog.open) dialog.close();
+      if (opener instanceof HTMLElement && opener.isConnected) opener.focus();
+    };
   }, [open]);
 
   return (

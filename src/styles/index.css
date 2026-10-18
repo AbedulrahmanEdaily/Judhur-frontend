@@ -19,7 +19,7 @@
 
   --color-text: #0e1a16; /* text/primary */
   --color-text-secondary: #5f6b65; /* text/secondary */
-  --color-muted: #8a948f; /* text/muted */
+  --color-muted: #6c7370; /* text/muted #8a948f, darkened for 4.5:1 contrast */
   --color-inverse: #ffffff; /* text/inverse */
 
   --color-brand: #0f7a56; /* brand/solid */
@@ -63,7 +63,7 @@
 
   --color-text: #eaf2ee;
   --color-text-secondary: #93a69d;
-  --color-muted: #6e7f77;
+  --color-muted: #82918a; /* #6e7f77, lightened for 4.5:1 contrast */
   --color-inverse: #04150e;
 
   --color-brand: #22a473;

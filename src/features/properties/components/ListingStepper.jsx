@@ -25,7 +25,7 @@ export function ListingStepper({ current, onStepClick }) {
           const isCurrent = step === current;
 
           let circle = (
-            <span className="flex size-[34px] items-center justify-center rounded-full border border-border bg-inset text-[14px] leading-[1.72] font-semibold text-muted">
+            <span className="flex size-[34px] items-center justify-center rounded-full border border-border bg-inset text-[14px] leading-[1.72] font-semibold text-text-secondary">
               {step}
             </span>
           );

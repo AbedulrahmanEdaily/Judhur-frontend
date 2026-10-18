@@ -120,7 +120,7 @@ export default function EditPropertyPage() {
       return;
     }
     // A published listing leaves the search until it is approved again: ask first.
-    if (detailsChanged && state === 'published') {
+    if (detailsChanged && property.moderationStatus === 'Approved') {
       setValuesToConfirm(values);
       return;
     }

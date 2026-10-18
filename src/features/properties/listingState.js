@@ -40,11 +40,12 @@ export const OWNER_STATE_TONES = {
 };
 
 /**
- * Reactivate: approved and inactive — also a sold or rented listing that was deactivated.
- * @param {{ moderationStatus: string, isActive: boolean }} property
+ * Reactivate: any inactive listing, in every moderation state (a pending one goes back to the
+ * queue, a rejected one stays rejected until it is resubmitted).
+ * @param {{ isActive: boolean }} property
  */
 export function canReactivateListing(property) {
-  return property.moderationStatus === 'Approved' && !property.isActive;
+  return !property.isActive;
 }
 
 /**

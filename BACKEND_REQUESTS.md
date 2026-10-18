@@ -100,10 +100,10 @@ Statuses last updated from the backend contract of 2026-09-30.
 
 ## 14. Password reset by link or by code
 
-- Status: open
+- Status: done — the API keeps the 6-digit code and the UI copy now says code («رمز من 6 أرقام», «أرسل رمز الاستعادة»)
 - Why the frontend needs it: the forgot-password design (Figma 70:1314) says a secure **link** is emailed («أرسل رابط الاستعادة»), but the API emails a 6-digit **code**.
-- Endpoint / change wanted: decide one. Either email a link to `/reset-password?email=…&code=…`, or keep the code and the design copy gets updated.
-- Current workaround in the UI: the Figma copy is kept word for word; the next page (`/reset-password`, not in Figma) asks for the code.
+- Endpoint / change wanted: none any more. The Figma frame still says link; it can be updated there.
+- Current workaround in the UI: none — `/forgot-password` asks for the code to be sent and `/reset-password` (not in Figma) takes it.
 
 ## 15. `requestId` on every ProblemDetails
 
@@ -129,3 +129,27 @@ Statuses last updated from the backend contract of 2026-09-30.
   - With `showPhoneNumber: false`, `GET /api/v1/User/Properties/{id}` leaves out `user.phoneNumber` for everyone (the details cache keys stay as they are).
   - With `emailNotifications: true`, the notifications above are also emailed (in Arabic, with a link to the page the notification opens).
 - Current workaround in the UI: the two switches are shown disabled with «قريباً», set to how the app works today (no notification emails, the phone shown to signed-in users). «الوضع الداكن» in the same card works now — it is a device setting, not saved on the server.
+
+## 18. Chat participant availability
+
+- Status: open
+- Why the frontend needs it: a chat whose other party was **deleted** has no `otherParty` (shown as «مستخدم محذوف», the composer closed). A **banned** party still comes back as a normal `ChatParticipant`, so the chat looks open until a send answers `409` `Conversations.ParticipantUnavailable`.
+- Endpoint / change wanted: `isAvailable: boolean` on `ChatParticipant` (false when the account is banned or deleted) in `GET /api/v1/User/Conversations` and `GET /api/v1/User/Conversations/{id}`.
+- Current workaround in the UI: a missing `otherParty` closes the composer at once; for a banned party the composer closes after the first `409`.
+
+## 19. Area range in search
+
+- Status: open
+- Why the frontend needs it: buyers filter land and apartments by size; the search filters have a price range but no area range.
+- Endpoint / change wanted: `GET /api/v1/User/Properties` accepting `minArea` and `maxArea` (numbers, inclusive, `maxArea` ≥ `minArea`, same `400` style as the price range).
+- Current workaround in the UI: no area filter is shown.
+
+## 20. 2026-10-16 contract — where the frontend follows the backend
+
+- Status: done — recorded so the brief and the backend agree
+- Why the frontend needs it: the frontend brief of 2026-10-16 differs from the backend source in three places; the backend wins.
+- Endpoint / change wanted: none. The differences:
+  - `POST /api/v1/User/Conversations/{id}/read?upTo=` takes the **id** of the newest message seen (a `Guid`), not its `sentAtUtc`.
+  - The decimal errors are `PropertyErrors.PriceTooPrecise` / `PropertyErrors.AreaTooPrecise` (not `Property.*`).
+  - `ChatParticipant` has no `isDeleted`; a missing `otherParty` means a deleted account (see #18 for banned ones).
+- Current workaround in the UI: none — the code uses the backend names and shapes.

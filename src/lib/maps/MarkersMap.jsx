@@ -54,11 +54,14 @@ export function MarkersMap({
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const onSelectRef = useRef(onSelect);
+  const activeIdRef = useRef(activeId);
+  const shownActiveIdRef = useRef(null);
   const fittedKeyRef = useRef('');
   const [status, setStatus] = useState('loading');
 
   useEffect(() => {
     onSelectRef.current = onSelect;
+    activeIdRef.current = activeId;
   });
 
   useEffect(() => {
@@ -88,7 +91,7 @@ export function MarkersMap({
     };
   }, []);
 
-  // Rebuilt when the pins or the chosen one change (a page holds at most a few dozen).
+  // Rebuilt when the pins change; choosing another pin only swaps two icons (below).
   const markersKey = JSON.stringify(markers);
   useEffect(() => {
     if (status !== 'ready') return;
@@ -97,22 +100,27 @@ export function MarkersMap({
     if (state.group) {
       map.removeObject(state.group);
       state.group = null;
+      state.pins = null;
     }
     const list = JSON.parse(markersKey);
     if (list.length === 0) return;
 
     const group = new H.map.Group();
+    const pins = new Map();
     for (const item of list) {
-      const isActive = item.id === activeId;
+      const isActive = item.id === activeIdRef.current;
       const marker = new H.map.DomMarker(
         { lat: item.lat, lng: item.lng },
         { icon: new H.map.DomIcon(pinElement(item.label, isActive)), zIndex: isActive ? 1 : 0 },
       );
       marker.addEventListener('tap', () => onSelectRef.current(item.id));
       group.addObject(marker);
+      pins.set(item.id, { marker, label: item.label });
     }
     map.addObject(group);
     state.group = group;
+    state.pins = pins;
+    shownActiveIdRef.current = activeIdRef.current;
 
     // Fit only when the listings change, not when another pin is chosen.
     const idsKey = list.map((item) => item.id).join(',');
@@ -125,6 +133,23 @@ export function MarkersMap({
     }
     map.getViewModel().setLookAtData({ bounds: group.getBoundingBox() });
     if (map.getZoom() > MAX_FIT_ZOOM) map.setZoom(MAX_FIT_ZOOM);
+  }, [status, markersKey]);
+
+  useEffect(() => {
+    if (status !== 'ready') return;
+    const state = mapRef.current;
+    if (!state?.pins || shownActiveIdRef.current === activeId) return;
+    const previous = state.pins.get(shownActiveIdRef.current);
+    if (previous) {
+      previous.marker.setIcon(new state.H.map.DomIcon(pinElement(previous.label, false)));
+      previous.marker.setZIndex(0);
+    }
+    const next = state.pins.get(activeId);
+    if (next) {
+      next.marker.setIcon(new state.H.map.DomIcon(pinElement(next.label, true)));
+      next.marker.setZIndex(1);
+    }
+    shownActiveIdRef.current = activeId;
   }, [status, markersKey, activeId]);
 
   function zoomBy(step) {

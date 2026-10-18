@@ -163,6 +163,7 @@ export const ar = {
     google: 'المتابعة باستخدام Google',
     // not in Figma: Google sign-in states and the first-time step
     googleFailed: 'تعذّر التحقق من حساب Google',
+    googleUnavailable: 'تسجيل الدخول عبر جوجل غير متاح حاليا',
     googleCancelled: 'ألغيت الدخول بحساب Google.',
     googleExpired: 'انتهت محاولة الدخول بحساب Google. جرّب مرة ثانية.',
     googleBack: 'رجوع لتسجيل الدخول',
@@ -219,8 +220,8 @@ export const ar = {
     },
     forgot: {
       title: 'نسيت كلمة المرور؟',
-      subtitle: 'اكتب بريدك وبنبعتلك رابط آمن تعيّن منه كلمة مرور جديدة.',
-      submit: 'أرسل رابط الاستعادة',
+      subtitle: 'اكتب بريدك وبنبعتلك رمز من 6 أرقام تعيّن فيه كلمة مرور جديدة.',
+      submit: 'أرسل رمز الاستعادة',
       backToLogin: 'رجوع لتسجيل الدخول',
     },
     // not in Figma — the code + new password step.
@@ -312,6 +313,7 @@ export const ar = {
     removeFilter: (label) => `إزالة ${label}`, // not in Figma (screen readers)
     filters: 'الفلاتر',
     clearAll: 'مسح الكل',
+    clearFilters: 'مسح الفلاتر',
     purpose: 'الغرض',
     propertyType: 'نوع العقار',
     priceRange: 'نطاق السعر',
@@ -400,7 +402,10 @@ export const ar = {
       'لا تدفع عربون قبل ما تشوف الأرض والوثيقة على الطبيعة.',
       'تأكّد من مطابقة رقم القطعة والحوض في الطابو.',
     ],
-    moreImages: (count) => `+${count} صور أخرى`,
+    // \u2066…\u2069 keeps «+3» left to right inside the Arabic line (it would read «3+»).
+    moreImages: (count) => `\u2066+${count}\u2069 صور أخرى`,
+    // not in Figma — the name of the swipeable photo strip on phones (screen readers)
+    photoStrip: (title) => `صور ${title}`,
     showImage: (number) => `عرض الصورة ${number}`, // not in Figma (screen readers)
     back: 'رجوع',
     // not in Figma
@@ -539,6 +544,7 @@ export const ar = {
       number: 'أدخل رقماً صحيحاً',
       positive: 'لازم يكون أكبر من صفر',
       tooHigh: (max) => `لازم ما يزيد عن ${max}`,
+      tooPrecise: 'خانتين عشريتين كحد أقصى',
       location: 'حدّد موقع العقار على الخريطة أو أدخل الإحداثيات',
     },
     // The edit page (not in Figma)
@@ -773,9 +779,13 @@ export const ar = {
     confirmPassword: 'تأكيد كلمة المرور الجديدة',
     changePassword: 'تغيير كلمة المرور',
     setPassword: 'تعيين كلمة مرور',
-    passwordChanged: 'تغيّرت كلمة المرور',
-    passwordSet: 'صار عندك كلمة مرور، وبتقدر تدخل فيها بالبريد',
-    loadError: 'ما قدرنا نجيب بياناتك',
+    passwordChanged: 'تم تغيير كلمة المرور وتسجيل الخروج من الأجهزة الأخرى',
+    passwordSet: 'صار عندك كلمة مرور وبتقدر تدخل فيها بالبريد، وسجّلنا خروجك من الأجهزة الأخرى',
+    reauth: {
+      prompt: 'حسابك مرتبط بـ Google: أكّد هويتك عبر Google قبل ما تكمّل.',
+      confirm: 'أكّد هويتك عبر Google',
+      confirmed: 'تم تأكيد هويتك عبر Google، كمّل الآن.',
+    },
   },
   sellers: {
     // Figma "ملف البائع — زائر" (73:1373)
@@ -882,6 +892,7 @@ export const ar = {
     loadingOlder: 'جاري تحميل الرسائل الأقدم…',
     chatStart: 'بداية المحادثة',
     messagesLabel: 'الرسائل',
+    newMessage: (content) => `رسالة جديدة: ${content}`,
     inputLabel: 'نص الرسالة',
     sendMessage: 'إرسال الرسالة',
     sentMark: 'أُرسلت',
@@ -946,7 +957,7 @@ export const ar = {
       queueTitle: 'بانتظار الموافقة',
       wholeQueue: 'الطابور كامل',
       // not in Figma
-      newThisWeek: (count) => `+${count} هالأسبوع`,
+      newThisWeek: (count) => `\u2066+${count}\u2069 هالأسبوع`, // «+9», like moreImages
       queueEmpty: 'ما في عقارات بانتظار المراجعة.',
       inspect: 'افحص',
       weekTitle: 'آخر 7 أيام',
@@ -1019,6 +1030,8 @@ export const ar = {
       adminNote: 'هذا حساب مشرف — ما بينحظر.',
       ban: 'حظر الحساب',
       unban: 'إلغاء الحظر',
+      banFor: (name) => `حظر حساب ${name}`,
+      unbanFor: (name) => `إلغاء حظر ${name}`,
       banDialog: {
         title: (name) => `حظر ${name}؟`,
         description:
@@ -1071,6 +1084,7 @@ export const ar = {
     },
     // not in Figma, or changed from it (see DESIGN.md)
     banner: 'إنت بوضع الإدارة — قراراتك بتوصل لأصحاب العقارات',
+    bannerLabel: 'وضع الإدارة',
     queueSubtitle: (count) => `${count} عقار بانتظار المراجعة — الأقدم أولاً.`,
     queueEmptyTitle: 'الطابور فاضي',
     queueEmptyText: 'ما في عقارات بانتظار المراجعة هلأ.',
@@ -1100,6 +1114,13 @@ export const ar = {
     rejectDescription: 'صاحب العقار رح يشوف سبب الرفض على صفحة عقاره، وبيقدر يعدّل ويعيد الإرسال.',
     rejectSuggestions: ['الصور غير واضحة', 'وثيقة الملكية غير واضحة', 'المعلومات غير مكتملة'],
     approved: (title) => `تمت الموافقة على «${title}» ونُشر العقار`,
+    changedSinceOpened: 'تم تعديل العقار، راجع التغييرات قبل ما تقرّر.',
+    changesReviewed: 'راجعت التغييرات',
+    quickApprove: {
+      title: (title) => `الموافقة على «${title}»؟`,
+      text: 'العقار رح يُنشر ويظهر بالبحث فوراً. تأكد إنك راجعت الصور والوثيقة.',
+      confirm: 'موافقة ونشر',
+    },
     rejected: (title) => `تم رفض «${title}» وإرسال السبب للمالك`,
     notFoundTitle: 'العقار غير موجود',
     notFoundText: 'يمكن انحذف أو الرابط غلط.',
@@ -1191,6 +1212,8 @@ export const ar = {
     tooManyRequests: 'محاولات كثيرة. الرجاء الانتظار قليلاً ثم المحاولة مجدداً.',
     // The global rate limit (300 a minute per user, 200 per IP): one toast from baseQuery.
     rateLimited: 'طلبات كثيرة، حاول بعد قليل',
+    payloadTooLarge: 'حجم الملف أو الطلب أكبر من المسموح.',
+    refreshFailed: 'ما قدرنا نحدّث هالصفحة، اللي قدامك ممكن يكون قديم.',
     rateLimitedFor: (seconds) => `طلبات كثيرة، حاول بعد ${seconds} ثانية`,
   },
   // not in Figma

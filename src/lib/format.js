@@ -8,7 +8,8 @@ export const DEFAULT_CURRENCY = 'ILS';
 const priceFormatter = new Intl.NumberFormat(LOCALE, {
   style: 'currency',
   currency: DEFAULT_CURRENCY,
-  maximumFractionDigits: 0,
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 2,
 });
 
 const numberFormatter = new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 2 });

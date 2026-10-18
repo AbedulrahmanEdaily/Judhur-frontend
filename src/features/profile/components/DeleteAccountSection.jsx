@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { IconTrash } from '../../../components/icons/index.js';
 import { ar } from '../../../locales/ar.js';
+import { REAUTH_ACTIONS, peekGoogleReauth } from '../../auth/googleSignIn.js';
 import { DeleteAccountDialog } from './DeleteAccountDialog.jsx';
 
 const text = ar.profile.deleteAccount;
@@ -14,7 +15,9 @@ const text = ar.profile.deleteAccount;
  * @param {{ hasPassword: boolean }} props
  */
 export function DeleteAccountSection({ hasPassword }) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(
+    () => peekGoogleReauth(REAUTH_ACTIONS.deleteAccount) !== null,
+  );
 
   return (
     <section

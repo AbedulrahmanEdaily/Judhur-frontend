@@ -99,9 +99,9 @@ export default function FavoritesPage() {
             {text.title}
           </h1>
           {data && data.totalCount > 0 && (
-            <p className="text-[13.5px] leading-[1.72] text-text-secondary">
+            <h2 className="text-[13.5px] leading-[1.72] text-text-secondary">
               {text.subtitle(formatNumber(data.totalCount))}
-            </p>
+            </h2>
           )}
         </div>
         {content}

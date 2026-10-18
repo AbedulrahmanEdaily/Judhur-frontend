@@ -7,9 +7,17 @@ import { Button } from '../../../components/ui/Button.jsx';
 import { Modal } from '../../../components/ui/Modal.jsx';
 import { useToast } from '../../../components/ui/useToast.js';
 import { ar } from '../../../locales/ar.js';
+import {
+  GOOGLE_REAUTH_FAILED,
+  GOOGLE_REAUTH_REQUIRED,
+  REAUTH_ACTIONS,
+  clearGoogleReauth,
+  peekGoogleReauth,
+} from '../../auth/googleSignIn.js';
 import { changeEmailSchema } from '../../auth/schemas.js';
 import { ListingInput } from '../../properties/components/ListingInput.jsx';
 import { useChangeMyEmailMutation } from '../profileApi.js';
+import { GoogleReauthPrompt } from './GoogleReauthPrompt.jsx';
 import { ProfilePasswordInput } from './ProfilePasswordInput.jsx';
 
 const text = ar.profile.changeEmail;
@@ -25,7 +33,8 @@ const SERVER_KEY_FIELDS = {
 /**
  * «تغيير البريد الإلكتروني» (not in Figma — the Modal 45:741 with the profile's fields): the new
  * email and, for an account with a password, the current password. On 204 a link goes to the new
- * email and nothing changes until it is opened. Mounted only while open, so it starts empty.
+ * email and nothing changes until it is opened. Mounted only while open, so it starts empty. A
+ * Google-only account confirms itself with Google first and sends `googleIdToken`.
  *
  * @param {{ currentEmail: string, hasPassword: boolean, onClose: () => void }} props
  */
@@ -33,6 +42,11 @@ export function ChangeEmailDialog({ currentEmail, hasPassword, onClose }) {
   const toast = useToast();
   const [changeEmail] = useChangeMyEmailMutation();
   const [failure, setFailure] = useState(null);
+  const [googleIdToken, setGoogleIdToken] = useState(() => {
+    if (hasPassword) return null;
+    return peekGoogleReauth(REAUTH_ACTIONS.changeEmail);
+  });
+  const needsReauth = !hasPassword && !googleIdToken;
 
   const {
     register,
@@ -49,8 +63,10 @@ export function ChangeEmailDialog({ currentEmail, hasPassword, onClose }) {
     setFailure(null);
     const body = { newEmail: values.newEmail };
     if (hasPassword) body.password = values.password;
+    else body.googleIdToken = googleIdToken;
     try {
       await changeEmail(body).unwrap();
+      clearGoogleReauth();
       toast.show({ tone: 'success', message: text.sent });
       onClose();
     } catch (error) {
@@ -61,6 +77,10 @@ export function ChangeEmailDialog({ currentEmail, hasPassword, onClose }) {
         FIELD_NAMES,
         SERVER_KEY_FIELDS,
       );
+      if (problem.errorCodes[GOOGLE_REAUTH_REQUIRED] || problem.errorCodes[GOOGLE_REAUTH_FAILED]) {
+        clearGoogleReauth();
+        setGoogleIdToken(null);
+      }
       let requestId = null;
       if (problem.status >= 500) requestId = problem.requestId;
       setFailure({ message: formMessage, requestId });
@@ -68,15 +88,19 @@ export function ChangeEmailDialog({ currentEmail, hasPassword, onClose }) {
   }
 
   function close() {
-    if (!isSubmitting) onClose();
+    if (isSubmitting) return;
+    clearGoogleReauth();
+    onClose();
   }
 
   return (
     <Modal open onClose={close} title={text.title}>
       <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-[18px]">
         <p className="text-[14px] leading-[1.78] text-text-secondary">{text.intro(currentEmail)}</p>
+        {needsReauth && <GoogleReauthPrompt action={REAUTH_ACTIONS.changeEmail} />}
         <ListingInput
           label={text.newEmail}
+          disabled={needsReauth}
           type="email"
           dir="ltr"
           autoComplete="email"
@@ -96,7 +120,7 @@ export function ChangeEmailDialog({ currentEmail, hasPassword, onClose }) {
           <Button variant="secondary" onClick={close} disabled={isSubmitting}>
             {ar.common.cancel}
           </Button>
-          <Button type="submit" loading={isSubmitting} className="flex-1">
+          <Button type="submit" loading={isSubmitting} disabled={needsReauth} className="flex-1">
             {text.submit}
           </Button>
         </div>

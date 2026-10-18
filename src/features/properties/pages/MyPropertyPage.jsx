@@ -2,7 +2,6 @@ import { Link, useParams } from 'react-router';
 import { AccountShell } from '../../../components/layout/AccountShell.jsx';
 import { PageTopBar } from '../../../components/layout/PageTopBar.jsx';
 import { IconBackChevron } from '../../../components/icons/index.js';
-import { Badge } from '../../../components/ui/Badge.jsx';
 import { Skeleton } from '../../../components/ui/Skeleton.jsx';
 import { formatDate, formatPrice } from '../../../lib/format.js';
 import { ar } from '../../../locales/ar.js';
@@ -12,12 +11,8 @@ import { ListingSummary } from '../components/ListingSummary.jsx';
 import { OwnerActions } from '../components/OwnerActions.jsx';
 import { OwnerLoadError } from '../components/OwnerLoadError.jsx';
 import { ReadinessChecklist } from '../components/ReadinessChecklist.jsx';
-import {
-  OWNER_STATE_LABELS,
-  OWNER_STATE_TONES,
-  ownerStateOf,
-  readinessOf,
-} from '../listingState.js';
+import { ownerStateOf, readinessOf } from '../listingState.js';
+import { OwnerStateBadges } from '../components/OwnerStateBadges.jsx';
 import { useGetMyPropertyQuery } from '../propertiesApi.js';
 
 const text = ar.ownerProperty;
@@ -57,7 +52,7 @@ export default function MyPropertyPage() {
             <h1 className="min-w-0 flex-1 text-[20px] leading-[1.6] font-bold text-text xl:text-[24px]">
               {property.title}
             </h1>
-            <Badge tone={OWNER_STATE_TONES[state]}>{OWNER_STATE_LABELS[state]}</Badge>
+            <OwnerStateBadges property={property} />
           </div>
           <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13.5px] leading-[1.72] text-text-secondary">
             <span>{place}</span>

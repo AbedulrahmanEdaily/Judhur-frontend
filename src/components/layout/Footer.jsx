@@ -1,4 +1,6 @@
+import { useSelector } from 'react-redux';
 import { Link } from 'react-router';
+import { selectIsAdmin } from '../../features/auth/authSlice.js';
 import { Logo } from './Logo.jsx';
 import { ar } from '../../locales/ar.js';
 
@@ -13,6 +15,7 @@ const itemClasses = 'text-[13.5px] leading-[1.75] text-white/70';
  * frames have no footer.
  */
 export function Footer() {
+  const isAdmin = useSelector(selectIsAdmin);
   const year = new Date().getFullYear();
 
   return (
@@ -37,9 +40,11 @@ export function Footer() {
             <Link to="/map" className={itemClasses}>
               {ar.nav.map}
             </Link>
-            <Link to="/properties/new" className={itemClasses}>
-              {ar.nav.addProperty}
-            </Link>
+            {!isAdmin && (
+              <Link to="/properties/new" className={itemClasses}>
+                {ar.nav.addProperty}
+              </Link>
+            )}
           </div>
 
           <div className="flex flex-col items-end gap-2.5 whitespace-nowrap">

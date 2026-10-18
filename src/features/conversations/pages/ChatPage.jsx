@@ -1,15 +1,22 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useDispatch } from 'react-redux';
 import { useParams } from 'react-router';
 import { EmptyState } from '../../../components/ui/EmptyState.jsx';
 import { ErrorState } from '../../../components/ui/ErrorState.jsx';
+import { RetryBanner } from '../../../components/ui/RetryBanner.jsx';
 import { Skeleton } from '../../../components/ui/Skeleton.jsx';
 import { toProblem } from '../../../lib/http/problemDetails.js';
-import { clearActiveConversation, setActiveConversation } from '../../../lib/realtime/chatHub.js';
+import {
+  clearActiveConversation,
+  setActiveConversation,
+  takeBufferedMessages,
+} from '../../../lib/realtime/chatHub.js';
 import { ar } from '../../../locales/ar.js';
 import { ChatComposer } from '../components/ChatComposer.jsx';
 import { ChatHeader } from '../components/ChatHeader.jsx';
 import { ChatMessages } from '../components/ChatMessages.jsx';
 import {
+  addMessageToChat,
   useGetConversationQuery,
   useGetMessagesInfiniteQuery,
   useMarkConversationReadMutation,
@@ -54,11 +61,14 @@ function renderError(error, onRetry) {
  * `/messages/:conversationId` — Figma "المحادثة" (76:1085), mobile 84:530: the header, the
  * messages (older pages on scroll) and the composer, inside MessagesPage (which also shows the
  * other party's name in the mobile top bar). New messages come from the hub or the send
- * answer straight into the cache. While the page is visible, unread messages from the other
- * party are marked read (on open and on each new one).
+ * answer straight into the cache (those pushed while the first page loads are added once it
+ * arrives). While the page is visible, unread messages from the other party are marked read up
+ * to the newest one on screen (on open and on each new one). A refresh that fails over cached
+ * data keeps the chat and shows a retry banner.
  */
 export default function ChatPage() {
   const { conversationId } = useParams();
+  const dispatch = useDispatch();
   const conversation = useGetConversationQuery(conversationId);
   const chat = useGetMessagesInfiniteQuery(conversationId, {
     refetchOnMountOrArgChange: true,
@@ -81,18 +91,34 @@ export default function ChatPage() {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, []);
 
+  const isChatLoaded = Boolean(chat.data);
+  useEffect(() => {
+    if (!isChatLoaded) return;
+    for (const message of takeBufferedMessages(conversationId)) {
+      dispatch(addMessageToChat(conversationId, message));
+    }
+  }, [isChatLoaded, conversationId, dispatch]);
+
   let messages = [];
   if (chat.data) messages = oldestFirst(chat.data.pages);
-  const hasUnreadFromThem = messages.some((message) => !message.isMine && !message.readAtUtc);
+  let newestUnreadFromThem = null;
+  for (const message of messages) {
+    if (!message.isMine && !message.readAtUtc) newestUnreadFromThem = message;
+  }
+  const upTo = newestUnreadFromThem?.id;
+  const upToSentAtUtc = newestUnreadFromThem?.sentAtUtc;
 
+  const lastReadUpToRef = useRef(null);
   useEffect(() => {
-    if (hasUnreadFromThem && isVisible) markRead(conversationId);
-  }, [hasUnreadFromThem, isVisible, conversationId, markRead]);
+    if (!upTo || !isVisible || lastReadUpToRef.current === upTo) return;
+    lastReadUpToRef.current = upTo;
+    markRead({ conversationId, upTo, upToSentAtUtc });
+  }, [upTo, upToSentAtUtc, isVisible, conversationId, markRead]);
 
   let body;
-  if (conversation.error) {
+  if (conversation.error && !conversation.data) {
     body = renderError(conversation.error, conversation.refetch);
-  } else if (chat.error) {
+  } else if (chat.error && !chat.data) {
     body = renderError(chat.error, chat.refetch);
   } else if (!conversation.data || !chat.data) {
     body = (
@@ -103,8 +129,17 @@ export default function ChatPage() {
       </div>
     );
   } else {
+    const hasStaleData = Boolean(conversation.error || chat.error);
     body = (
       <>
+        {hasStaleData && (
+          <RetryBanner
+            onRetry={() => {
+              conversation.refetch();
+              chat.refetch();
+            }}
+          />
+        )}
         <ChatHeader conversation={conversation.data} />
         <ChatMessages
           messages={messages}
@@ -112,7 +147,11 @@ export default function ChatPage() {
           isLoadingOlder={chat.isFetchingNextPage}
           onLoadOlder={() => chat.fetchNextPage()}
         />
-        <ChatComposer key={conversationId} conversationId={conversationId} />
+        <ChatComposer
+          key={conversationId}
+          conversationId={conversationId}
+          isParticipantGone={!conversation.data.otherParty}
+        />
       </>
     );
   }
